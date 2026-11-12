@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "addons/plugin.video.homefx"))
 from resources.lib.trakt_auth import DeviceLogin
-from resources.lib.trakt_client import Client
+from resources.lib.trakt_client import Client, ApiError
 from resources.lib.trakt_transport import Transport, TransportError
 
 
@@ -79,6 +79,29 @@ HEADERS = {"Authorization": "Bearer synthetic-access", "trakt-api-key": "synthet
 
 
 class TransportTests(unittest.TestCase):
+    def test_complete_movie_snapshot_endpoint_has_no_pagination_query(self):
+        factory = Connections([wire(b'[]')])
+        transport = Transport(connection_factory=factory)
+        client = Client(transport.api_request, "synthetic-client", "synthetic-access")
+        self.assertEqual(client.watched_movies(), ())
+        self.assertIn(b"GET /users/me/watched/movies HTTP/1.1", b"".join(factory.sockets[0].sent))
+        for suffix in ("?page=1", "?limit=100", "?extended=full"):
+            with self.assertRaises(TransportError):
+                transport.api_request("GET", "/users/me/watched/movies" + suffix, HEADERS)
+        self.assertEqual(len(factory.calls), 1)
+
+    def test_movie_snapshot_rejects_transport_pagination_markers(self):
+        for header in ("X-Pagination-Item-Count", "X-Pagination-Custom"):
+            with self.subTest(header=header):
+                factory = Connections([wire(b'[]', headers=[
+                    ("Content-Type", "application/json"), ("Content-Length", "2"),
+                    (header, "42")])])
+                client = Client(Transport(connection_factory=factory).api_request,
+                                "synthetic-client", "synthetic-access")
+                with self.assertRaises(ApiError):
+                    client.watched_movies()
+                self.assertEqual(len(factory.calls), 1)
+
     def test_real_http_framing_tls_hosts_and_callback_compatibility(self):
         responses = [wire(b'{"device_code":"synthetic-device","user_code":"DEMO",'
                           b'"verification_url":"https://trakt.tv/activate",'

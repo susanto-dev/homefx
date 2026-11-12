@@ -24,7 +24,9 @@ Kodi modules. Tests use the standard-library unittest runner and synthetic fixtu
 Tests never log into services. This project does not need Docker, a server, or an
 Android application. Trakt transport/session/library tests use injected connections
 and fabricated responses. Local socket-pair tests exercise HTTP parsing without
-contacting online services. The Kodi adapter does not enable that network stack.
+contacting online services. The Kodi adapter does not enable either provider network stack. Real-Debrid storage,
+transport and session tests use temporary SQLite stores and fabricated HTTP streams.
+Never use the cloud development environment or CI for real debrid account traffic.
 
 Future CI should use reviewed immutable Action pins, minimal read permissions,
 stable check names, and no service secrets on PRs. Release permissions must be

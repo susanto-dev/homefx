@@ -82,3 +82,9 @@ expiry, pagination and uncertainty without contacting the service. Combined work
 tests pass a mocked grant through the REST client to a fake player callback and prove
 account change after resolution prevents dispatch. Single-attempt locks do not establish
 cross-process playback ownership; callback acceptance is not a TV playback test.
+
+The 0.8 suite adds actual temporary SQLite transactions for provider persistence and
+competing refresh claims, injected HTTPS framing for the provider endpoints, and
+session/account-change recovery tests. Complete movie-history tests distinguish an
+authoritative empty snapshot from failures, pagination and malformed rows. Provider
+network tests use in-memory connections or local socket pairs, never account traffic.

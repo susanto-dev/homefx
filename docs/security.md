@@ -182,12 +182,20 @@ they upload only candidate/report artifacts and have no public-comment operation
 ## Provider credentials and resolved links
 
 The inactive Real-Debrid open-source grant receives user-bound client credentials
-after consent. These secrets are not bundled public application credentials. No provider
-credentials are persisted or enabled in this preview. A separately reviewed private
-store, durable refresh ownership and bounded provider transport are activation gates.
+after consent. These secrets are not bundled public application credentials. The Kodi preview does not construct provider storage or enable account access. The
+inactive 0.8 stack includes a separate private store, durable refresh claims and
+bounded transport; their Android behavior and live service recovery remain gates.
 
 Resolved URLs are sensitive. Error messages and representations omit response bodies,
 source links, filenames and tokens. URL syntax checks reject credential-bearing and
 local-address forms; they do not resolve DNS or constrain subsequent redirects. Live
 network/player adapters must enforce destination policy. Explicit resolution is one
 attempt with no retry after an uncertain response, and no Remote Traffic option.
+
+The provider store uses a separate realdebrid directory and validates private regular
+files, record state and clocks. It is unencrypted and cannot protect secrets from
+other code running as Kodi or from copied backups. Conservative interrupted-refresh
+recovery clears active material and requires reauthorization. Session errors and
+representations omit account secrets and resolved links. The API transport never
+follows redirects or opens returned media URLs; source/player destination validation
+and shared service-rate limits remain outside this batch.

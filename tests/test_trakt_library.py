@@ -84,6 +84,8 @@ class LibraryTests(unittest.TestCase):
             return Response(200, body=[{"type": "movie", "movie": {
                 "ids": {"trakt": ident}, "title": "Synthetic movie", "released": day}}
                 for ident, day in [(10, "2026-11-01"), (11, "2026-12-01"), (12, None)]])
+        if path == "/users/me/watched/movies":
+            return Response(200, body=[{"plays": 1, "movie": {"ids": {"trakt": 12}}}])
         if "/seasons/" in path:
             return Response(200, body=[{"ids": {"trakt": n}, "title": "Synthetic episode",
                 "season": 1, "number": n, "first_aired": "2026-11-01T00:00:00Z"}
@@ -95,20 +97,107 @@ class LibraryTests(unittest.TestCase):
             "ids": {"trakt": 10}, "title": "Synthetic movie", "released": "2026-11-01"},
             "progress": 42, "paused_at": "2026-11-11T12:00:00Z"}])
 
-    def test_movie_views_preserve_unknown_watch_and_filter_future_dates(self):
+    def test_movie_views_join_watched_snapshot_and_filter_future_dates(self):
         self.reply = self._view_reply
         now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
         rows = self.library.movie_view("trakt-list:1", now)
         self.assertEqual({r["trakt_id"] for r in rows}, {10, 11, 12})
-        self.assertTrue(all(r["watched"] is None for r in rows))
+        self.assertEqual({r["trakt_id"]: r["watched"] for r in rows},
+                         {10: False, 11: False, 12: True})
         self.assertEqual(next(r for r in rows if r["trakt_id"] == 10)["progress"], 42)
         future = self.library.movie_view("trakt-list:1", now, "upcoming")
         self.assertEqual([r["trakt_id"] for r in future], [11])
         requests = len(self.calls)
-        for mode in ("unwatched", "released_unwatched"):
-            with self.assertRaisesRegex(ApiError, "watched_status_unavailable"):
-                self.library.movie_view("trakt-list:1", now, mode)
+        self.assertEqual([r["trakt_id"] for r in self.library.movie_view(
+            "trakt-list:1", now, "unwatched")], [10, 11])
+        self.assertEqual([r["trakt_id"] for r in self.library.movie_view(
+            "trakt-list:1", now, "released_unwatched")], [10])
         self.assertEqual(len(self.calls), requests)
+        self.assertEqual(self.calls.count("/users/me/watched/movies"), 1)
+
+    def test_empty_snapshot_is_evidence_but_failed_or_partial_snapshot_is_not(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        snapshot = [Response(200, body=[])]
+        def reply(path, headers):
+            return snapshot[0] if path == "/users/me/watched/movies" else self._view_reply(path, headers)
+        self.reply = reply
+        self.assertTrue(all(row["watched"] is False for row in
+                            self.library.movie_view("trakt-list:1", now)))
+        for bad in (Response(500), Response(200, body=[{}]),
+                    Response(200, {"X-Pagination-Page": "1"}, [])):
+            self.library.clear()
+            snapshot[0] = bad
+            with self.assertRaises(ApiError):
+                self.library.movie_view("trakt-list:1", now, "unwatched")
+            self.assertEqual(self.cache._entries, {})
+        snapshot[0] = Response(200, body=[])
+        self.assertEqual(len(self.library.movie_view("trakt-list:1", now, "unwatched")), 3)
+
+    def test_account_or_revision_change_during_watched_join_rejects_result(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        def switch(path, headers):
+            if path == "/users/me/watched/movies":
+                self.store.install(TokenSet("synthetic-new", "synthetic-refresh-new", 10000))
+                return Response(200, body=[])
+            return self._view_reply(path, headers)
+        self.reply = switch
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.library.movie_view("trakt-list:1", now, "unwatched")
+        self.assertEqual(self.cache._entries, {})
+        def revise(path, headers):
+            if path == "/users/me/watched/movies":
+                self.session.data_revision += 1
+                return Response(200, body=[])
+            return self._view_reply(path, headers)
+        self.reply = revise
+        with self.assertRaisesRegex(ApiError, "data_changed"):
+            self.library.movie_view("trakt-list:1", now, "unwatched")
+        self.assertEqual(self.cache._entries, {})
+
+    def test_movie_watched_cache_is_invalidated_after_explicit_history_write(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        watched, mutations = [], []
+        def reply(path, headers):
+            if path == "/users/me/watched/movies":
+                return Response(200, body=[{"plays": 1, "movie": {"ids": {"trakt": ident}}}
+                                           for ident in watched])
+            return self._view_reply(path, headers)
+        def mutate(method, path, headers, body):
+            mutations.append(path)
+            watched.append(body["movies"][0]["ids"]["trakt"])
+            return Response(200, body={"added": {"movies": 1, "episodes": 0},
+                                      "updated": {"movies": 0, "episodes": 0}, "not_found": {}})
+        self.reply = reply
+        self.session._mutation = mutate
+        self.assertEqual(len(self.library.movie_view("trakt-list:1", now, "released_unwatched")), 1)
+        self.assertEqual(self.session.mutate("mark_watched", "movie", 10, now).outcome, "confirmed")
+        self.assertEqual(self.library.movie_view("trakt-list:1", now, "released_unwatched"), [])
+        self.assertEqual(mutations, ["/sync/history"])
+        self.assertEqual(self.calls.count("/users/me/watched/movies"), 2)
+
+    def test_movie_watched_snapshot_refetches_after_refresh(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        clock, watched, reads, refreshes = [1000], [], [], []
+        self.store.install(TokenSet("synthetic-old", "synthetic-refresh-old", 1100))
+        def api(method, path, headers, body=None):
+            reads.append(path)
+            if path == "/users/me/watched/movies":
+                return Response(200, body=[{"plays": 1, "movie": {"ids": {"trakt": ident}}}
+                                           for ident in watched])
+            return self._view_reply(path, headers)
+        def oauth(method, path, body):
+            refreshes.append(path)
+            return Response(200, body=dict(access_token="synthetic-refreshed",
+                refresh_token="synthetic-refreshed-refresh", token_type="bearer",
+                created_at=clock[0], expires_in=3600))
+        library = Library(Session(self.store, oauth, api, "synthetic-client",
+            "https://example.invalid/callback", clock=lambda: clock[0]))
+        self.assertEqual(len(library.movie_view("trakt-list:1", now, "released_unwatched")), 1)
+        watched.append(10)
+        clock[0] = 1050
+        self.assertEqual(library.movie_view("trakt-list:1", now, "released_unwatched"), [])
+        self.assertEqual(refreshes, ["/oauth/token"])
+        self.assertEqual(reads.count("/users/me/watched/movies"), 2)
 
     def test_continue_view_and_episode_filter_do_not_invent_watch_evidence(self):
         self.reply = self._view_reply

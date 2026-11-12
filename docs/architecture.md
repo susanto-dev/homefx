@@ -99,8 +99,9 @@ putting configuration controls inside them. Filters live in bounded plugin URLs;
 existing demo preferences need no schema migration.
 
 Inactive Library movie/continue views preserve `watched=None` when the available
-Trakt data does not establish watched status. Movie unwatched filters fail explicitly
-until an authoritative history join exists. Paused entries without sufficient date
+Trakt data does not establish watched status. Library movie views now require a
+complete authenticated watched snapshot before assigning watched/unwatched status;
+failed or truncated snapshots fail rather than becoming an empty history. Paused entries without sufficient date
 metadata are excluded, so continue results may be incomplete. Joined reads retain
 account-generation and mutation-revision checks; these methods do not enable login.
 
@@ -116,3 +117,18 @@ season/episode. A supplied source URL is separate and must not be inferred from 
 IDs. One in-memory attempt resolves once and dispatches at most once; callback acceptance
 is not actual audiovisual start. Cross-invocation coordination and atomic account checks
 at player dispatch remain responsibilities of a future live adapter.
+
+## Provider account coordination (0.8)
+
+A separate private Real-Debrid store, fixed-host transport and session coordinator
+complete the inactive provider stack. Construction/import boundaries remain explicit:
+the Kodi preview never constructs these objects or touches their account databases.
+The store keeps user-bound credentials and tokens outside Trakt records; refresh
+claims remove reusable material from active rows before the exchange and reject stale
+completion. Interrupted claims require login again. This is conservative recovery,
+not a claim that the provider requires single-use refresh semantics.
+
+The session uses local generation checks for playback guards. Those checks do not
+perform refresh/network operations. Real dispatch still needs an atomic player-side
+account/cancellation check and cross-invocation ownership. The new transport contacts
+only the API host, never a resolved media URL; actual media networking remains separate.
