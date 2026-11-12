@@ -6,5 +6,6 @@ if it is available. If unavailable, ask the maintainer for a private contact rou
 without disclosing exploit details or account data publicly.
 
 No private reporting channel has been configured or verified by this project yet.
-Version 0.1.0 is a local synthetic-data preview. It has no service authentication
-or network client. See [security design](docs/security.md).
+Version 0.2.0 remains a synthetic-data preview. Authentication and data-client
+foundations are exercised only with injected test responses; there is no live
+transport or account-login route. See [security design](docs/security.md).

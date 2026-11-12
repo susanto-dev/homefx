@@ -7,7 +7,7 @@ component are deferred. A skin fork requires a demonstrated limitation first.
 The preview boundary is: Kodi adapter → pure route/catalogue logic → invented data.
 Demo preferences and watched overrides live in the add-on profile as demo.json.
 Atomic replacement avoids partial writes; this is not a concurrent credential store.
-No shared database or background service is introduced.
+The demo does not open a database or start a background service.
 
 Later boundaries must remain explicit: Trakt supplies metadata/lists/watch state;
 a playback adapter locates an authorized source and resolves media; Kodi plays it.
@@ -22,4 +22,21 @@ Changing route names later requires considering existing saved widget paths.
 
 Widget header clickability and context-menu behavior are skin/device-dependent.
 Folder access through the HomeFX root is the baseline fallback. Real metadata
-provider choice, pagination, caching, authentication, and playback are deferred.
+provider choice, persistent data caching, live authentication, and playback remain
+deferred.
+
+## Inactive Trakt foundations
+
+Four pure modules are packaged for later integration: `trakt_auth` owns device-login
+and refresh orchestration, `trakt_tokens` owns profile token state, `trakt_client`
+owns bounded read API requests, and `trakt_views` merges metadata with progress.
+They accept injected request functions and fabricated fixtures in tests. No HTTP
+transport, account configuration or production client identity is included.
+`default.py` does not import these modules; existing saved widget routes retain
+their synthetic behavior. Merely installing the ZIP does not create token storage.
+
+OAuth and Standard API hosts are separate constants. A future transport must keep
+TLS verification enabled, reject redirects across hosts, bound response bytes and
+timeouts, and avoid logging headers, bodies or exception details containing secrets.
+Injected request callbacks currently receive relative paths; their implementation
+will be a separate reviewed boundary, not an implicit network guarantee.
