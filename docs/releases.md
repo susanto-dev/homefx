@@ -65,10 +65,16 @@ main. PR events validate without deploying. Build access is read-only; deploymen
 alone receives Pages write and OIDC permissions. External Actions use reviewed full
 commit SHAs, and Python tooling installs use pinned artifact hashes. Runner images
 and package registries remain external inputs. Weekly discovery produces reports for
-manual triage, not automatic update PRs or discussion comments.
+manual triage, not automatic update PRs or discussion comments. GitHub-managed
+security checks may independently annotate PR findings; these workflows do not post
+comments. The deployment guard rejects a run that no longer matches current main.
+Do not rerun historical deployment workflows predating that guard.
 
 The postdeployment check uses the exact downloaded Pages build artifact, not a fresh
-rebuild: `python tools/check_published.py PATH_TO_EXTRACTED_SITE`. It first verifies
+rebuild. `tools/unpack_site.py` rejects unsafe archive members, bounds reads and
+validates the complete site before making a new staging directory available. It never
+executes archived files or uses unrestricted extraction. Then
+`python tools/check_published.py PATH_TO_EXTRACTED_SITE` verifies
 local topology, repository and root-package equivalence, then compares every expected
 file byte-for-byte over HTTPS at `https://susanto-dev.github.io/homefx/`. Redirects,
 HTTP failures and mismatches fail the check. It does not enumerate unexpected remote
