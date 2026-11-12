@@ -38,3 +38,8 @@ commit pins. Validation has read-only permissions and does not deploy or create 
 Python 3.8 is a compatibility floor, not a recommendation for a new desktop install;
 use a supported interpreter for development. Android/Kodi runtime support still
 requires the TV checks.
+
+The compatibility matrix uses Ubuntu 22.04 for Python 3.8 and Ubuntu 24.04 for
+Python 3.12. `ubuntu-latest` resolved to 26.04 during the first run and lacked a
+Python 3.8 distribution, so that job failed before tests; explicit runner versions
+keep the intended interpreter coverage. Hosted image contents still change over time.
