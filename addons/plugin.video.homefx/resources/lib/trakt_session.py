@@ -5,6 +5,7 @@ constructs a transport nor enables an account screen. A new login disconnects th
 previous local account; server-side revocation remains a separate user action.
 """
 import time
+from threading import Lock
 
 from .trakt_auth import AuthError, DeviceLogin, _number, _text, refresh_tokens
 from .trakt_client import ApiError, Client
@@ -33,6 +34,8 @@ class Session:
         self._api = api_request
         self._mutation = mutation_request
         self.data_revision = 0
+        self._mutation_pending = False
+        self._mutation_lock = Lock()
         self._client_id = client_id
         self._redirect_uri = redirect_uri
         self._clock, self._monotonic = clock, monotonic
@@ -107,6 +110,8 @@ class Session:
         return snapshot
 
     def _ready(self):
+        if self._mutation_pending:
+            raise AuthError("action_in_progress")
         snapshot = self._store.snapshot()
         if snapshot.state == "refreshing":
             raise AuthError("refresh_busy")
@@ -166,7 +171,8 @@ class Session:
 
         No callback is configured by default. History writes are not idempotent;
         callers must reconcile an uncertain outcome before attempting another.
-        data_revision invalidates invocation caches even when the result is lost.
+        data_revision changes at both attempt and completion, even when the result
+        is lost. Reads and nested writes are refused while a callback is pending.
         """
         request = prepare(operation, *args)
         if self._mutation is None:
@@ -174,15 +180,29 @@ class Session:
         snapshot = self._ready()
         generation = snapshot.generation
         attempted = [False]
+        blocked = [False]
 
         def guarded_request(method, path, headers, body=None):
-            self.assert_current(generation)
-            attempted[0] = True
-            self.data_revision += 1
-            return self._mutation(method, path, headers, body)
+            if not self._mutation_lock.acquire(blocking=False):
+                blocked[0] = True
+                raise AuthError('action_in_progress')
+            try:
+                self.assert_current(generation)
+                attempted[0] = True
+                self._mutation_pending = True
+                self.data_revision += 1
+                try:
+                    return self._mutation(method, path, headers, body)
+                finally:
+                    self.data_revision += 1
+                    self._mutation_pending = False
+            finally:
+                self._mutation_lock.release()
 
         client = MutationClient(guarded_request, self._client_id, snapshot.tokens.access_token)
         result = client.execute(request)
+        if blocked[0]:
+            return ActionResult('failed', 'action_in_progress')
         try:
             self.assert_current(generation)
         except AuthError:

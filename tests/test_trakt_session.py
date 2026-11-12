@@ -208,7 +208,7 @@ class SessionMutationTests(unittest.TestCase):
         self.assertEqual(len(self.oauth_calls), 1)
         self.assertEqual(len(self.writes), 1)
         self.assertEqual(self.writes[0][2]['Authorization'], 'Bearer synthetic-access-new')
-        self.assertEqual(self.session.data_revision, 1)
+        self.assertEqual(self.session.data_revision, 2)
 
     def test_uncertain_write_is_not_retried_or_installed_as_watched(self):
         self.install()
@@ -218,7 +218,7 @@ class SessionMutationTests(unittest.TestCase):
         self.write_reply = timeout
         self.assertEqual(self.mark().outcome, 'uncertain')
         self.assertEqual(len(self.writes), 1)
-        self.assertEqual(self.session.data_revision, 1)
+        self.assertEqual(self.session.data_revision, 2)
         self.assertEqual(self.store.snapshot(), before)
 
     def test_stale_success_or_401_does_not_claim_or_disconnect_new_account(self):
@@ -232,7 +232,7 @@ class SessionMutationTests(unittest.TestCase):
             self.assertEqual((result.outcome, result.reason), ('uncertain', 'session_changed'))
             self.assertEqual(self.store.snapshot().tokens.access_token, 'synthetic-replacement')
         self.assertEqual(len(self.writes), 2)
-        self.assertEqual(self.session.data_revision, 2)
+        self.assertEqual(self.session.data_revision, 4)
 
     def test_current_401_disconnects_once_and_does_not_retry(self):
         self.install()
@@ -241,4 +241,56 @@ class SessionMutationTests(unittest.TestCase):
         self.assertEqual(result.reason, 'reauthenticate')
         self.assertEqual(self.store.snapshot().state, 'disconnected')
         self.assertEqual(len(self.writes), 1)
-        self.assertEqual(self.session.data_revision, 1)
+        self.assertEqual(self.session.data_revision, 2)
+
+
+    def test_pending_action_rejects_reads_and_nested_mutation_then_clears(self):
+        self.install()
+        for uncertain in (False, True):
+            def pending():
+                for action in (lambda: self.session.read('settings'), self.session.cache_key, self.mark):
+                    with self.assertRaisesRegex(AuthError, '^action_in_progress$'):
+                        action()
+                self.assertEqual(self.api_calls, [])
+                if uncertain:
+                    raise OSError('synthetic lost response')
+                return Response(200, body={
+                    'added': {'movies': 1, 'episodes': 0},
+                    'updated': {'movies': 0, 'episodes': 0}, 'not_found': {}})
+            self.write_reply = pending
+            prior_revision = self.session.data_revision
+            result = self.mark()
+            self.assertEqual(result.outcome, 'uncertain' if uncertain else 'confirmed')
+            self.assertEqual(self.session.data_revision, prior_revision + 2)
+            self.assertFalse(self.session._mutation_pending)
+            self.session.read('settings')
+            self.assertEqual(len(self.api_calls), 1)
+            self.api_calls.clear()
+        self.assertEqual(len(self.writes), 2)
+
+    def test_overlapping_reader_is_rejected_without_waiting_for_callback(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Event
+        self.install()
+        entered, finish = Event(), Event()
+        def pending():
+            entered.set()
+            if not finish.wait(3):
+                raise AssertionError('Test did not release callback')
+            raise OSError('synthetic lost response')
+        self.write_reply = pending
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(self.mark)
+            try:
+                self.assertTrue(entered.wait(3))
+                with self.assertRaisesRegex(AuthError, '^action_in_progress$'):
+                    self.session.read('settings')
+                with self.assertRaisesRegex(AuthError, '^action_in_progress$'):
+                    self.mark()
+            finally:
+                finish.set()
+            self.assertEqual(future.result(timeout=3).outcome, 'uncertain')
+        self.session.read('settings')
+        self.assertEqual(len(self.writes), 1)
+        self.assertEqual(len(self.api_calls), 1)
+        self.assertEqual(self.session.data_revision, 2)

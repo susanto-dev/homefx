@@ -271,9 +271,9 @@ class PersistentLibraryTests(unittest.TestCase):
 
     def test_switch_during_save_never_writes_new_accounts_selection(self):
         original = self.preferences.save
-        def save(uuid, keys):
+        def save(uuid, keys, **kwargs):
             self.store.install(TokenSet('synthetic-account-b', 'synthetic-refresh-b', 10000))
-            original(uuid, keys)
+            return original(uuid, keys, **kwargs)
         self.preferences.save = save
         with self.assertRaisesRegex(AuthError, 'session_changed'):
             self.library.select_lists(['trakt-list:1'])
@@ -314,3 +314,56 @@ class PersistentLibraryTests(unittest.TestCase):
             library.selected_lists()
         self.assertEqual(library._cache._entries, {})
         self.assertEqual(self.preferences.load('synthetic-uuid-a'), ['trakt-list:1'])
+
+    def test_disconnect_blocks_an_already_pending_selection_save(self):
+        from resources.lib.trakt_preferences import AccountPreferences
+        other_preferences = AccountPreferences(self.temp.name)
+        other_session = Session(TokenStore(self.temp.name), lambda *args: None, self.api,
+                                'synthetic-client', 'https://example.invalid/callback',
+                                clock=lambda: 1000)
+        other_library = Library(other_session, preferences=other_preferences)
+        original_save = self.preferences.save
+        def interrupted_save(uuid, keys, **kwargs):
+            other_library.disconnect()
+            return original_save(uuid, keys, **kwargs)
+        self.preferences.save = interrupted_save
+        with self.assertRaises(AuthError):
+            self.library.select_lists(['trakt-list:1'])
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), [])
+        self.assertEqual(self.store.snapshot().state, 'disconnected')
+
+    def test_disconnect_invalidates_credentials_before_preference_clear_window(self):
+        from resources.lib.trakt_preferences import AccountPreferences
+        other_preferences = AccountPreferences(self.temp.name)
+        other_library = Library(self.session, preferences=other_preferences)
+        original_clear = other_preferences.clear_all
+        attempts = []
+        def interleaved_clear():
+            original_clear()
+            pending = Library(self.session, preferences=self.preferences)
+            try:
+                pending.select_lists(['trakt-list:1'])
+                attempts.append('saved')
+            except AuthError:
+                attempts.append('blocked')
+        other_preferences.clear_all = interleaved_clear
+        other_library.disconnect()
+        self.assertEqual(attempts, ['blocked'])
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), [])
+
+    def test_disconnect_attempts_both_cleanup_steps_when_one_fails(self):
+        self.library.select_lists(['trakt-list:1'])
+        original_disconnect = self.session.disconnect
+        def failed_disconnect():
+            raise AuthError('token_store_unavailable')
+        self.session.disconnect = failed_disconnect
+        with self.assertRaisesRegex(AuthError, 'token_store_unavailable'):
+            self.library.disconnect()
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), [])
+        self.session.disconnect = original_disconnect
+        def failed_clear():
+            raise AuthError('preferences_unavailable')
+        self.preferences.clear_all = failed_clear
+        with self.assertRaisesRegex(AuthError, 'preferences_unavailable'):
+            self.library.disconnect()
+        self.assertEqual(self.store.snapshot().state, 'disconnected')

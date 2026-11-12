@@ -73,3 +73,7 @@ Session data revisions invalidate invocation caches after attempted writes, incl
 lost responses. This is not cross-device synchronization; other invocations still
 observe bounded cache staleness. Compound reads check revision and credential generation
 so they cannot combine snapshots across an intervening action or account switch.
+Reads through the same session are refused while a mutation callback is pending;
+completion invalidates again even if the callback raises. Preference snapshots
+carry a persistent epoch used for conditional saves; disconnect invalidates credentials
+first and advances the epoch while clearing choices, rejecting delayed saves.

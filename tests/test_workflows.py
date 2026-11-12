@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'addons/plugin.video.homefx'))
-from resources.lib.trakt_auth import TokenSet
+from resources.lib.trakt_auth import AuthError, TokenSet
 from resources.lib.trakt_client import Response
 from resources.lib.trakt_library import Library
 from resources.lib.trakt_preferences import AccountPreferences
@@ -22,6 +22,7 @@ class WorkflowTests(unittest.TestCase):
         watched = [False]
         lose_response = [False]
         writes, refreshes, reads = [], [], []
+        active_library = [None]
 
         def api(method, path, headers, body=None):
             self.assertEqual(method, 'GET')
@@ -52,6 +53,10 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual((method, path), ('POST', '/sync/history'))
             self.assertEqual(body['episodes'][0]['ids'], {'trakt': 101})
             writes.append(path)
+            before_read = len(reads)
+            with self.assertRaisesRegex(AuthError, 'action_in_progress'):
+                active_library[0].episode_view(10, 1, NOW)
+            self.assertEqual(len(reads), before_read)
             watched[0] = True  # Fabricated service applies the action before responding.
             if lose_response[0]:
                 raise TimeoutError('synthetic response loss')
@@ -65,13 +70,15 @@ class WorkflowTests(unittest.TestCase):
             session = Session(store, oauth, api, 'synthetic-client', 'https://example.invalid/callback',
                               clock=lambda: clock[0], mutation_request=mutate)
             library = Library(session, preferences=preferences)
+            active_library[0] = library
             library.select_lists(['trakt-list:42'])
             self.assertFalse(library.episode_view(10, 1, NOW)[0]['watched'])
             reads_before_action = len(reads)
             result = session.mutate('mark_watched', 'episode', 101, NOW)
             self.assertEqual(result.outcome, 'confirmed')
             self.assertEqual(len(writes), 1)
-            self.assertEqual(session.data_revision, 1)
+            first_revision = session.data_revision
+            self.assertGreater(first_revision, 0)
             self.assertTrue(library.episode_view(10, 1, NOW)[0]['watched'])
             self.assertGreater(len(reads), reads_before_action)
             self.assertEqual([ref.key for ref in library.selected_lists()], ['trakt-list:42'])
@@ -80,6 +87,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual([ref.key for ref in library.selected_lists()], ['trakt-list:42'])
             self.assertEqual(len(refreshes), 1)
             reopened = Library(session, preferences=AccountPreferences(profile))
+            active_library[0] = reopened
             self.assertEqual([ref.key for ref in reopened.selected_lists()], ['trakt-list:42'])
 
             watched[0] = False
@@ -89,7 +97,7 @@ class WorkflowTests(unittest.TestCase):
             uncertain = session.mutate('mark_watched', 'episode', 101, NOW)
             self.assertEqual(uncertain.outcome, 'uncertain')
             self.assertEqual(len(writes), 2)  # One attempt per explicit action, no replay.
-            self.assertEqual(session.data_revision, 2)
+            self.assertGreater(session.data_revision, first_revision)
             self.assertTrue(reopened.episode_view(10, 1, NOW)[0]['watched'])
             self.assertEqual(len(writes), 2)  # Reconciliation reads, not another write.
             reopened.disconnect()

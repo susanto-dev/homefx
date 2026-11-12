@@ -141,6 +141,9 @@ SQLite file, never tokens, titles, watch history or a copy of account settings.
 The hash is not encryption or anonymization. The profile remains sensitive and
 must not be shared. Library disconnect clears all saved choices in that local
 profile, even if account identity was never fetched; it does not contact Trakt.
+Credentials are invalidated before preference clearing. A persistent preference
+epoch rejects delayed saves from before that clear, so an in-flight selection
+cannot restore choices after disconnect.
 
 The stable UUID is rechecked after token-generation changes before restoring choices.
 Missing or malformed identity fails closed; mutable usernames are not a fallback.
@@ -155,3 +158,6 @@ never queued or automatically retried. A timeout or malformed response can hide 
 successful remote action, so the result stays uncertain and local watched state is
 not changed. Reconcile service state before any manual retry; repeated history plays
 can create duplicate records. Remote history deletion is not implemented.
+Same-session reads are blocked while an action is pending, and cache revisions
+change both before the request and at completion, including response loss. This
+prevents a concurrent read from keeping pre-write state cached after the result.

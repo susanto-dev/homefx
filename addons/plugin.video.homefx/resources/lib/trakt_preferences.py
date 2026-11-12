@@ -43,7 +43,9 @@ def _selection(keys):
 class AccountPreferences:
     """Explicitly opened POSIX profile storage; bounded to eight saved accounts.
 
-    Save replaces one ordered selection atomically. The oldest saved account is
+    Save replaces one ordered selection atomically; an optional epoch rejects
+    writes loaded before a clear. Clear increments the durable epoch in the same
+    transaction that deletes selections. The oldest saved account is
     evicted on the ninth account. Disconnect should call clear_all: the complete
     local profile's choices are forgotten, even before identity has been fetched.
     File permissions do not protect against code running as Kodi or profile backups.
@@ -75,11 +77,23 @@ class AccountPreferences:
     @staticmethod
     def _initialize(conn):
         version = conn.execute('PRAGMA user_version').fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             raise PreferencesError('preferences_version_unsupported')
         conn.execute('CREATE TABLE IF NOT EXISTS selections ('
                      'account TEXT PRIMARY KEY, selected TEXT NOT NULL, revision INTEGER NOT NULL)')
-        conn.execute('PRAGMA user_version=1')
+        if version < 2:
+            conn.execute('CREATE TABLE IF NOT EXISTS preference_state ('
+                         'id INTEGER PRIMARY KEY CHECK(id=1), epoch INTEGER NOT NULL CHECK(epoch>=0))')
+            conn.execute('INSERT OR IGNORE INTO preference_state(id,epoch) VALUES(1,0)')
+        AccountPreferences._epoch(conn)
+        conn.execute('PRAGMA user_version=2')
+
+    @staticmethod
+    def _epoch(conn):
+        row = conn.execute('SELECT epoch FROM preference_state WHERE id=1').fetchone()
+        if row is None or type(row[0]) is not int or row[0] < 0:
+            raise PreferencesError('preferences_invalid')
+        return row[0]
 
     def _transaction(self, action):
         conn = None
@@ -100,34 +114,53 @@ class AccountPreferences:
             if conn is not None:
                 conn.close()
 
-    def load(self, uuid):
+    def snapshot(self, uuid):
+        """Read clear epoch and ordered selection in one transaction."""
         account = _account_key(uuid)
         def read(conn):
+            epoch = self._epoch(conn)
             row = conn.execute('SELECT selected FROM selections WHERE account=?', (account,)).fetchone()
             if row is None:
-                return []
+                return epoch, []
             if not isinstance(row[0], str) or len(row[0]) > 4096:
                 raise PreferencesError('preferences_invalid')
             try:
-                return _selection(json.loads(row[0]))
+                return epoch, _selection(json.loads(row[0]))
             except (ValueError, TypeError, RecursionError, PreferencesError):
                 raise PreferencesError('preferences_invalid') from None
         return self._transaction(read)
 
-    def save(self, uuid, keys):
+    def load(self, uuid):
+        return self.snapshot(uuid)[1]
+
+    def save(self, uuid, keys, expected_epoch=None):
+        """Return False without writing if a clear invalidated the caller's epoch."""
+        if expected_epoch is not None and (type(expected_epoch) is not int or expected_epoch < 0):
+            raise PreferencesError('invalid_preference_epoch')
         account = _account_key(uuid)
         selected = json.dumps(_selection(keys), separators=(',', ':'))
         def write(conn):
+            if expected_epoch is not None and self._epoch(conn) != expected_epoch:
+                return False
             revision = conn.execute('SELECT COALESCE(MAX(revision),0)+1 FROM selections').fetchone()[0]
             conn.execute('INSERT OR REPLACE INTO selections(account,selected,revision) VALUES(?,?,?)',
                          (account, selected, revision))
             conn.execute('DELETE FROM selections WHERE account NOT IN '
                          '(SELECT account FROM selections ORDER BY revision DESC LIMIT 8)')
-        self._transaction(write)
+            return True
+        return self._transaction(write)
 
     def clear(self, uuid):
         account = _account_key(uuid)
-        self._transaction(lambda conn: conn.execute('DELETE FROM selections WHERE account=?', (account,)))
+        def clear_account(conn):
+            conn.execute('UPDATE preference_state SET epoch=epoch+1 WHERE id=1')
+            self._epoch(conn)
+            conn.execute('DELETE FROM selections WHERE account=?', (account,))
+        self._transaction(clear_account)
 
     def clear_all(self):
-        self._transaction(lambda conn: conn.execute('DELETE FROM selections'))
+        def clear_profile(conn):
+            conn.execute('UPDATE preference_state SET epoch=epoch+1 WHERE id=1')
+            self._epoch(conn)
+            conn.execute('DELETE FROM selections')
+        self._transaction(clear_profile)

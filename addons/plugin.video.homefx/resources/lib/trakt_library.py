@@ -8,7 +8,7 @@ import time
 from .trakt_auth import AuthError, _number
 from .trakt_client import ApiError, ListRef
 from . import trakt_views
-from .trakt_preferences import account_uuid
+from .trakt_preferences import PreferencesError, account_uuid
 
 
 class MemoryCache:
@@ -100,6 +100,7 @@ class Library:
         self._revision = None
         self._account = None
         self._preferences = preferences
+        self._preferences_epoch = None
         self._selected = ()
 
     def __repr__(self):
@@ -108,14 +109,16 @@ class Library:
     def clear(self):
         self._cache.clear()
         self._generation, self._revision, self._account, self._selected = None, None, None, ()
+        self._preferences_epoch = None
 
     def disconnect(self):
         self.clear()
         try:
+            # Stop new authenticated loads before invalidating pending preference saves.
+            self._session.disconnect()
+        finally:
             if self._preferences is not None:
                 self._preferences.clear_all()
-        finally:
-            self._session.disconnect()
 
     def _data_revision(self):
         return getattr(self._session, 'data_revision', 0)
@@ -131,9 +134,10 @@ class Library:
             settings = self._session.read('settings')
             self._assert_view(generation, revision)
             account = account_uuid(settings)
-            selected = self._preferences.load(account)
+            epoch, selected = self._preferences.snapshot(account)
             self._assert_view(generation, revision)
             self._account, self._selected = account, tuple(selected)
+            self._preferences_epoch = epoch
         self._generation = generation
 
     def _read(self, operation, *args, expected_generation=None, expected_revision=None):
@@ -176,7 +180,8 @@ class Library:
             raise
         try:
             if self._preferences is not None:
-                self._preferences.save(self._account, keys)
+                if not self._preferences.save(self._account, keys, expected_epoch=self._preferences_epoch):
+                    raise PreferencesError('preferences_changed')
                 self._assert_view(self._generation, self._revision)
             self._selected = tuple(keys)
             return [available[key] for key in self._selected]

@@ -103,3 +103,48 @@ class PreferencesTests(unittest.TestCase):
                 AccountPreferences(profile)
             with sqlite3.connect(str(path)) as conn:
                 self.assertEqual(conn.execute('PRAGMA user_version').fetchone()[0], 9)
+
+    def test_clear_epoch_rejects_stale_saves_across_reopened_stores(self):
+        with tempfile.TemporaryDirectory() as profile:
+            first = AccountPreferences(profile)
+            epoch, selected = first.snapshot('synthetic-a')
+            self.assertEqual((epoch, selected), (0, []))
+            self.assertTrue(first.save('synthetic-a', ['trakt-list:1'], expected_epoch=epoch))
+            second = AccountPreferences(profile)
+            second.clear_all()
+            reopened = AccountPreferences(profile)
+            next_epoch, selected = reopened.snapshot('synthetic-a')
+            self.assertEqual((next_epoch, selected), (1, []))
+            self.assertFalse(first.save('synthetic-a', ['trakt-list:2'], expected_epoch=epoch))
+            self.assertEqual(reopened.load('synthetic-a'), [])
+            self.assertTrue(first.save('synthetic-a', ['trakt-list:3'], expected_epoch=next_epoch))
+            second.clear('synthetic-a')
+            self.assertEqual(reopened.snapshot('synthetic-a'), (2, []))
+            self.assertFalse(first.save('synthetic-a', ['trakt-list:4'], expected_epoch=next_epoch))
+            self.assertTrue(first.save('synthetic-a', ['trakt-list:5']))  # explicit unconditional API
+            self.assertEqual(reopened.load('synthetic-a'), ['trakt-list:5'])
+
+    def test_existing_selection_schema_migrates_without_forgetting_choices(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as profile:
+            root = Path(profile) / 'trakt'
+            root.mkdir()
+            path = root / 'preferences.sqlite3'
+            key = hashlib.sha256(b'homefx-trakt-account:synthetic-a').hexdigest()
+            with sqlite3.connect(str(path)) as conn:
+                conn.execute('CREATE TABLE selections (account TEXT PRIMARY KEY, selected TEXT NOT NULL, revision INTEGER NOT NULL)')
+                conn.execute('INSERT INTO selections VALUES(?,?,?)', (key, '["trakt-list:1"]', 1))
+                conn.execute('PRAGMA user_version=1')
+            migrated = AccountPreferences(profile)
+            self.assertEqual(migrated.snapshot('synthetic-a'), (0, ['trakt-list:1']))
+            migrated.clear_all()
+            self.assertEqual(AccountPreferences(profile).snapshot('synthetic-a'), (1, []))
+
+    def test_corrupt_epoch_is_not_reset_by_constructor(self):
+        with tempfile.TemporaryDirectory() as profile:
+            AccountPreferences(profile)
+            path = Path(profile) / 'trakt/preferences.sqlite3'
+            with sqlite3.connect(str(path)) as conn:
+                conn.execute('DELETE FROM preference_state')
+            with self.assertRaisesRegex(PreferencesError, '^preferences_invalid$'):
+                AccountPreferences(profile)
