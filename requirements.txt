@@ -1,0 +1,3 @@
+# HomeFX runtime uses Python's standard library and Kodi-provided modules only.
+# Add fully pinned third-party Python dependencies here if introduced later.
+# This inventory is for auditing; Kodi dependencies also belong in addon.xml.

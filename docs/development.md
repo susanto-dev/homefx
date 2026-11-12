@@ -23,5 +23,6 @@ Android application. Runtime network support belongs to later batches.
 Future CI should use reviewed immutable Action pins, minimal read permissions,
 stable check names, and no service secrets on PRs. Release permissions must be
 separate. A scan that skipped files or failed is not a clean scan. The Pages workflow runs tests before building and deploying the preview.
-Secret and vulnerability scanners are not configured by this project yet;
-repository-level security settings are managed separately by the maintainer.
+The separate Security scans workflow runs Bandit and pip-audit weekly and on
+changes; see security.md for coverage, manual triage and report retention.
+Secret scanning and repository security settings remain maintainer-managed.
