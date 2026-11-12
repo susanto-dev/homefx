@@ -44,9 +44,9 @@ just to get a green result. Do not paste credentials or private data into issues
 No workflow creates issues, suggestions, remediation PRs, or commits. No Dependabot
 version-update configuration is installed. Keep Dependabot alerts enabled if desired,
 but disable **Dependabot security updates** in repository security settings to prevent
-its separate automatic PRs. The current integration received HTTP 403 when inspecting
-and disabling that setting, so its actual state is unverified. No security settings
-were changed. Repository administrators must verify this once.
+its separate automatic PRs. The owner confirmed Dependabot security updates were disabled on 2026-11-12.
+The integration could not independently read that setting (HTTP 403); no further
+setting change is needed based on the owner confirmation.
 
 Initial local scan: three XML-parser findings in tools/package.py (B405 and two B314).
 They concern parsing the checked-in manifest and the generated ZIP manifest. They
@@ -57,3 +57,35 @@ No paid scanner subscription is introduced. Bandit and pip-audit are Apache-2.0
 open-source tools used only in development. Public standard-runner compute is free;
 account artifact-storage limits still apply. Tool upgrades and licence reviews are
 manual. The tool inventory pins versions; package hashes are not yet locked.
+
+
+## External Action pins and update discovery
+
+Every external `uses:` in `.github` must use a full 40-character commit SHA.
+Local Actions must reside under `.github` and are inspected too. Docker-style
+Action references are currently rejected rather than treated as commit-pinned.
+The guard reads YAML including reusable workflow references, not comments.
+Pages publication runs the local guard before building. Security scans run guard
+failure fixtures, then online discovery on main pushes, manual runs and the same
+weekly schedule. PR runs use only offline validation, with no API token passed to
+PR code. Nested upstream composite Actions and reusable workflow references are
+recursively inspected at the pinned commits during online runs.
+
+The pinned Pages wrapper formerly delegated to a floating upload-artifact tag.
+It was replaced with a local tar step and a directly SHA-pinned official uploader.
+No upstream implementation code was copied into the repository.
+
+`action-audit` reports contain each pin, latest stable release tag/resolved commit,
+and whether the release is ahead, behind or divergent. Annotated tags are resolved
+to their commit. Missing release metadata is labelled for manual tag review;
+network/parse failures or unpinned dependencies fail the job. New releases alone
+are informational, never automatic approvals or updates. Review changelogs, source,
+provenance and compatibility before manually changing any SHA, then run checks.
+Reports are retained seven days. No write token, automatic PRs or fix operation.
+
+Local commands (install tools/security-requirements.txt first):
+`python tools/action_audit.py` and `python tools/action_audit.py --online`.
+Online mode optionally accepts GH_TOKEN for authenticated GitHub API reads.
+Never log that value. The checker covers nested uses, not bundled libraries,
+runtime downloads or the runner image. SHA pinning protects against moved tags;
+it does not prove an Action is trustworthy or free of vulnerabilities.

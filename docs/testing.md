@@ -16,3 +16,8 @@ construction. They do not establish actual Kodi API compatibility or rendering.
 Cloud checks do not establish installation, home-widget behavior, navigation,
 performance, playback, subtitles, resume, or scrobbling on Android/Google TV.
 Record those separately with exact versions and the package hash.
+
+Action audit tests require the optional security tool environment. They deliberately
+reject floating tags, short/dynamic refs and nested unpinned Actions; mocked release
+responses exercise annotated-tag resolution and update reporting. The security job
+runs these tests explicitly. Plain standard-library runs skip this optional suite.

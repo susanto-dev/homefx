@@ -69,3 +69,35 @@ jobs:
           test "$CODE_OUTCOME" = success
           test "$RUNTIME_OUTCOME" = success
           test "$TOOLING_OUTCOME" = success
+
+  actions:
+    name: External Action pins and updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install YAML parser
+        run: python -m pip install -r tools/security-requirements.txt
+      - name: Test Action pin guard
+        run: python -m unittest discover -s tests -p test_action_audit.py -v
+      - name: Check local pins
+        run: python tools/action_audit.py
+      - name: Inspect nested pins and available releases
+        # Do not expose an authenticated API token to pull-request code.
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/action_audit.py --online
+      - name: Save Action audit
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: action-audit
+          path: dist/action-audit/
+          retention-days: 7
+          if-no-files-found: warn

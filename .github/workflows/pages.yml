@@ -16,17 +16,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Install audit dependencies
+        run: python3 -m pip install -r tools/security-requirements.txt
+      - name: Validate external Action pins
+        run: python3 tools/action_audit.py
       - name: Test preview
         run: python3 -m unittest discover -s tests -v
       - name: Build download site
         run: python3 tools/build_site.py
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+      - name: Archive Pages content
+        run: tar -cf "$RUNNER_TEMP/artifact.tar" -C dist/site .
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          path: dist/site
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
           retention-days: 1
+          if-no-files-found: error
   deploy:
     needs: build
     if: github.ref == 'refs/heads/main'
