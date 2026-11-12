@@ -178,3 +178,16 @@ not revoke remote authorization or erase backups, and cleanup failure is not suc
 Repository-candidate verification is a read-only integrity check, not a source-trust
 or malware guarantee. PR checks run on creation, update, reopening and promotion;
 they upload only candidate/report artifacts and have no public-comment operation.
+
+## Provider credentials and resolved links
+
+The inactive Real-Debrid open-source grant receives user-bound client credentials
+after consent. These secrets are not bundled public application credentials. No provider
+credentials are persisted or enabled in this preview. A separately reviewed private
+store, durable refresh ownership and bounded provider transport are activation gates.
+
+Resolved URLs are sensitive. Error messages and representations omit response bodies,
+source links, filenames and tokens. URL syntax checks reject credential-bearing and
+local-address forms; they do not resolve DNS or constrain subsequent redirects. Live
+network/player adapters must enforce destination policy. Explicit resolution is one
+attempt with no retry after an uncertain response, and no Remote Traffic option.

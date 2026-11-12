@@ -75,3 +75,10 @@ empty widget directories, duplicate or malformed route arguments, and fixed UI e
 messages. Mocked Trakt view tests cover unknown watched status and account/revision
 changes during joined reads. Repeatability tests deliberately change output bytes,
 add unexpected files and corrupt candidates to prove the check rejects them.
+
+Real-Debrid tests use fabricated device/credential/token responses, pending-response
+classifiers, entitlement/download data and resolved links. They exercise cancellation,
+expiry, pagination and uncertainty without contacting the service. Combined workflow
+tests pass a mocked grant through the REST client to a fake player callback and prove
+account change after resolution prevents dispatch. Single-attempt locks do not establish
+cross-process playback ownership; callback acceptance is not a TV playback test.

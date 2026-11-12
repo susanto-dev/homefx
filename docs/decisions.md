@@ -128,3 +128,15 @@ activation remains gated. A release date is metadata, not evidence of a playable
 source. Movie watched status stays unknown when list/paused responses cannot establish
 it; do not infer unwatched from absence. Release checks compare isolated builds
 without publishing repository artifacts or adding dependencies.
+
+## Explicit Real-Debrid planning and inactive contracts (0.7.0)
+
+Real-Debrid is a first-class planned component, distinct from metadata and source
+discovery. Develop original injected authorization, API and playback contracts with
+fabricated responses; do not ship a shared client secret or activate account access.
+The service's open-source workflow obtains private user-bound credentials at runtime.
+
+Retain both the Umbrella experiment and a direct-resolution candidate until evidence
+supports the first live path. Source-provider selection, secure persistent credentials,
+transport, Kodi playback and one resume/scrobbling owner remain explicit gates. No paid
+service purchase, new dependency, third-party source reuse or licence change is made.

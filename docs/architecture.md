@@ -103,3 +103,16 @@ Trakt data does not establish watched status. Movie unwatched filters fail expli
 until an authoritative history join exists. Paused entries without sufficient date
 metadata are excluded, so continue results may be incomplete. Joined reads retain
 account-generation and mutation-revision checks; these methods do not enable login.
+
+## Inactive Real-Debrid and playback contracts (0.7)
+
+Provider authentication, REST contracts and playback coordination are separate modules.
+They accept injected callbacks and construct no network transport, credential store or
+Kodi player. The public adapter imports none of them; Playback setup is information
+only and runs before profile access. See [playback plan](playback-plan.md) for activation.
+
+Playback identity uses explicit Trakt IDs: a movie trakt_id, or show_trakt_id plus
+season/episode. A supplied source URL is separate and must not be inferred from those
+IDs. One in-memory attempt resolves once and dispatches at most once; callback acceptance
+is not actual audiovisual start. Cross-invocation coordination and atomic account checks
+at player dispatch remain responsibilities of a future live adapter.

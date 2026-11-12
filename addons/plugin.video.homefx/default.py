@@ -95,6 +95,15 @@ def main():
                 lambda: xbmc.getInfoLabel("System.BuildVersion"),
                 lambda: xbmcaddon.Addon("plugin.video.umbrella").getAddonInfo("version")))
             return
+        if route == "playback_setup":
+            message("Titles, lists and release dates are metadata, not playable sources.\n"
+                    "Real-Debrid needs a separate account and a source you are authorized to access. "
+                    "It is not a complete title catalogue or a source-discovery service.\n"
+                    "An initial Umbrella playback handoff is unverified. "
+                    "The native Real-Debrid prototype is inactive.\n"
+                    "This screen does not connect accounts, resolve sources or start playback. "
+                    "Never enter or share account tokens or client secrets here.")
+            return
         profile = Path(xbmcvfs.translatePath(addon.getAddonInfo("profile"))) / "demo.json"
         prefs = state.load(profile)
         items = model.apply_state(model.catalogue(), prefs)
@@ -154,6 +163,8 @@ def main():
             item = items[key]
             message(item["title"] + "\nRelease/air date: " + item["date"] +
                     "\n" + ("Upcoming. " if item["date"] > date.today().isoformat() else "") +
+                    "A release date does not establish a playable source. "
+                    "Playback needs a separate authorized source.\n"
                     "Demo only: no playback or Trakt connection.")
             return
         if route == "sequence":
@@ -186,6 +197,7 @@ def main():
                 add("Search demo titles…", "search")
                 add("Select demo widget lists…", "select", False)
                 add("Trakt connection setup…", "setup", False)
+                add("Playback and Real-Debrid setup…", "playback_setup", False)
                 add("Device readiness", "readiness", False)
                 add("Reset demo data…", "reset", False)
         elif route == "seasons":
