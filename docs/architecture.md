@@ -90,3 +90,16 @@ It coordinates a future device-code screen and explicit local disconnect; it is 
 imported or enabled by the Kodi connection menu. The flow confirms account replacement,
 respects poll timing/expiry, checks cancellation and always closes progress UI. Its
 bounded waiting is not proof of actual Kodi responsiveness or live authorization.
+
+## Browsing and read-view boundaries
+
+The synthetic catalogue supports filtered list endpoints, season summaries and saved
+upcoming movies. The Widget sources directory links to content endpoints without
+putting configuration controls inside them. Filters live in bounded plugin URLs;
+existing demo preferences need no schema migration.
+
+Inactive Library movie/continue views preserve `watched=None` when the available
+Trakt data does not establish watched status. Movie unwatched filters fail explicitly
+until an authoritative history join exists. Paused entries without sufficient date
+metadata are excluded, so continue results may be incomplete. Joined reads retain
+account-generation and mutation-revision checks; these methods do not enable login.

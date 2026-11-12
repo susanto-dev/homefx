@@ -1,4 +1,4 @@
-# TV acceptance — preview 0.5.0
+# TV acceptance — preview 0.6.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,
@@ -51,3 +51,22 @@ without preventing normal demo navigation. No full backup or unredacted log is n
 Use this report to plan the first registered-app/device test, not as a substitute for
 it. TLS certificate availability, SQLite import and add-on presence do not establish
 Trakt authorization, playback handoff, subtitles, resume or scrobbling.
+
+## Browsing and widget checks for 0.6
+
+- Open Widget sources and select two list folders in the installed skin. Check the
+  content endpoints contain titles only, with no settings rows inside widgets.
+- Use a list folder's context menu to open All, Unwatched, Released unwatched and
+  Upcoming. Unfinished released titles should remain first; a date is not a source.
+- Add Tomorrow's Orchard to My movie list and open Upcoming saved movies. Remove it
+  and confirm the empty view opens quietly, without a repeated modal dialog.
+- Open Browse seasons from a series or episode menu. Check season counts and enter
+  a season; switching All / Aired unwatched must preserve that season scope.
+- Mark an episode watched, refresh, and verify counts and filtered views change.
+  Restart and confirm the previous local selections and saved movies remain intact.
+
+These are pending device checks, not a report of successful TV testing.
+
+After upgrading from 0.5, reopen existing Continue watching, Next episodes and
+Upcoming widget shortcuts before recreating them; legacy empty identifier parameters
+must remain compatible.

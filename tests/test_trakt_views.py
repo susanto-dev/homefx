@@ -101,5 +101,50 @@ class ViewTests(unittest.TestCase):
         self.assertTrue(all(r["release_status"] == "unknown_date" for r in result))
 
 
+    def test_movie_filters_require_complete_watch_evidence(self):
+        metadata = [{"ids": {"trakt": n}, "title": "Synthetic", "released": day}
+                    for n, day in [(1, "2026-11-01"), (2, "2026-12-01"), (3, None)]]
+        unknown = views.movies(metadata, now=NOW)
+        for mode in ("unwatched", "released_unwatched"):
+            with self.assertRaisesRegex(ApiError, "watched_status_unavailable"):
+                views.movie_filter(unknown, mode)
+        known = views.movies(metadata, {1}, now=NOW)
+        self.assertEqual([r["trakt_id"] for r in views.movie_filter(known, "unwatched")], [2, 3])
+        self.assertEqual(views.movie_filter(known, "released_unwatched"), [])
+        self.assertEqual([r["trakt_id"] for r in views.movie_filter(unknown, "upcoming")], [2])
+        for mode in ([], "invalid"):
+            with self.assertRaisesRegex(ApiError, "invalid_filter"):
+                views.movie_filter(unknown, mode)
+
+    def test_continued_uses_latest_valid_pause_and_keeps_watch_unknown(self):
+        older = pause(101, when="2026-11-11T21:00:00Z")
+        older["episode"] = episode(1)
+        newer = dict(older, paused_at="2026-11-11T23:00:00+01:00", progress=45)
+        movie = pause(101, kind="movie", when="2026-11-11T21:30:00Z")
+        movie["movie"] = {"ids": {"trakt": 101}, "title": "Synthetic movie", "released": "2026-11-01"}
+        result = views.continued([movie, older, newer], NOW)
+        self.assertEqual([r["kind"] for r in result], ["episode", "movie"])
+        self.assertEqual(result[0]["progress"], 45)
+        self.assertEqual((result[0]["show_id"], result[0]["season"], result[0]["episode"]), (10, 1, 1))
+        self.assertTrue(all(r["watched"] is None and not r["aired_unwatched"] for r in result))
+        self.assertTrue(all("playable" not in r for r in result))
+
+    def test_continued_excludes_undated_future_and_malformed_progress(self):
+        sources = []
+        for n, day in [(1, None), (2, "2026-11-12T12:00:01Z"),
+                       (3, "2026-11-12T12:00:00Z")]:
+            row = pause(100+n)
+            row["episode"] = episode(n, day)
+            sources.append(row)
+        future_pause = dict(sources[2], paused_at="2026-11-12T12:00:01Z")
+        malformed = [dict(sources[2], progress=x) for x in (True, 0, 100, float("nan"), 10**400)]
+        self.assertEqual([r["trakt_id"] for r in views.continued(
+            sources + [future_pause, None, {"type": "movie"}, {"type": []},
+                       {"type": {}}, {"type": None}, {"type": True}, {"type": 1}] + malformed, NOW)], [103])
+        conflict = dict(sources[2], show={"ids": {"trakt": 20}})
+        with self.assertRaisesRegex(ApiError, "mismatched_show"):
+            views.continued([sources[2], conflict], NOW)
+
+
 if __name__ == "__main__":
     unittest.main()

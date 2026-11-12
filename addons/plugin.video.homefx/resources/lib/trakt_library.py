@@ -219,7 +219,9 @@ class Library:
         return self._read("list_items", ref.owner, ref.trakt_id,
                           expected_generation=self._generation, expected_revision=self._revision)
 
-    def episode_view(self, show_id, season, now=None):
+    def episode_view(self, show_id, season, now=None, episode_filter="all"):
+        if not isinstance(episode_filter, str) or episode_filter not in {"all", "aired_unwatched"}:
+            raise ApiError("invalid_filter")
         # Guard the whole join as well as each component: mixing account snapshots
         # could otherwise attribute one account's history to another's metadata.
         try:
@@ -229,6 +231,59 @@ class Library:
             progress = self._read("show_progress", show_id, expected_generation=generation, expected_revision=revision)
             pauses = self._read("paused", expected_generation=generation, expected_revision=revision)
             rows = trakt_views.episodes(metadata, progress, pauses, now)
+            if episode_filter == "aired_unwatched":
+                rows = [row for row in rows if row["aired_unwatched"]]
+            self._assert_view(generation, revision)
+            return rows
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+
+    def movie_view(self, key, now=None, movie_filter="all"):
+        """Normalize one available list with partial progress and unknown watched state.
+
+        The current client does not fetch a complete movie watched snapshot.
+        Unwatched filters therefore fail explicitly, even for an empty list.
+        all/upcoming are metadata views, never playable-content catalogues.
+        """
+        if not isinstance(movie_filter, str) or movie_filter not in {"all", "unwatched", "released_unwatched", "upcoming"}:
+            raise ApiError("invalid_filter")
+        if movie_filter in {"unwatched", "released_unwatched"}:
+            raise ApiError("watched_status_unavailable")
+        try:
+            generation = self._session.cache_key()
+            revision = self._data_revision()
+            source = self.list_items(key)
+            self._assert_view(generation, revision)
+            metadata = []
+            for item in source:
+                if not isinstance(item, dict):
+                    raise ApiError("invalid_metadata")
+                if item.get("type") == "movie":
+                    metadata.append(item.get("movie"))
+            pauses = self._read("paused", expected_generation=generation,
+                                expected_revision=revision)
+            rows = trakt_views.movie_filter(trakt_views.movies(metadata, None, pauses, now),
+                                            movie_filter)
+            self._assert_view(generation, revision)
+            return rows
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def continue_view(self, now=None):
+        """Dated aired pauses only; missing dates and watched state remain unverified.
+
+        The current playback endpoint need not supply extended metadata, so this
+        conservative view can be empty/incomplete. No implicit metadata requests.
+        """
+        try:
+            generation = self._session.cache_key()
+            revision = self._data_revision()
+            pauses = self._read("paused", expected_generation=generation,
+                                expected_revision=revision)
+            rows = trakt_views.continued(pauses, now)
             self._assert_view(generation, revision)
             return rows
         except (AuthError, ApiError):

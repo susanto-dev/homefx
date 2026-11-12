@@ -18,10 +18,25 @@ def main():
     def message(text):
         dialog.ok("HomeFX Preview — demo only", text)
 
-    def add(label, route, folder=True, key="", item=None):
+    def add(label, route, folder=True, key="", item=None, **route_params):
         li = xbmcgui.ListItem(label=label)
         li.setArt({"thumb": art_root + "poster.png", "poster": art_root + "poster.png",
                    "icon": art_root + "icon.png", "fanart": art_root + "fanart.png"})
+        folder_actions = []
+        if route == "list":
+            for label_text, view_filter in [("All titles (demo)", "all"),
+                    ("Unwatched titles (demo)", "unwatched"),
+                    ("Released unwatched titles (demo)", "released_unwatched"),
+                    ("Upcoming titles (demo)", "upcoming")]:
+                folder_actions.append((label_text, "Container.Update(" +
+                    routes.url("list", id=key, filter=view_filter) + ")"))
+        if route == "show" and item is None:
+            for label_text, view_filter in [("All episodes in this season (demo)", "all"),
+                    ("Aired unwatched episodes in this season (demo)", "aired_unwatched")]:
+                target = dict(route_params, id=key, filter=view_filter)
+                folder_actions.append((label_text, "Container.Update(" + routes.url("show", **target) + ")"))
+        if folder_actions:
+            li.addContextMenuItems(folder_actions)
         if item:
             tag = li.getVideoInfoTag()
             tag.setTitle(item["title"])
@@ -53,19 +68,27 @@ def main():
                                 routes.url("similar", id=key) + ")"))
             if item["kind"] in {"tvshow", "episode"}:
                 show_id = key if item["kind"] == "tvshow" else item["show"]
+                season_params = {"season": params["season"]} if current_route == "show" and "season" in params else {}
                 actions.extend([("Browse aired unwatched episodes (demo)", "Container.Update(" +
-                                 routes.url("show", id=show_id, filter="aired_unwatched") + ")"),
+                                 routes.url("show", id=show_id, filter="aired_unwatched", **season_params) + ")"),
                                 ("Browse all episodes (demo)", "Container.Update(" +
-                                 routes.url("show", id=show_id, filter="all") + ")")])
+                                 routes.url("show", id=show_id, filter="all", **season_params) + ")"),
+                                ("Browse seasons (demo)", "Container.Update(" +
+                                 routes.url("seasons", id=show_id) + ")")])
             if item["kind"] == "episode":
                 actions.append(("Preview next-episode choice", "RunPlugin(" +
                                 routes.url("sequence", id=key) + ")"))
             li.addContextMenuItems(actions)
         # Deliberately not IsPlayable: demo clicks must not invoke Kodi's player.
-        xbmcplugin.addDirectoryItem(handle, routes.url(route, id=key), li, folder)
+        # Directory-level actions have no synthetic identifier.
+        target_params = dict(route_params)
+        if key:
+            target_params["id"] = key
+        xbmcplugin.addDirectoryItem(handle, routes.url(route, **target_params), li, folder)
 
     try:
         route, params = routes.parse(sys.argv[2] if len(sys.argv) > 2 else "")
+        current_route = route
         if route == "readiness":
             dialog.ok("HomeFX — Device readiness", readiness.report(
                 lambda: addon.getAddonInfo("version"),
@@ -84,8 +107,12 @@ def main():
                     "Only a public client ID and registered redirect URI will be needed. "
                     "Never enter or share a client secret or account tokens here.")
             return
-        if route in {"play", "watched", "info", "sequence", "similar", "show", "collect"} and key not in items:
+        if route in {"play", "watched", "info", "sequence", "similar", "show", "seasons", "collect"} and key not in items:
             raise ValueError("Demo title not found")
+        if route in {"show", "seasons"} and items[key]["kind"] != "tvshow":
+            raise ValueError("Invalid series")
+        if route == "list" and key not in model.LISTS:
+            raise ValueError("Invalid list")
         if route == "collect":
             if items[key]["kind"] != "movie" or params.get("value") not in {"0", "1"}:
                 raise ValueError("Invalid demo movie-list action")
@@ -146,18 +173,28 @@ def main():
             return
         xbmcplugin.setPluginCategory(handle, "HomeFX Preview — synthetic data")
         xbmcplugin.setContent(handle, "videos")
-        if route == "home":
+        if route in {"home", "widgets"}:
             for list_id in prefs["selected"]:
                 add(model.LISTS[list_id], "list", key=list_id)
             for label, target in [("Continue watching (demo)", "continue"),
                                   ("Next aired unwatched episodes (demo)", "next"),
-                                  ("Upcoming episodes — 7 days (demo)", "upcoming")]:
+                                  ("Upcoming episodes — 7 days (demo)", "upcoming"),
+                                  ("Upcoming saved movies (demo)", "upcoming_movies")]:
                 add(label, target)
-            add("Search demo titles…", "search")
-            add("Select demo widget lists…", "select", False)
-            add("Trakt connection setup…", "setup", False)
-            add("Device readiness", "readiness", False)
-            add("Reset demo data…", "reset", False)
+            if route == "home":
+                add("Widget sources (demo)", "widgets")
+                add("Search demo titles…", "search")
+                add("Select demo widget lists…", "select", False)
+                add("Trakt connection setup…", "setup", False)
+                add("Device readiness", "readiness", False)
+                add("Reset demo data…", "reset", False)
+        elif route == "seasons":
+            for summary in model.seasons(items, key):
+                season = summary["season"]
+                label = ("Specials" if season == 0 else "Season " + str(season))
+                label += " · %d/%d watched · %d aired unwatched · %d upcoming" % (
+                    summary["watched"], summary["total"], summary["aired_unwatched"], summary["upcoming"])
+                add(label, "show", key=key, season=season, filter="all")
         else:
             query = params.get("q", "")
             if route == "search":
@@ -166,7 +203,11 @@ def main():
                     xbmcplugin.endOfDirectory(handle, succeeded=True, cacheToDisc=False)
                     return
             result = model.view(route, items, prefs, key, query,
-                                episode_filter=params.get("filter", "all"))
+                                episode_filter=params.get("filter", "all") if route == "show" else "all",
+                                list_filter=params.get("filter", "all") if route == "list" else "all",
+                                season=int(params["season"]) if "season" in params else None)
+            if not result:
+                xbmcplugin.setPluginCategory(handle, "HomeFX Preview — no matching demo titles")
             kinds = {x["kind"] for x in result}
             content = {"movie": "movies", "episode": "episodes", "tvshow": "tvshows"}
             if len(kinds) == 1:
@@ -183,8 +224,8 @@ def main():
                     item["kind"] == "tvshow", item["id"], item)
         xbmcplugin.addSortMethod(handle, xbmcplugin.SORT_METHOD_NONE)
         xbmcplugin.endOfDirectory(handle, succeeded=True, cacheToDisc=False)
-    except (ValueError, OSError) as exc:
-        message("Unable to complete the demo action: " + str(exc))
+    except (ValueError, OSError):
+        message("Unable to complete the demo action. Check the selected view or local profile access.")
         if handle >= 0:
             xbmcplugin.endOfDirectory(handle, succeeded=False)
 

@@ -49,12 +49,12 @@ steps, without accounts, analytics or external assets. GitHub Pages/standard
 public-repository runners require no paid plan; account storage limits still apply.
 No paid services, custom domain or larger runners are provisioned.
 
-Version 0.5.0 adds local readiness reporting, an inactive account-flow controller
+Version 0.6.0 adds local readiness reporting, an inactive account-flow controller
 and detached repository verification. Saved-movie/filter workflows remain available. Existing demo data and widget routes
 are unchanged; there is no credential migration or automatic account connection.
 The Validation workflow performs tests/package checks on PRs and main pushes without
 publication. On merge, Security scans and the existing managed CodeQL checks also
-run, and Publish preview builds/deploys the 0.5.0 video download only. Runner images and package
+run, and Publish preview builds/deploys the 0.6.0 video download only. Runner images and package
 registries remain external mutable inputs even though Action commits and dependency
 versions are pinned. No automatic update PRs, account writes or new hosting are added.
 
@@ -112,3 +112,11 @@ Validation runs this verifier before uploading the candidate artifact. Promotion
 draft reruns Validation and Security scans; the fresh checks must finish successfully.
 No PR event deploys the preview or repository. The existing main-merge Pages workflow
 still publishes only the synthetic manual video download.
+
+## Repeatability before review
+
+Run `python tools/check_reproducibility.py` on a stable checkout. Two isolated builds
+must have identical site and repository files, and each candidate must pass the
+standalone verifier. The public ZIP and checksum must match the candidate video ZIP.
+CI runs the check separately under Python 3.8 and 3.12; it does not compare their bytes
+across jobs. Determinism establishes neither provenance nor device acceptance.

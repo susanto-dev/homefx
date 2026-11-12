@@ -43,42 +43,95 @@ def apply_state(items, state):
     return result
 
 
+def _release(item):
+    try:
+        return date.fromisoformat(item.get("date", ""))
+    except (TypeError, ValueError):
+        return None
+
+
 def ordered(items, today=None):
-    """Widget groups: unfinished, released unwatched, upcoming, watched."""
-    today = (today or date.today()).isoformat()
+    """Widget groups: unfinished, released unwatched, upcoming/unknown, watched."""
+    today = today or date.today()
     def key(x):
+        released = _release(x)
+        ordinal = released.toordinal() if released else 0
         if x["watched"]:
-            return (3, -date.fromisoformat(x["date"]).toordinal())
-        if x["date"] > today:
-            return (2, date.fromisoformat(x["date"]).toordinal())
+            return (3, -ordinal)
+        if released is None or released > today:
+            return (2, ordinal if released else date.max.toordinal() + 1)
         if x["progress"] > 0:
-            return (0, -date.fromisoformat(x["last_played"][:10]).toordinal())
-        return (1, -date.fromisoformat(x["date"]).toordinal())
+            last_played = _release({"date": x.get("last_played", "")[:10]})
+            return (0, -(last_played.toordinal() if last_played else 0))
+        return (1, -ordinal)
     return sorted(items, key=key)
 
 
 def _aired(item, today):
-    try:
-        released = date.fromisoformat(item.get("date", ""))
-    except (TypeError, ValueError):
-        return False
-    return released <= today
+    released = _release(item)
+    return released is not None and released <= today
 
 
-def view(route, items, state, key="", query="", today=None, episode_filter="all"):
+def _show(items, show_id):
+    if (not isinstance(show_id, str) or show_id not in items
+            or items[show_id].get("kind") != "tvshow"):
+        raise ValueError("Demo series not found")
+
+
+def seasons(items, show_id, today=None):
+    """Episode counts are metadata, not evidence of playable sources."""
+    _show(items, show_id)
     today = today or date.today()
+    result = {}
+    for item in items.values():
+        if item.get("kind") != "episode" or item.get("show") != show_id:
+            continue
+        number = item.get("season")
+        if type(number) is not int or not 0 <= number <= 999:
+            continue
+        counts = result.setdefault(number, dict(season=number, total=0, watched=0,
+                                                aired_unwatched=0, upcoming=0))
+        counts["total"] += 1
+        counts["watched"] += bool(item["watched"])
+        counts["aired_unwatched"] += not item["watched"] and _aired(item, today)
+        released = _release(item)
+        counts["upcoming"] += released is not None and released > today
+    return [result[number] for number in sorted(result)]
+
+
+def view(route, items, state, key="", query="", today=None, episode_filter="all",
+         list_filter="all", season=None):
+    today = today or date.today()
+    if type(list_filter) is not str or list_filter not in {"all", "unwatched", "released_unwatched", "upcoming"}:
+        raise ValueError("Unknown list filter")
+    if type(episode_filter) is not str or episode_filter not in {"all", "aired_unwatched"}:
+        raise ValueError("Unknown episode filter")
+    if season is not None and (type(season) is not int or not 0 <= season <= 999):
+        raise ValueError("Invalid season")
     values = list(items.values())
-    if route == "list":
-        if key == "saved":
+    if route in {"list", "upcoming_movies"}:
+        if key == "saved" or route == "upcoming_movies":
             saved = state.get("saved_movies", [])
-            return ordered([item for ident, item in items.items()
-                            if ident in saved and item["kind"] == "movie"], today)
-        return ordered([items[i] for i in MEMBERS.get(key, [])], today)
+            rows = [item for ident, item in items.items()
+                    if ident in saved and item["kind"] == "movie"]
+        else:
+            rows = [items[i] for i in MEMBERS.get(key, []) if i in items]
+        selected_filter = "upcoming" if route == "upcoming_movies" else list_filter
+        if selected_filter == "unwatched":
+            rows = [x for x in rows if not x["watched"]]
+        elif selected_filter == "released_unwatched":
+            rows = [x for x in rows if not x["watched"] and _aired(x, today)]
+        elif selected_filter == "upcoming":
+            rows = [x for x in rows if _release(x) is not None and _release(x) > today]
+        if route == "upcoming_movies":
+            return sorted(rows, key=lambda x: _release(x))
+        return ordered(rows, today)
     if route == "show":
-        if episode_filter not in {"all", "aired_unwatched"}:
-            raise ValueError("Unknown episode filter")
-        return sorted([x for x in values if x.get("show") == key and
-                       (episode_filter == "all" or (not x["watched"] and _aired(x, today)))],
+        _show(items, key)
+        return sorted([x for x in values if x.get("kind") == "episode"
+                       and x.get("show") == key
+                       and (season is None or x.get("season") == season)
+                       and (episode_filter == "all" or (not x["watched"] and _aired(x, today)))],
                       key=lambda x: (x["season"], x["episode"]))
     if route == "continue":
         return ordered([x for x in values if x["progress"] > 0 and not x["watched"]

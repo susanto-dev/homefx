@@ -76,3 +76,8 @@ The repository verifier is read-only and separate from generation. It validates 
 candidate before CI uploads it and can inspect a detached/copied artifact locally.
 It does not repair mismatches, publish files or establish source trust. Use a fresh
 candidate directory when source changes; the generator's immutable-output guard stays.
+
+The release repeatability check runs `python tools/check_reproducibility.py`. It builds
+two temporary site/package/candidate trees and compares their paths and bytes; neither
+run writes to the ordinary dist output. This checks one source revision and local
+toolchain, not reproducibility between different platforms or toolchain versions.

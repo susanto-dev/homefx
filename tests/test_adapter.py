@@ -46,7 +46,7 @@ class AdapterTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.rows, self.ends, self.messages, self.commands = [], [], [], []
-        self.content = []
+        self.content, self.categories = [], []
         self.selection = [0, 2]
         self.answer = 'Lantern'
         self.last_default = None
@@ -78,7 +78,7 @@ class AdapterTests(unittest.TestCase):
             'xbmcplugin': types.SimpleNamespace(
                 addDirectoryItem=lambda handle, url, li, folder: self.rows.append((url, li, folder)),
                 endOfDirectory=lambda handle, **kw: self.ends.append(kw),
-                setPluginCategory=lambda *args: None,
+                setPluginCategory=lambda handle, label: self.categories.append(label),
                 setContent=lambda handle, kind: self.content.append(kind),
                 addSortMethod=lambda *args: None, SORT_METHOD_NONE=0)}
 
@@ -276,3 +276,93 @@ class AdapterTests(unittest.TestCase):
         restored = state.load(Path(self.temp.name) / 'demo.json')
         self.assertEqual(restored['saved_movies'], [])
         self.assertEqual(restored['watched'], {})
+
+    def test_widget_directory_has_only_selected_content_sources(self):
+        self.selection = [3]
+        self.run_route('select')
+        self.commands.clear()
+        self.messages.clear()
+        self.run_route('widgets')
+        self.assertTrue(all(folder for _, _, folder in self.rows))
+        destinations = [routes.parse(urlsplit(url).query) for url, _, _ in self.rows]
+        self.assertEqual(destinations, [('list', {'id': 'saved'}), ('continue', {}),
+            ('next', {}), ('upcoming', {}), ('upcoming_movies', {})])
+        self.assertEqual(self.messages, [])
+        self.assertEqual(self.commands, [])
+        self.assertIn('released_unwatched', dict(self.rows[0][1].menu)['Released unwatched titles (demo)'])
+        self.run_route('list', id='saved')
+        self.assertEqual(self.rows, [])
+        self.assertIn('no matching demo titles', self.categories[-1])
+        self.assertEqual(self.messages, [])
+        self.assertEqual(self.ends, [{'succeeded': True, 'cacheToDisc': False}])
+
+    def test_movie_filters_and_upcoming_saved_route_keep_content_rows_clean(self):
+        self.run_route('list', id='weekend', filter='released_unwatched')
+        self.assertEqual([li.tag.values['title'] for _, li, _ in self.rows],
+                         ['The Lantern Harbour', 'A Map of Quiet Stars'])
+        self.assertTrue(all(li.tag.values and not folder for _, li, folder in self.rows))
+        self.run_route('list', id='weekend', filter='upcoming')
+        self.assertEqual([li.tag.values['title'] for _, li, _ in self.rows], ["Tomorrow's Orchard"])
+        self.run_route('collect', id='m3', value='1')
+        self.run_route('upcoming_movies')
+        self.assertEqual(len(self.rows), 1)
+        self.assertIn('Upcoming', self.rows[0][1].label)
+        self.assertEqual(self.content[-1], 'movies')
+
+    def test_season_folders_counts_and_context_preserve_scope(self):
+        self.run_route('seasons', id='s1')
+        self.assertEqual(len(self.rows), 1)
+        url, li, folder = self.rows[0]
+        self.assertTrue(folder)
+        self.assertIn('2/6 watched', li.label)
+        self.assertIn('2 aired unwatched', li.label)
+        self.assertIn('2 upcoming', li.label)
+        self.assertEqual(routes.parse(urlsplit(url).query),
+                         ('show', {'season': '1', 'filter': 'all', 'id': 's1'}))
+        self.assertIn('season=1', dict(li.menu)['Aired unwatched episodes in this season (demo)'])
+        self.run_route('show', id='s1', season='1', filter='aired_unwatched')
+        self.assertEqual([li.tag.values['episode'] for _, li, _ in self.rows], [2, 4])
+        menu = dict(self.rows[0][1].menu)
+        self.assertIn('season=1', menu['Browse all episodes (demo)'])
+        self.assertIn('route=seasons', menu['Browse seasons (demo)'])
+        self.run_route('show', id='s1', season='2')
+        self.assertEqual(self.rows, [])
+        self.assertTrue(self.ends[-1]['succeeded'])
+        self.assertEqual(self.messages, [])
+
+    def test_invalid_routes_are_bounded_and_unambiguous(self):
+        for query in ('route=list&route=home', 'route=list&id=weekend&id=saved',
+                      'route=show&id=s1&season=-1', 'route=show&id=s1&season=1000',
+                      'route=show&id=s1&season=01', 'route=list&id=saved&season=1',
+                      'route=widgets&filter=all', 'route=list&id=saved&filter=aired_unwatched',
+                      'route=show&id=s1&filter=released_unwatched',
+                      'route=search&q=' + 'x' * 257, 'route=list&id=' + 'x' * 129,
+                      'route=search&q=%00', 'route=home&unknown=x'):
+            with self.subTest(query=query), self.assertRaises(ValueError):
+                routes.parse(query)
+        self.assertEqual(routes.parse('route=show&id=s1&season=0')[1]['season'], '0')
+        self.run_route('seasons', id='m1')
+        self.assertFalse(self.ends[-1]['succeeded'])
+
+    def test_failed_profile_write_does_not_disclose_private_path(self):
+        with patch.object(state, 'save', side_effect=OSError('/private/user/profile/token.sqlite')):
+            self.run_route('watched', id='m1', value='1')
+        self.assertFalse(self.ends[-1]['succeeded'])
+        self.assertNotIn('/private', self.messages[-1])
+        self.assertNotIn('token.sqlite', self.messages[-1])
+        self.assertEqual(self.commands, [])
+
+    def test_legacy_empty_id_widget_urls_remain_navigable(self):
+        for route in ('home', 'continue', 'next', 'upcoming', 'search', 'select',
+                      'reset', 'setup', 'readiness', 'widgets', 'upcoming_movies'):
+            with self.subTest(route=route):
+                self.assertEqual(routes.parse('route=' + route + '&id='), (route, {}))
+        for route in ('continue', 'next', 'upcoming'):
+            with self.subTest(route=route):
+                self.run_route(route, id='')
+                self.assertTrue(self.rows)
+                self.assertEqual(self.ends, [{'succeeded': True, 'cacheToDisc': False}])
+        for route in ('list', 'show', 'seasons', 'play', 'watched', 'info', 'sequence',
+                      'similar', 'collect'):
+            with self.subTest(route=route), self.assertRaises(ValueError):
+                routes.parse('route=' + route + '&id=')

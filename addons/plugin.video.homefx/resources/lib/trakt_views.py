@@ -161,3 +161,68 @@ def widget_order(rows):
             return (0, -played.toordinal(), -played.hour, -played.minute, -played.second, row["id"])
         return (1, -release.toordinal(), -release.hour, -release.minute, -release.second, row["id"])
     return sorted(rows, key=key)
+
+
+def movie_filter(rows, selection="all"):
+    """Filter normalized metadata; unknown watched evidence never means unwatched.
+
+    Callers must supply a complete watched snapshot before requesting either
+    unwatched view. Empty rows alone are not evidence of such a snapshot, so the
+    Library layer also rejects those views when no watched endpoint is available.
+    """
+    if not isinstance(selection, str) or selection not in {"all", "unwatched", "released_unwatched", "upcoming"}:
+        raise ApiError("invalid_filter")
+    if selection in {"unwatched", "released_unwatched"} and any(
+            row["watched"] is None for row in rows):
+        raise ApiError("watched_status_unavailable")
+    if selection == "unwatched":
+        rows = [row for row in rows if row["watched"] is False]
+    elif selection == "released_unwatched":
+        rows = [row for row in rows if row["aired_unwatched"]]
+    elif selection == "upcoming":
+        rows = [row for row in rows if row["release_status"] == "upcoming"]
+    return widget_order(rows)
+
+
+def continued(paused, now=None):
+    """Normalize only dated, aired pause metadata; this is not a watched snapshot.
+
+    The playback response may omit release dates. Such rows are excluded rather
+    than assumed aired, so this deliberately conservative view may be incomplete.
+    watched remains None: a pause proves partial progress, not current watch state.
+    No external metadata lookup, source resolution or playback occurs here.
+    """
+    now = _now(now)
+    selected = {}
+    for source in paused:
+        if (not isinstance(source, dict) or not isinstance(source.get("type"), str)
+                or source["type"] not in {"movie", "episode"}):
+            continue
+        kind = source["type"]
+        item, ident = source.get(kind), _id(source.get(kind))
+        show_id = _id(source.get("show")) if kind == "episode" else None
+        if ident is None or (kind == "episode" and show_id is None):
+            continue
+        pause = _pause_map([source], kind, show_id).get(ident)
+        if pause is None or pause[1] > now:
+            continue
+        try:
+            row = _row(item, kind, None, pause, now)
+        except ApiError:
+            continue
+        if row["release_status"] != "aired":
+            continue
+        if kind == "episode":
+            if any(type(item.get(key)) is not int or not 0 <= item[key] <= 10000
+                   for key in ("season", "number")):
+                continue
+            row.update(show_id=show_id, season=item["season"], episode=item["number"])
+        key = (kind, ident)
+        previous = selected.get(key)
+        if previous is not None and kind == "episode" and previous["show_id"] != show_id:
+            raise ApiError("mismatched_show")
+        if previous is None or row["last_played"] > previous["last_played"]:
+            selected[key] = row
+    # Sort by exact UTC instant, retaining stable global identity for equal dates.
+    rows = sorted(selected.values(), key=lambda row: row["id"])
+    return sorted(rows, key=lambda row: row["last_played"], reverse=True)

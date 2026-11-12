@@ -75,6 +75,90 @@ class LibraryTests(unittest.TestCase):
         self.cache = MemoryCache(clock=lambda: self.now[0], ttl=5)
         self.library = Library(self.session, self.cache)
 
+    def _view_reply(self, path, headers):
+        if path.startswith("/users/me/lists?"):
+            return Response(200, body=[{"ids": {"trakt": 1}, "name": "Synthetic list"}])
+        if path.startswith("/users/likes/lists?"):
+            return Response(200, body=[])
+        if "/items?" in path:
+            return Response(200, body=[{"type": "movie", "movie": {
+                "ids": {"trakt": ident}, "title": "Synthetic movie", "released": day}}
+                for ident, day in [(10, "2026-11-01"), (11, "2026-12-01"), (12, None)]])
+        if "/seasons/" in path:
+            return Response(200, body=[{"ids": {"trakt": n}, "title": "Synthetic episode",
+                "season": 1, "number": n, "first_aired": "2026-11-01T00:00:00Z"}
+                for n in (1, 2, 3)])
+        if "/progress/" in path:
+            return Response(200, body={"seasons": [{"number": 1, "episodes": [
+                {"number": 1, "completed": False}, {"number": 2, "completed": True}]}]})
+        return Response(200, body=[{"type": "movie", "movie": {
+            "ids": {"trakt": 10}, "title": "Synthetic movie", "released": "2026-11-01"},
+            "progress": 42, "paused_at": "2026-11-11T12:00:00Z"}])
+
+    def test_movie_views_preserve_unknown_watch_and_filter_future_dates(self):
+        self.reply = self._view_reply
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        rows = self.library.movie_view("trakt-list:1", now)
+        self.assertEqual({r["trakt_id"] for r in rows}, {10, 11, 12})
+        self.assertTrue(all(r["watched"] is None for r in rows))
+        self.assertEqual(next(r for r in rows if r["trakt_id"] == 10)["progress"], 42)
+        future = self.library.movie_view("trakt-list:1", now, "upcoming")
+        self.assertEqual([r["trakt_id"] for r in future], [11])
+        requests = len(self.calls)
+        for mode in ("unwatched", "released_unwatched"):
+            with self.assertRaisesRegex(ApiError, "watched_status_unavailable"):
+                self.library.movie_view("trakt-list:1", now, mode)
+        self.assertEqual(len(self.calls), requests)
+
+    def test_continue_view_and_episode_filter_do_not_invent_watch_evidence(self):
+        self.reply = self._view_reply
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        rows = self.library.continue_view(now)
+        self.assertEqual([r["trakt_id"] for r in rows], [10])
+        self.assertIsNone(rows[0]["watched"])
+        episodes = self.library.episode_view(1, 1, now, "aired_unwatched")
+        self.assertEqual([r["episode"] for r in episodes], [1])
+        self.assertEqual(len(self.library.episode_view(1, 1, now)), 3)
+        for mode in ([], "invalid"):
+            with self.assertRaisesRegex(ApiError, "invalid_filter"):
+                self.library.episode_view(1, 1, now, mode)
+
+    def test_movie_join_rejects_account_and_data_changes_after_list_read(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        self.reply = self._view_reply
+        original = self.library.list_items
+        def switch(key):
+            result = original(key)
+            self.store.install(TokenSet("synthetic-account-b", "synthetic-refresh-b", 10000))
+            return result
+        self.library.list_items = switch
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.library.movie_view("trakt-list:1", now)
+        self.assertFalse(any(path.startswith("/sync/playback") for path in self.calls))
+        self.assertEqual(self.cache._entries, {})
+        def revise(key):
+            result = original(key)
+            self.session.data_revision += 1
+            return result
+        self.library.list_items = revise
+        with self.assertRaisesRegex(ApiError, "data_changed"):
+            self.library.movie_view("trakt-list:1", now)
+        self.assertEqual(self.cache._entries, {})
+
+    def test_continue_view_rechecks_generation_after_normalization(self):
+        from unittest.mock import patch
+        from resources.lib import trakt_views
+        self.reply = self._view_reply
+        original = trakt_views.continued
+        def switch(rows, now):
+            result = original(rows, now)
+            self.store.install(TokenSet("synthetic-account-b", "synthetic-refresh-b", 10000))
+            return result
+        with patch.object(trakt_views, "continued", switch):
+            with self.assertRaisesRegex(AuthError, "session_changed"):
+                self.library.continue_view(datetime(2026, 11, 12, 12, tzinfo=timezone.utc))
+        self.assertEqual(self.cache._entries, {})
+
     def test_list_selection_items_and_copy_isolation(self):
         lists = self.library.lists()
         self.assertEqual([ref.key for ref in lists], ["trakt-list:1", "trakt-list:2"])
