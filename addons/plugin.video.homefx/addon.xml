@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.homefx" name="HomeFX Preview" version="0.1.0" provider-name="susanto-dev">
+  <requires><import addon="xbmc.python" version="3.0.1"/></requires>
+  <extension point="xbmc.python.pluginsource" library="default.py"><provides>video</provides></extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">A local preview of personal movie and episode widgets</summary>
+    <description lang="en_GB">Synthetic titles only. No Trakt connection, source resolution, or playback. Watch-state changes affect local demo data only.</description>
+    <platform>all</platform><license>MIT</license>
+    <source>https://github.com/susanto-dev/homefx</source>
+    <assets><icon>resources/art/icon.png</icon></assets>
+  </extension>
+</addon>
