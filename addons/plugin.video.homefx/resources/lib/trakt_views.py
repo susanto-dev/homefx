@@ -48,7 +48,7 @@ def _pause_map(rows, kind, show_id=None):
         ident, progress = _id(row.get(kind)), row.get("progress")
         when = _stamp(row.get("paused_at"))
         if (ident is None or type(progress) not in (int, float) or
-                not math.isfinite(progress) or not 0 < progress < 100 or when is None):
+                not 0 < progress < 100 or not math.isfinite(progress) or when is None):
             continue
         if ident not in result or when > result[ident][1]:
             result[ident] = (progress, when)

@@ -64,6 +64,17 @@ class ViewTests(unittest.TestCase):
         self.assertTrue(result[0]["aired_unwatched"])
         self.assertEqual(result[0]["release_at"].hour, 11)
 
+    def test_extreme_pause_values_are_ignored_for_movies_and_episodes(self):
+        movie = {"ids": {"trakt": 1}, "title": "Synthetic", "released": "2026-11-01"}
+        source = {"show_id": 10, "episodes": [episode(1)]}
+        for progress in (10 ** 400, -(10 ** 400), float("inf"), float("-inf"), float("nan")):
+            with self.subTest(progress_type=type(progress).__name__):
+                rows = views.movies([movie], set(), [pause(1, kind="movie", progress=progress)], NOW)
+                self.assertEqual(rows[0]["progress"], 0)
+                rows = views.episodes(source, snapshot([(1, False)]),
+                                      [pause(101, progress=progress)], NOW)
+                self.assertEqual(rows[0]["progress"], 0)
+
     def test_movies_include_future_dates_without_claiming_availability(self):
         source = [{"ids": {"trakt": n}, "title": "Synthetic", "released": day}
                   for n, day in [(1, "2026-11-01"), (2, "2027-01-01"),
