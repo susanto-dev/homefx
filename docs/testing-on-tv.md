@@ -1,4 +1,4 @@
-# TV acceptance — preview 0.6.0
+# TV acceptance — preview 0.7.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,
@@ -70,3 +70,11 @@ These are pending device checks, not a report of successful TV testing.
 After upgrading from 0.5, reopen existing Continue watching, Next episodes and
 Upcoming widget shortcuts before recreating them; legacy empty identifier parameters
 must remain compatible.
+
+## Playback setup guidance (0.7)
+
+Open Playback and Real-Debrid setup from the root. It should explain title metadata,
+authorized sources and inactive provider integration, without asking for credentials
+or starting media. Existing movie/episode clicks must still show demo information.
+There is no real account login or source input field to test in this version.
+Follow the separate [playback plan](playback-plan.md) before any future live experiment.

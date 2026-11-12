@@ -106,6 +106,54 @@ class AdapterTests(unittest.TestCase):
         self.assertIn('Umbrella version: unavailable; handoff untested', report)
         self.assertNotIn(self.temp.name, report)
 
+    def test_playback_setup_is_information_only_before_any_profile_or_account_access(self):
+        def forbidden(*args, **kwargs):
+            raise AssertionError('Account, profile and playback access forbidden')
+
+        class NoInfoAddon:
+            def getAddonInfo(self, key):
+                forbidden()
+
+        self.modules['xbmcaddon'].Addon = NoInfoAddon
+        self.modules['xbmcvfs'].translatePath = forbidden
+        self.modules['xbmc'].Player = forbidden
+        with patch.object(state, 'load', side_effect=forbidden), \
+                patch('socket.create_connection', side_effect=forbidden), \
+                patch('sqlite3.connect', side_effect=forbidden):
+            self.run_route('playback_setup')
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.ends, [])
+        self.assertEqual(self.commands, [])
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+        self.assertIsNone(self.last_default)
+        self.assertEqual(self.choices, [])
+        guidance = self.messages[-1]
+        self.assertIn('metadata, not playable sources', guidance)
+        self.assertIn('source you are authorized to access', guidance)
+        self.assertIn('Umbrella playback handoff is unverified', guidance)
+        self.assertIn('Real-Debrid prototype is inactive', guidance)
+        self.assertIn('Never enter or share account tokens or client secrets', guidance)
+        self.assertNotIn(self.temp.name, guidance)
+
+    def test_root_playback_setup_action_stays_out_of_widget_sources(self):
+        self.run_route()
+        rows = [(url, folder) for url, item, folder in self.rows
+                if item.label == 'Playback and Real-Debrid setup…']
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0][1])
+        self.assertEqual(routes.parse(urlsplit(rows[0][0]).query), ('playback_setup', {}))
+        self.run_route('widgets')
+        self.assertNotIn('playback_setup', [routes.parse(urlsplit(url).query)[0]
+                                           for url, _, _ in self.rows])
+
+    def test_movie_click_and_information_distinguish_dates_from_sources(self):
+        for route in ('play', 'info'):
+            self.run_route(route, id='m3')
+            self.assertIn('A release date does not establish a playable source', self.messages[-1])
+            self.assertIn('separate authorized source', self.messages[-1])
+            self.assertIn('Demo only: no playback', self.messages[-1])
+        self.assertEqual(self.commands, [])
+
     def test_readiness_reads_only_explicit_numeric_runtime_versions(self):
         reads = []
 
@@ -354,7 +402,7 @@ class AdapterTests(unittest.TestCase):
 
     def test_legacy_empty_id_widget_urls_remain_navigable(self):
         for route in ('home', 'continue', 'next', 'upcoming', 'search', 'select',
-                      'reset', 'setup', 'readiness', 'widgets', 'upcoming_movies'):
+                      'reset', 'setup', 'readiness', 'widgets', 'upcoming_movies', 'playback_setup'):
             with self.subTest(route=route):
                 self.assertEqual(routes.parse('route=' + route + '&id='), (route, {}))
         for route in ('continue', 'next', 'upcoming'):
