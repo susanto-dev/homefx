@@ -4,11 +4,25 @@ Current preview: no outbound requests or accounts. Only synthetic watched overri
 and demo list selection are saved in the Kodi profile. Reset clears these overrides.
 The package includes only an explicit file list. Do not package any user profile.
 
-Future service integration must use supported public-client authentication without
-shipping a client secret. Keep user tokens out of plugin URLs, logs and diagnostics.
-Serialize token refresh and atomically replace rotated tokens. Kodi profile storage
-is not a vault against other code running inside Kodi. Specify disconnect, revocation,
-cache retention and account-switch behavior before connecting real accounts.
+Inactive authentication foundations use injected responses, never a bundled client
+secret or a live account configuration. Their dedicated profile token database uses
+owner-only directory/file permissions on POSIX systems and fails closed on other
+platforms. Android/Kodi SQLite and permission support still need device testing. Tokens and device prompts
+have redacted object representations; public failures omit raw transport/response
+details. This does not sanitize an arbitrary caller that logs request arguments.
+A future transport/UI must preserve the same boundary.
+
+A durable refresh claim removes the old token pair from the active row before the
+request. Only one invocation wins, and the matching claimant atomically installs
+the rotated pair. Ambiguous failure or expired claims require reauthentication;
+they never release the old token for retry. Disconnect/new login invalidates stale
+completion. Requests must time out before the bounded claim expires.
+
+The store is not encrypted and is not a vault against other code running as Kodi.
+Local disconnect clears active rows; secure-delete is best effort, not guaranteed
+forensic erasure from filesystem snapshots/backups. Service-side revocation, cache
+retention and account-switch UX remain gates before connecting real accounts. Do
+not export profile files. No token database is created by the current Kodi adapter.
 
 Validate remote responses, bound requests and caches, retain TLS verification, handle
 rate limits and cancellations, and avoid duplicate watch-history writes. Read-only

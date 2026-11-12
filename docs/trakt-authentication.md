@@ -25,26 +25,48 @@ for privacy documentation and a Trakt nonendorsement notice. Premium is not stat
 as mandatory for the proposed basic functionality. No account or paid service was
 created during this investigation.
 
-## Next implementation slice
+## Implemented mocked foundations
 
-1. Build device-login lifecycle against synthetic HTTP responses: pending,
-   authorization, cancellation, expiration, denied/used/invalid codes and 429.
-   Honor returned interval and expiry; never poll indefinitely.
-2. Separate OAuth/data hosts, verify TLS and redact tokens/device codes from all
-   logs and error messages. Keep public client identity separate from user tokens.
-3. Define profile storage and a cross-invocation refresh lock. Replace access and
-   refresh tokens atomically; refresh tokens are single-use. Treat ambiguous
-   refresh failure conservatively and provide reauthentication. Profile backups
-   can expose credentials; Kodi profile storage is not a secure vault.
-4. Verify mocks for personal and liked list selection, pagination, ownership,
-   restricted/private lists and account limits. Liked lists are not necessarily
-   writable. Read account allowances; avoid retry loops on limit errors.
-5. Keep episode metadata separate from watched progress and paused playback.
-   Personal calendars are based on watched/watchlisted shows, not automatically
-   the selected custom lists. Define that view explicitly before implementation.
-6. Require real development-app device login and rotated-token refresh before
-   enabling live account mode; then validate on the Android TV. Keep the existing
-   preview synthetic until those gates are complete.
+The 0.2.0 candidate implements caller-driven device polling, terminal/cancellation
+states, token validation, and refresh orchestration with injected responses only.
+The caller supplies the public client ID and registered redirect URI; neither is
+preconfigured. There is no client-secret parameter. No live transport or Kodi
+account screen exists, so these modules cannot independently contact a service.
+
+Token state uses a dedicated SQLite file below a supplied private profile directory.
+Short transactions persist refresh ownership before sending a request and clear
+the old token pair from the active row. Only the matching claimant can install the
+new pair. Another invocation returns busy rather than retrying the old refresh
+token. Failed, timed-out or abandoned refresh requires login again. Disconnect or
+a new login invalidates an old in-flight completion. This conservative behavior can
+require another login after a temporary network fault; it avoids replaying a
+single-use refresh token. SQLite/permissions support on the actual TV is unverified.
+
+Read API foundations cover personal/liked lists, list items, episode metadata,
+show progress, paused playback and account settings. They enforce bounded results
+and surface service/rate/account-limit errors without an automatic retry loop.
+Liked lists are not assumed writable. View normalization is separate from API
+requests and joins metadata, watched status and pause records by stable identity.
+No Trakt write, scrobbling, persistent metadata cache or live list widget is enabled.
+
+## Gates before live account access
+
+1. Register a development application and verify the documented public-client flow
+   using its client ID and registered redirect URI. Never provide a client secret.
+2. Implement and independently review a TLS-verifying transport with host binding,
+   redirect rejection, byte/time bounds, cancellation and sanitized diagnostics.
+   Injected callbacks are a test boundary, not proof of those network protections.
+3. Add explicit connect/disconnect/account-switch UX and a revocation policy. Keep
+   tokens out of widget routes, exported logs, backups and packaged artifacts.
+4. Validate real device login and rotated-token refresh; check cancelled/expired
+   attempts and interrupted refresh recovery. Then repeat on Android/Google TV,
+   recording interpreter and SQLite availability without recording token values.
+5. Choose actual lists/views and verify list ownership, response pagination and
+   account limits against real API responses. Selected custom lists do not
+   automatically define a personal calendar. Movie release region/type remains a
+   product choice; unknown dates must not be treated as already released.
+6. Connect live read views only after those gates; keep watch-history/list writes
+   and playback under separate acceptance criteria.
 
 No playback or scrobbling claims follow from successful Trakt login. Umbrella
 handoff remains a separate test gate. Aired/released does not imply playable.
@@ -65,3 +87,11 @@ handoff remains a separate test gate. Aired/released does not imply playable.
 These sources establish the intended API contract, not observed integration
 success. Recheck current contracts when implementing; no upstream source code is
 copied into HomeFX.
+
+Read API pagination contracts were checked against the same official snapshot:
+[personal lists/items](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/users/subroutes/userLists.ts),
+[liked lists](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/users/index.ts),
+and [paused playback](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/sync/index.ts).
+A full page without pagination headers fails conservatively instead of presenting
+an incomplete result as complete. Movie watched IDs must be supplied from a complete
+snapshot; a missing snapshot remains unknown. Live responses still need validation.

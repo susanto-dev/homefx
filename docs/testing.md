@@ -5,6 +5,7 @@ Tests cover explicit synthetic expected orders/dates, episode identity, calendar
 boundaries, watch-state overrides, search, related-title order, continuation choices,
 URL encoding and malformed routes, local state recovery, reproducible ZIP bytes,
 private-file exclusion, and rejection of deliberately broken manifests/files.
+Profile token databases and journals are explicitly exercised as excluded files.
 
 Expected values are independently specified. Keep the injected date fixed in logic
 tests. Error and empty paths matter as much as happy paths. A package allowlist
@@ -21,3 +22,11 @@ Action audit tests require the optional security tool environment. They delibera
 reject floating tags, short/dynamic refs and nested unpinned Actions; mocked release
 responses exercise annotated-tag resolution and update reporting. The security job
 runs these tests explicitly. Plain standard-library runs skip this optional suite.
+
+Trakt foundation tests inject fabricated responses and clocks. They cover polling
+intervals and terminal states, cancellation, malformed credentials, durable refresh
+ownership, atomic token replacement, interrupted refresh and disconnect races,
+sanitized errors, pagination bounds and API failures, list identity/ownership, and
+the separation of metadata, watched progress and paused playback. Future and unknown
+air dates must not become aired-unwatched candidates. None of these tests establishes
+that a real Trakt account or HTTP transport works.

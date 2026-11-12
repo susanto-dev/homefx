@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.1.0
+## Current preview: 0.2.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies three selectable demo lists, a series episode browser,
@@ -13,6 +13,10 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
+Version 0.2.0 also contains inactive Trakt authentication, token-storage and read
+API foundations tested with fabricated responses. These are not connected to the
+Kodi menus and do not enable real accounts.
+
 Original geometric placeholder artwork is included; no third-party skin or artwork
 is bundled. The current skin stays installed separately.
 

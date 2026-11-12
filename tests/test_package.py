@@ -21,6 +21,10 @@ class PackageTests(unittest.TestCase):
             shutil.copytree(p.ADDON, src)
             (src / "demo.json").write_text('{"private": "fixture"}')
             (src / ".env").write_text("EXAMPLE=synthetic")
+            profile = src / "profile" / "trakt"
+            profile.mkdir(parents=True)
+            (profile / "tokens.sqlite3").write_bytes(b"synthetic private state")
+            (profile / "tokens.sqlite3-journal").write_bytes(b"synthetic journal")
             first = p.build(src, root / "one")
             second = p.build(src, root / "two")
             self.assertEqual(first.read_bytes(), second.read_bytes())
@@ -30,7 +34,7 @@ class PackageTests(unittest.TestCase):
                 self.assertIsNone(archive.testzip())
 
     def test_validator_rejects_actual_manifest_defects(self):
-        mutations = [('version="0.1.0"', 'version="invalid"'),
+        mutations = [('version="' + p.validate() + '"', 'version="invalid"'),
                      ('version="3.0.1"', 'version="9.0.0"'),
                      ('library="default.py"', 'library="missing.py"'),
                      ('resources/art/icon.png', 'private/icon.png')]
@@ -39,7 +43,9 @@ class PackageTests(unittest.TestCase):
                 src = Path(temp) / "source"
                 shutil.copytree(p.ADDON, src)
                 manifest = src / "addon.xml"
-                manifest.write_text(manifest.read_text().replace(old, new))
+                original = manifest.read_text()
+                self.assertIn(old, original, "Mutation must alter the real manifest")
+                manifest.write_text(original.replace(old, new))
                 with self.assertRaises(ValueError):
                     p.build(src, Path(temp) / "out")
 

@@ -1,0 +1,208 @@
+"""Read-only Trakt contracts with an injected transport; no live network adapter.
+
+Transport receives relative paths and must bind them to API_HOST, verify TLS,
+reject redirects, bound response bytes/time, and never log credentials. Results
+live only in invocation memory. Errors intentionally omit URLs and response data.
+"""
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+import re
+from urllib.parse import urlencode
+
+API_HOST = "https://api.trakt.tv"
+
+
+@dataclass(frozen=True)
+class Response:
+    status: int
+    headers: dict = field(default_factory=dict, repr=False)
+    body: object = field(default=None, repr=False)
+
+
+class ApiError(Exception):
+    def __init__(self, kind, status=None, retry_after=None):
+        self.kind, self.status, self.retry_after = kind, status, retry_after
+        super().__init__("Trakt request failed: " + kind)
+
+
+@dataclass(frozen=True)
+class ListRef:
+    trakt_id: int
+    owner: str
+    name: str
+    writable: bool
+
+    @property
+    def key(self):
+        return "trakt-list:" + str(self.trakt_id)
+
+
+def _identifier(value):
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
+        raise ApiError("invalid_identifier")
+    value = str(value)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", value):
+        raise ApiError("invalid_identifier")
+    return value
+
+
+def _positive_id(value):
+    if type(value) is not int or value <= 0:
+        raise ApiError("invalid_response")
+    return value
+
+
+def retry_delay(headers, now=None):
+    """Return a bounded UI delay, never sleep or retry a request automatically."""
+    raw = {str(k).lower(): v for k, v in headers.items()}.get("retry-after", "")
+    if type(raw) not in (str, int) or (isinstance(raw, str) and len(raw) > 128):
+        return 60
+    try:
+        delay = int(raw)
+    except (TypeError, ValueError, OverflowError):
+        try:
+            when = parsedate_to_datetime(raw)
+            if when.tzinfo is None:
+                raise ValueError()
+            delay = (when - (now or datetime.now(timezone.utc))).total_seconds()
+        except (TypeError, ValueError, OverflowError, IndexError):
+            delay = 60
+    return max(1, min(3600, int(delay)))
+
+
+class Client:
+    def __init__(self, request, client_id, access_token, page_size=100,
+                 max_pages=20, max_items=2000):
+        for value in (client_id, access_token):
+            if not isinstance(value, str) or not 1 <= len(value) <= 4096 or any(
+                    ord(c) < 33 or ord(c) > 126 for c in value):
+                raise ApiError("invalid_credentials")
+        if (type(page_size) is not int or not 1 <= page_size <= 100 or
+                type(max_pages) is not int or not 1 <= max_pages <= 100 or
+                type(max_items) is not int or not 1 <= max_items <= 10000):
+            raise ApiError("invalid_bounds")
+        self._request = request
+        self._client_id, self._token = client_id, access_token
+        self.page_size, self.max_pages, self.max_items = page_size, max_pages, max_items
+
+    def _get(self, path):
+        headers = {"Authorization": "Bearer " + self._token,
+                   "trakt-api-key": self._client_id, "trakt-api-version": "2",
+                   "Content-Type": "application/json"}
+        try:
+            response = self._request("GET", path, headers, None)
+        except Exception:
+            raise ApiError("transport") from None
+        if (type(getattr(response, "status", None)) is not int or
+                not isinstance(getattr(response, "headers", None), dict) or
+                not hasattr(response, "body")):
+            raise ApiError("invalid_response")
+        status = response.status
+        if status == 401:
+            raise ApiError("reauthenticate", status)
+        if status in (403, 404):
+            raise ApiError("unavailable", status)
+        if status == 420:
+            raise ApiError("account_limit", status)
+        if status == 429:
+            raise ApiError("rate_limit", status, retry_delay(response.headers))
+        if status != 200:
+            raise ApiError("service", status)
+        return response
+
+    def _pages(self, path):
+        rows = []
+        for page in range(1, self.max_pages + 1):
+            separator = "&" if "?" in path else "?"
+            response = self._get(path + separator + urlencode({"page": page, "limit": self.page_size}))
+            body = getattr(response, "body", None)
+            if not isinstance(body, list) or len(body) > self.page_size or any(
+                    not isinstance(row, dict) for row in body):
+                raise ApiError("invalid_response")
+            rows.extend(body)
+            if len(rows) > self.max_items:
+                raise ApiError("result_limit")
+            headers = {str(k).lower(): v for k, v in response.headers.items()}
+            count = headers.get("x-pagination-page-count")
+            try:
+                if "x-pagination-page" in headers and int(headers["x-pagination-page"]) != page:
+                    raise ValueError()
+                if count is not None:
+                    count = int(count)
+                    if count < 0 or (count == 0 and body) or (count and count < page):
+                        raise ValueError()
+            except (TypeError, ValueError):
+                raise ApiError("invalid_pagination") from None
+            if count is not None:
+                if count > self.max_pages:
+                    raise ApiError("result_limit")
+                if page >= count:
+                    return rows
+                if not body:
+                    raise ApiError("invalid_pagination")
+            elif len(body) < self.page_size:
+                return rows
+            else:
+                # A full page without a total cannot be called a complete result.
+                raise ApiError("invalid_pagination")
+        raise ApiError("result_limit")
+
+    @staticmethod
+    def _list(row, own):
+        item = row if own else row.get("list")
+        if not isinstance(item, dict):
+            raise ApiError("invalid_response")
+        ids = item.get("ids")
+        if not isinstance(ids, dict):
+            raise ApiError("invalid_response")
+        ident = _positive_id(ids.get("trakt"))
+        name = item.get("name")
+        if not isinstance(name, str) or not 1 <= len(name) <= 1000:
+            raise ApiError("invalid_response")
+        if own:
+            owner = "me"
+        else:
+            user = item.get("user", {})
+            user_ids = user.get("ids", {}) if isinstance(user, dict) else {}
+            owner = _identifier(user_ids.get("slug") if isinstance(user_ids, dict) else None)
+        return ListRef(ident, owner, name, own)
+
+    def lists(self):
+        """Union by global list ID; ownership evidence wins over a liked copy."""
+        own = [self._list(row, True) for row in self._pages("/users/me/lists")]
+        liked = [self._list(row, False) for row in self._pages("/users/likes/lists")]
+        result = {}
+        for ref in own + liked:
+            result.setdefault(ref.key, ref)
+        return list(result.values())
+
+    def list_items(self, owner, list_id):
+        return self._pages("/users/" + _identifier(owner) + "/lists/" +
+                           _identifier(list_id) + "/items?extended=full")
+
+    def paused(self):
+        return self._pages("/sync/playback")
+
+    def show_progress(self, show_id):
+        ident = _positive_id(show_id)
+        body = self._get("/shows/" + str(ident) + "/progress/watched?hidden=false&specials=false").body
+        if not isinstance(body, dict) or not isinstance(body.get("seasons"), list):
+            raise ApiError("invalid_response")
+        return {"show_id": ident, "progress": body}
+
+    def season_episodes(self, show_id, season):
+        ident = _positive_id(show_id)
+        if type(season) is not int or not 0 <= season <= 10000:
+            raise ApiError("invalid_identifier")
+        body = self._get("/shows/" + str(ident) + "/seasons/" + str(season) + "?extended=full").body
+        if (not isinstance(body, list) or len(body) > self.max_items or
+                any(not isinstance(row, dict) for row in body)):
+            raise ApiError("invalid_response")
+        return {"show_id": ident, "episodes": body}
+
+    def settings(self):
+        body = self._get("/users/settings").body
+        if not isinstance(body, dict):
+            raise ApiError("invalid_response")
+        return body
