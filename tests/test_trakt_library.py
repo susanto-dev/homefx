@@ -351,6 +351,16 @@ class PersistentLibraryTests(unittest.TestCase):
         self.assertEqual(attempts, ['blocked'])
         self.assertEqual(self.preferences.load('synthetic-uuid-a'), [])
 
+    def test_confirmed_disconnect_preserves_preferences_on_generation_mismatch(self):
+        self.library.select_lists(['trakt-list:1'])
+        stale = self.store.snapshot().generation
+        self.store.disconnect()
+        self.assertFalse(self.library.disconnect(expected_generation=stale))
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), ['trakt-list:1'])
+        current = self.store.snapshot().generation
+        self.assertTrue(self.library.disconnect(expected_generation=current))
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), [])
+
     def test_disconnect_attempts_both_cleanup_steps_when_one_fails(self):
         self.library.select_lists(['trakt-list:1'])
         original_disconnect = self.session.disconnect

@@ -161,3 +161,20 @@ can create duplicate records. Remote history deletion is not implemented.
 Same-session reads are blocked while an action is pending, and cache revisions
 change both before the request and at completion, including response loss. This
 prevents a concurrent read from keeping pre-write state cached after the result.
+
+## Readiness report and account-flow UI boundary
+
+The on-demand Device readiness screen exposes only allowlisted, bounded local version
+and capability fields. It runs before profile loading and does not read secrets,
+account configuration or private lists/history. It neither logs nor writes a report,
+contacts a service, nor tests playback. Prefer these safe fields over a full backup.
+
+The inactive account-flow controller sends a user code only to its explicit display
+callback, never diagnostics. Device codes/tokens are not returned in flow outcomes.
+Replacement/disconnect confirmation is tied to observed credential generation; a
+changed session cannot be overwritten by a stale confirmation. Local disconnect does
+not revoke remote authorization or erase backups, and cleanup failure is not success.
+
+Repository-candidate verification is a read-only integrity check, not a source-trust
+or malware guarantee. PR checks run on creation, update, reopening and promotion;
+they upload only candidate/report artifacts and have no public-comment operation.

@@ -1,4 +1,4 @@
-# TV acceptance — preview 0.4.0
+# TV acceptance — preview 0.5.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,
@@ -39,3 +39,15 @@ Playback/subtitle/resume/scrobbling acceptance is DEFERRED, not passed. The disp
 resume values are synthetic, not a functional player integration. Real Trakt lists,
 Add to Trakt list, login and recommendations are also deferred. Do not send a full
 Kodi backup or unredacted logs; provide only minimal sanitized evidence.
+
+## Device readiness report
+
+Open **Device readiness** from the HomeFX root. Record the displayed safe version and
+capability fields, alongside the package checksum and observed UI behavior. The report
+must not ask for credentials, access the network, create account storage, show profile
+paths or claim live integration passed. Missing capability should appear as unavailable
+without preventing normal demo navigation. No full backup or unredacted log is needed.
+
+Use this report to plan the first registered-app/device test, not as a substitute for
+it. TLS certificate availability, SQLite import and add-on presence do not establish
+Trakt authorization, playback handoff, subtitles, resume or scrobbling.

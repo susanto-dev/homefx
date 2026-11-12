@@ -111,7 +111,15 @@ class Library:
         self._generation, self._revision, self._account, self._selected = None, None, None, ()
         self._preferences_epoch = None
 
-    def disconnect(self):
+    def disconnect(self, expected_generation=None):
+        """Clear local credentials and all choices, optionally pinning confirmation."""
+        if expected_generation is not None:
+            if not self._session.disconnect(expected_generation=expected_generation):
+                return False
+            self.clear()
+            if self._preferences is not None:
+                self._preferences.clear_all()
+            return True
         self.clear()
         try:
             # Stop new authenticated loads before invalidating pending preference saves.
@@ -119,6 +127,7 @@ class Library:
         finally:
             if self._preferences is not None:
                 self._preferences.clear_all()
+        return True
 
     def _data_revision(self):
         return getattr(self._session, 'data_revision', 0)

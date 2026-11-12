@@ -57,22 +57,37 @@ class Session:
         return {"state": state, "generation": snapshot.generation,
                 "login": self._login.state if self._login is not None else "idle"}
 
-    def begin_login(self):
+    def begin_login(self, expected_generation=None):
         """Start an explicit account replacement and return a redacted prompt."""
-        self.cancel_login()
         prior = self._store.snapshot()
+        if expected_generation is not None and prior.generation != expected_generation:
+            raise AuthError("session_changed")
+        self.cancel_login()
         if not self._store.disconnect(expected_generation=prior.generation):
             raise AuthError("session_changed")
         expected = prior.generation + 1
         login = DeviceLogin(self._oauth, self._client_id, self._monotonic)
         self._login, self._login_generation = login, expected
-        prompt = login.begin()
+        try:
+            prompt = login.begin()
+        except Exception:
+            login.cancel()
+            if self._login is login:
+                self._login, self._login_generation = None, None
+            raise
         if self._login is not login or self._store.snapshot().generation != expected:
             login.cancel()
             return None
         return prompt
 
-    def poll_login(self):
+    def _assert_login_generation(self, expected_generation):
+        if expected_generation is not None and (
+                self._login_generation != expected_generation
+                or self._store.snapshot().generation != expected_generation):
+            raise AuthError("session_changed")
+
+    def poll_login(self, cancelled=None, expected_generation=None):
+        self._assert_login_generation(expected_generation)
         login = self._login
         if login is None:
             raise AuthError("login_not_started")
@@ -80,7 +95,24 @@ class Session:
         if self._store.snapshot().generation != expected:
             self.cancel_login()
             return "cancelled"
+        def aborted():
+            try:
+                return cancelled is not None and cancelled()
+            except Exception:
+                return True
+
+        cancelled_before = aborted()
+        self._assert_login_generation(expected_generation)
+        if cancelled_before:
+            self.cancel_login(expected_generation=expected)
+            return "cancelled"
         state = login.poll()
+        self._assert_login_generation(expected_generation)
+        cancelled_after = aborted()
+        self._assert_login_generation(expected_generation)
+        if cancelled_after:
+            self.cancel_login(expected_generation=expected)
+            return "cancelled"
         if self._login is not login or self._store.snapshot().generation != expected:
             login.cancel()
             return "cancelled"
@@ -94,14 +126,29 @@ class Session:
             self._login, self._login_generation = None, None
         return state
 
-    def cancel_login(self):
+    def login_timing(self, expected_generation=None):
+        """Public monotonic scheduling data; contains no codes or credentials."""
+        self._assert_login_generation(expected_generation)
+        self.status()
+        self._assert_login_generation(expected_generation)
+        login = self._login
+        if login is None:
+            return {"state": "idle", "next_poll": None, "expires_at": None}
+        return {"state": login.state, "next_poll": login.next_poll,
+                "expires_at": login.prompt.expires_at if login.prompt else None}
+
+    def cancel_login(self, expected_generation=None):
+        if expected_generation is not None and self._login_generation != expected_generation:
+            return
         if self._login is not None:
             self._login.cancel()
         self._login, self._login_generation = None, None
 
-    def disconnect(self):
-        self.cancel_login()
-        self._store.disconnect()
+    def disconnect(self, expected_generation=None):
+        if not self._store.disconnect(expected_generation=expected_generation):
+            return False
+        self.cancel_login(expected_generation=expected_generation)
+        return True
 
     def _current(self, generation):
         snapshot = self._store.snapshot()

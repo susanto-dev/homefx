@@ -92,6 +92,57 @@ class AdapterTests(unittest.TestCase):
             spec.loader.exec_module(module)
             module.main()
 
+    def test_readiness_without_profile_network_or_optional_kodi_information(self):
+        with patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')), \
+                patch('socket.create_connection', side_effect=AssertionError('Network forbidden')):
+            self.run_route('readiness')
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.ends, [])
+        self.assertEqual(self.commands, [])
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+        report = self.messages[-1]
+        self.assertIn('Kodi: unavailable', report)
+        self.assertIn('HomeFX: unavailable', report)
+        self.assertIn('Umbrella version: unavailable; handoff untested', report)
+        self.assertNotIn(self.temp.name, report)
+
+    def test_readiness_reads_only_explicit_numeric_runtime_versions(self):
+        reads = []
+
+        class VersionAddon:
+            def __init__(self, addon_id='plugin.video.homefx'):
+                self.addon_id = addon_id
+
+            def getAddonInfo(self, key):
+                reads.append((self.addon_id, key))
+                if key != 'version':
+                    raise AssertionError('Only version may be read')
+                return '0.4.0' if self.addon_id == 'plugin.video.homefx' else '6.7.8'
+
+        self.modules['xbmcaddon'].Addon = VersionAddon
+        self.modules['xbmc'].getInfoLabel = lambda name: '21.2 (private build details)'
+        with patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')):
+            self.run_route('readiness')
+        self.assertEqual(set(reads), {('plugin.video.homefx', 'version'),
+                                      ('plugin.video.umbrella', 'version')})
+        self.assertIn('Kodi: 21.2', self.messages[-1])
+        self.assertIn('Umbrella version: 6.7.8; handoff untested', self.messages[-1])
+        self.assertNotIn('private build details', self.messages[-1])
+
+    def test_normal_navigation_does_not_require_optional_runtime_modules(self):
+        with patch.dict(sys.modules, {'ssl': None, 'sqlite3': None}):
+            self.run_route()
+        self.assertTrue(self.rows)
+        self.assertEqual(self.ends, [{'succeeded': True, 'cacheToDisc': False}])
+
+    def test_root_offers_readiness_action(self):
+        self.run_route()
+        rows = [(url, folder) for url, item, folder in self.rows
+                if item.label == 'Device readiness']
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0][1])
+        self.assertEqual(routes.parse(urlsplit(rows[0][0]).query)[0], 'readiness')
+
     def test_root_selection_and_folder_routes(self):
         self.run_route('select')
         self.run_route()
