@@ -41,8 +41,9 @@ copy isolation, bounded retention and failed/incomplete responses.
 Repository tests check the actual packaged manifest/index relationship, deterministic
 bytes, ZIP/index checksums, invalid IDs/versions/unsafe XML/archive members, private
 file exclusion and refusal to replace differing candidate output. The candidate
-repository stays outside the site directory. Run TV fresh-install/upgrade tests only
-after the separate publication gates are met; no remote update passed in CI.
+repository stays outside the site directory; a separately verified preview channel is
+embedded for publication. TV fresh-install/upgrade tests remain required; no remote
+Kodi update passed in CI.
 
 The 0.4.0 preview tests local saved-movie persistence/migration, future-release
 membership, duplicate-safe additions, cancelled removals and all/aired-unwatched
@@ -88,3 +89,14 @@ competing refresh claims, injected HTTPS framing for the provider endpoints, and
 session/account-change recovery tests. Complete movie-history tests distinguish an
 authoritative empty snapshot from failures, pagination and malformed rows. Provider
 network tests use in-memory connections or local socket pairs, never account traffic.
+
+
+The 0.9 suite checks preview/bootstrap byte equality, immutable release inventories,
+exact staged-versus-hosted bytes with injected HTTP responses, and fatal lint failures.
+Search and related-movie tests preserve metadata-only semantics and unknown watched
+state. Shared-limit tests use temporary SQLite files and concurrent reservations;
+transport tests exercise local blocking and server cooldowns without service traffic.
+Install all hash-locked tool inventories for the complete suite; run `tools/check_quality.py`
+and `tools/release_history.py releases/inventory.json --base-ref <review-base>` as well.
+The full official Kodi add-on checker remains pending for the reasons in
+[tooling licences](tooling-licenses.md).

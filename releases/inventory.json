@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "packages": [
+    {
+      "id": "plugin.video.homefx",
+      "version": "0.8.0",
+      "path": "archives/plugin.video.homefx-0.8.0.zip",
+      "sha256": "3b4503f0203eb15bddb488f66918a4b48e63dbc8f18bdf73ef8fff31e3d37617"
+    },
+    {
+      "id": "plugin.video.homefx",
+      "version": "0.9.0",
+      "path": "archives/plugin.video.homefx-0.9.0.zip",
+      "sha256": "273195a9f20d546e9299dc4a1c40a00e62ab736aa721a8cd70b6dc10e9819317"
+    },
+    {
+      "id": "repository.homefx",
+      "version": "0.2.0",
+      "path": "archives/repository.homefx-0.2.0.zip",
+      "sha256": "3b61f6e8771c1c3fa77cff09a3d4e98c2871c7181f0fe9193b2deba60abeaef9"
+    }
+  ]
+}

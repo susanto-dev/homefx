@@ -5,6 +5,7 @@ import socket
 import ssl
 import sys
 import unittest
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "addons/plugin.video.homefx"))
@@ -79,6 +80,68 @@ HEADERS = {"Authorization": "Bearer synthetic-access", "trakt-api-key": "synthet
 
 
 class TransportTests(unittest.TestCase):
+    def test_shared_limits_observe_429_and_block_without_socket(self):
+        from resources.lib.request_limits import RequestLimits
+        now = [1000]
+        with tempfile.TemporaryDirectory() as profile:
+            factory = Connections([wire(status=429, headers=[("Retry-After", "7"),
+                                   ("Content-Length", "0")]), wire()])
+            limiter = RequestLimits(profile, "trakt", clock=lambda: now[0])
+            first = Transport(connection_factory=factory, rate_limits=limiter)
+            self.assertEqual(first.api_request("GET", "/users/settings", HEADERS).status, 429)
+            other = Transport(connection_factory=factory,
+                rate_limits=RequestLimits(profile, "trakt", clock=lambda: now[0]))
+            blocked = other.api_request("GET", "/users/settings", HEADERS)
+            self.assertEqual((blocked.status, blocked.headers), (429, {"retry-after": "7"}))
+            self.assertEqual(len(factory.calls), 1)
+            self.assertTrue(factory.sockets[0].closed)
+            now[0] += 7
+            self.assertEqual(other.api_request("GET", "/users/settings", HEADERS).status, 200)
+            self.assertEqual(len(factory.calls), 2)
+
+    def test_limit_failures_are_sanitized_and_configuration_is_optional(self):
+        class Broken:
+            def reserve(self):
+                raise RuntimeError("private path and account")
+            def observe(self, status, headers):
+                raise RuntimeError("private server data")
+        factory = Connections([wire()])
+        transport = Transport(connection_factory=factory, rate_limits=Broken())
+        with self.assertRaisesRegex(TransportError, "^transport_failed$"):
+            transport.api_request("GET", "/users/settings", HEADERS)
+        self.assertEqual(factory.calls, [])
+        broken = Broken()
+        broken.reserve = lambda: 0
+        with self.assertRaisesRegex(TransportError, "^transport_failed$"):
+            Transport(connection_factory=factory, rate_limits=broken).api_request("GET", "/users/settings", HEADERS)
+        self.assertTrue(factory.sockets[0].closed)
+        with self.assertRaisesRegex(TransportError, "invalid_configuration"):
+            Transport(rate_limits=object())
+
+
+    def test_encoded_metadata_search_and_related_stay_on_fixed_api_host(self):
+        from urllib.parse import parse_qs
+        factory = Connections([wire(b'[]'), wire(b'[]')])
+        transport = Transport(connection_factory=factory)
+        client = Client(transport.api_request, "synthetic-client", "synthetic-access")
+        self.assertEqual(client.search_titles("Rain & 雨: (Part 2)"), [])
+        self.assertEqual(client.related_movies(42), [])
+        request = b"".join(factory.sockets[0].sent).split(b"\r\n", 1)[0].decode()
+        query = parse_qs(request.split("?", 1)[1].split(" ", 1)[0])
+        self.assertEqual(query["fields"], ["title"])
+        self.assertIn("雨", query["query"][0])
+        self.assertIn(b"GET /movies/42/related?page=1&limit=100 HTTP/1.1",
+                      b"".join(factory.sockets[1].sent))
+        self.assertEqual([host for host, _ in factory.calls], ["api.trakt.tv"] * 2)
+        for path in ("/search/movie?query=%FF&fields=title&page=1&limit=100",
+                     "/search/movie?query=%0A&fields=title&page=1&limit=100",
+                     "/search/movie?query=ok&fields=title&page=1&limit=100&personalized=true",
+                     "/movies/42/related?page=1&limit=100&query=private",
+                     "/users/settings?query=Rain%20"):
+            with self.assertRaises(TransportError):
+                transport.api_request("GET", path, HEADERS)
+        self.assertEqual(len(factory.calls), 2)
+
     def test_complete_movie_snapshot_endpoint_has_no_pagination_query(self):
         factory = Connections([wire(b'[]')])
         transport = Transport(connection_factory=factory)

@@ -63,7 +63,36 @@ class RepositoryTests(unittest.TestCase):
             self.assertEqual(repo.findtext("hashes"), "sha256")
             self.assertEqual(repo.find("checksum").get("verify"), "sha256")
             self.assertTrue((output / "plugin.video.homefx/resources/art/icon.png").is_file())
-            self.assertIn("NOT AN ACTIVE UPDATE CHANNEL", (output / "CANDIDATE.txt").read_text())
+            self.assertIn("LOCAL REVIEW ARTIFACT", (output / "CANDIDATE.txt").read_text())
+
+    def test_preview_is_explicit_reproducible_and_channel_switch_preserves_existing_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = r.build(root / "preview", channel="preview")
+            second = r.build(root / "again", channel="preview")
+            self.assertEqual(r._tree_bytes(first), r._tree_bytes(second))
+            self.assertEqual((first / "CHANNEL.txt").read_text(), r.PREVIEW_NOTICE)
+            self.assertFalse((first / "CANDIDATE.txt").exists())
+            before = r._tree_bytes(first)
+            with self.assertRaisesRegex(ValueError, "fresh output"):
+                r.build(first)  # Default candidate may not relabel a preview tree.
+            self.assertEqual(before, r._tree_bytes(first))
+            for value in (None, [], True, "live", "PREVIEW"):
+                with self.subTest(channel=value), self.assertRaisesRegex(ValueError, "channel"):
+                    r.build(root / "invalid", channel=value)
+                self.assertFalse((root / "invalid").exists())
+
+    def test_preview_retains_old_bytes_and_advertises_current_builds(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            old = self.older_video(root)
+            inventory = self.inventory(root, [(old, "plugin.video.homefx", "0.2.0")])
+            output = r.build(root / "preview", retain_manifest=inventory, channel="preview")
+            self.assertEqual((output / "plugin.video.homefx" / old.name).read_bytes(), old.read_bytes())
+            index = r.package.parse_manifest((output / "addons.xml").read_bytes())
+            self.assertEqual(index.find("./addon[@id='plugin.video.homefx']").get("version"),
+                             r.package.validate())
+            self.assertEqual(len(index), 2)
 
     def test_reproducible_idempotent_and_private_files_excluded(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -94,7 +123,7 @@ class RepositoryTests(unittest.TestCase):
 
     def test_repository_manifest_contract_mutations_are_rejected(self):
         mutations = [("https://", "http://"), ('minversion="21.0.0"', 'minversion="20.0.0"'),
-                     ("repository.homefx", "../escape"), ('version="0.1.0"', 'version="bad"'),
+                     ("repository.homefx", "../escape"), ('version="0.2.0"', 'version="bad"'),
                      ("<hashes>sha256</hashes>", "<hashes>false</hashes>"),
                      ("addons.xml.sha256", "different.xml.sha256")]
         for old, new in mutations:
@@ -126,28 +155,28 @@ class RepositoryTests(unittest.TestCase):
     def test_corrupt_archive_and_identity_mismatch_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            path = root / "repository.homefx-0.1.0.zip"
+            path = root / "repository.homefx-0.2.0.zip"
             path.write_bytes(b"not a ZIP")
             with self.assertRaisesRegex(ValueError, "Invalid ZIP"):
-                r.inspect_package(path, "repository.homefx", "0.1.0", r.REPO_FILES)
+                r.inspect_package(path, "repository.homefx", "0.2.0", r.REPO_FILES)
             with ZipFile(path, "w") as archive:
                 archive.writestr("repository.homefx/LICENSE", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("repository.homefx/addon.xml",
-                                 (r.REPOSITORY / "addon.xml").read_bytes().replace(b'"0.1.0"', b'"0.2.0"'))
+                                 (r.REPOSITORY / "addon.xml").read_bytes().replace(b'"0.2.0"', b'"0.3.0"'))
             with self.assertRaisesRegex(ValueError, "version mismatch"):
-                r.inspect_package(path, "repository.homefx", "0.1.0", r.REPO_FILES)
+                r.inspect_package(path, "repository.homefx", "0.2.0", r.REPO_FILES)
 
     def test_unexpected_duplicate_or_symlink_zip_entries_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            path = root / "repository.homefx-0.1.0.zip"
+            path = root / "repository.homefx-0.2.0.zip"
             for extra in ("../outside", "repository.homefx/private.json", "repository.homefx/addon.xml"):
                 with self.subTest(extra=extra), ZipFile(path, "w") as archive:
                     archive.writestr("repository.homefx/LICENSE", (ROOT / "LICENSE").read_bytes())
                     archive.writestr("repository.homefx/addon.xml", (r.REPOSITORY / "addon.xml").read_bytes())
                     archive.writestr(extra, b"synthetic")
                 with self.assertRaisesRegex(ValueError, "allowlist"):
-                    r.inspect_package(path, "repository.homefx", "0.1.0", r.REPO_FILES)
+                    r.inspect_package(path, "repository.homefx", "0.2.0", r.REPO_FILES)
             with ZipFile(path, "w") as archive:
                 archive.writestr("repository.homefx/LICENSE", (ROOT / "LICENSE").read_bytes())
                 entry = ZipInfo("repository.homefx/addon.xml")
@@ -155,13 +184,13 @@ class RepositoryTests(unittest.TestCase):
                 entry.external_attr = (stat.S_IFLNK | 0o777) << 16
                 archive.writestr(entry, b"outside")
             with self.assertRaisesRegex(ValueError, "Unsafe ZIP"):
-                r.inspect_package(path, "repository.homefx", "0.1.0", r.REPO_FILES)
+                r.inspect_package(path, "repository.homefx", "0.2.0", r.REPO_FILES)
 
     def test_duplicate_addon_ids_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = r.build(Path(temporary) / "candidate")
             path = next((output / "repository.homefx").glob("*.zip"))
-            item = (path, "repository.homefx", "0.1.0", r.REPO_FILES)
+            item = (path, "repository.homefx", "0.2.0", r.REPO_FILES)
             with self.assertRaisesRegex(ValueError, "Duplicate add-on ID"):
                 r._write_index([item, item], output)
 
@@ -174,11 +203,11 @@ class RepositoryTests(unittest.TestCase):
             output.symlink_to(target, target_is_directory=True)
             with self.assertRaisesRegex(ValueError, "Unsafe output"):
                 r.build(output)
-            path = root / "repository.homefx-0.1.0.zip"
+            path = root / "repository.homefx-0.2.0.zip"
             with path.open("wb") as stream:
                 stream.truncate(r.MAX_PACKAGE + 1)
             with self.assertRaisesRegex(ValueError, "oversized"):
-                r.inspect_package(path, "repository.homefx", "0.1.0", r.REPO_FILES)
+                r.inspect_package(path, "repository.homefx", "0.2.0", r.REPO_FILES)
 
     def test_retained_versions_are_reproducible_without_changing_advertised_version(self):
         with tempfile.TemporaryDirectory() as temporary:

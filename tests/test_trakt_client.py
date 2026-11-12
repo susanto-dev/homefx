@@ -33,6 +33,58 @@ def item(ident, name="Example list"):
 
 
 class ClientTests(unittest.TestCase):
+    def test_title_search_literal_encoding_and_basic_projection(self):
+        from urllib.parse import urlsplit, parse_qs
+        from resources.lib.trakt_client import metadata_rows
+        body = [{"type": "show", "score": 7, "show": {
+            "ids": {"trakt": 9}, "title": "Synthetic", "images": {"poster": "unused"}}}]
+        request = Transport(response(body))
+        result = Client(request, "id", "token").search_titles(" café + sequel ", "show")
+        self.assertEqual(result, body)
+        path = urlsplit(request.calls[0][1])
+        self.assertEqual(path.path, "/search/show")
+        self.assertEqual(parse_qs(path.query), {"query": ["café \\+ sequel"],
+            "fields": ["title"], "page": ["1"], "limit": ["100"]})
+        row = metadata_rows(result, "show", wrapped=True)[0]
+        self.assertEqual(row, {"kind": "show", "trakt_id": 9, "title": "Synthetic",
+            "year": None, "watched": None, "release_status": "unknown", "playable": False})
+
+    def test_metadata_inputs_rejected_without_transport(self):
+        request = Transport()
+        client = Client(request, "id", "token")
+        for query in (None, [], "", "   ", "x" * 129, "a\n", "a\x00", "a\x7f", "a\u0085", "a\ud800"):
+            with self.subTest(query=repr(query)), self.assertRaises(ApiError):
+                client.search_titles(query)
+        for kind in ([], None, "episode", "movie,show"):
+            with self.assertRaises(ApiError):
+                client.search_titles("title", kind)
+        for ident in (True, 0, -1, "1", [], 2 ** 63):
+            with self.assertRaises(ApiError):
+                client.related_movies(ident)
+        self.assertEqual(request.calls, [])
+
+    def test_related_order_and_pagination_fail_closed(self):
+        first = {"ids": {"trakt": 20}, "title": "Z", "year": None}
+        second = {"ids": {"trakt": 10}, "title": "A", "year": 2025}
+        request = Transport(response([first], pages=2, page=1), response([second], pages=2, page=2))
+        self.assertEqual(Client(request, "id", "token", page_size=1).related_movies(12), [first, second])
+        self.assertEqual(request.calls[0][1], "/movies/12/related?page=1&limit=1")
+        for responses in ((response([first]),), (response([first], pages=2, page=1), Response(500)),
+                          (response([first], pages=2, page=1), response([first], pages=2, page=2))):
+            with self.assertRaises(ApiError):
+                Client(Transport(*responses), "id", "token", page_size=1).related_movies(12)
+        with self.assertRaisesRegex(ApiError, "result_limit"):
+            Client(Transport(response([first], pages=2, page=1)), "id", "token", page_size=1, max_pages=1).related_movies(12)
+
+    def test_metadata_rejects_unusable_and_mistyped_rows(self):
+        valid = {"ids": {"trakt": 1}, "title": "Synthetic"}
+        for media in (None, {}, dict(valid, year=True), dict(valid, title=""),
+                      dict(valid, year=10000), dict(valid, ids={"trakt": 0})):
+            with self.assertRaises(ApiError):
+                Client(Transport(response([{"type": "movie", "movie": media}])), "id", "token").search_titles("x")
+        with self.assertRaises(ApiError):
+            Client(Transport(response([{"type": "show", "show": valid}])), "id", "token").search_titles("x")
+
     def test_watched_movies_complete_snapshot_has_no_pagination_request(self):
         request = Transport(response([{"plays": 2, "movie": {"ids": {"trakt": 10}}},
                                       {"plays": 1, "movie": {"ids": {"trakt": 20}}}]))

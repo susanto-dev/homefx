@@ -8,7 +8,7 @@ import time
 from threading import Lock
 
 from .trakt_auth import AuthError, DeviceLogin, _number, _text, refresh_tokens
-from .trakt_client import ApiError, Client
+from .trakt_client import search_arguments, metadata_id, ApiError, Client
 from .trakt_actions import ActionResult, MutationClient, prepare
 
 
@@ -20,7 +20,7 @@ class Session:
     must still cancel outstanding network I/O through their transport callback.
     """
     READS = frozenset(("lists", "list_items", "paused", "show_progress",
-                       "season_episodes", "settings", "watched_movies"))
+                       "season_episodes", "settings", "watched_movies", "search_titles", "related_movies"))
 
     def __init__(self, store, oauth_request, api_request, client_id, redirect_uri,
                  clock=time.time, monotonic=time.monotonic, refresh_margin=60,
@@ -191,6 +191,10 @@ class Session:
     def read(self, operation, *args):
         if not isinstance(operation, str) or operation not in self.READS:
             raise ApiError("unsupported_operation")
+        if operation == "search_titles":
+            search_arguments(*args)
+        elif operation == "related_movies":
+            metadata_id(*args)
         snapshot = self._ready()
         generation = snapshot.generation
 

@@ -75,6 +75,47 @@ class LibraryTests(unittest.TestCase):
         self.cache = MemoryCache(clock=lambda: self.now[0], ttl=5)
         self.library = Library(self.session, self.cache)
 
+    def test_metadata_order_unknown_state_and_cache_copy(self):
+        media = [{"ids": {"trakt": 20}, "title": "Z"}, {"ids": {"trakt": 10}, "title": "A", "year": 2030}]
+        self.reply = lambda path, headers: Response(200, body=(
+            [{"type": "movie", "movie": row} for row in media] if path.startswith("/search/") else media))
+        rows = self.library.search_titles("Synthetic")
+        self.assertEqual([row["trakt_id"] for row in rows], [20, 10])
+        self.assertTrue(all(row["watched"] is None and not row["playable"] for row in rows))
+        self.assertTrue(all(row["release_status"] == "unknown" for row in rows))
+        rows[0]["title"] = "Edited"
+        self.assertEqual(self.library.search_titles("Synthetic")[0]["title"], "Z")
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.library.related_movies(1)[0]["trakt_id"], 20)
+        self.assertEqual(len(self.calls), 2)
+        self.assertFalse(any("watched" in path or "playback" in path for path in self.calls))
+
+    def test_metadata_account_and_revision_changes_discard_results(self):
+        def replace(path, headers):
+            self.store.install(TokenSet("synthetic-new", "synthetic-refresh", 10000))
+            return Response(200, body=[])
+        self.reply = replace
+        with self.assertRaises(AuthError):
+            self.library.related_movies(1)
+        from unittest.mock import patch
+        self.reply = lambda path, headers: Response(200, body=[])
+        revision = [0]
+        with patch.object(self.library, "_data_revision", side_effect=lambda: revision[0]):
+            def normalize(*args, **kwargs):
+                revision[0] += 1
+                return []
+            with patch("resources.lib.trakt_library.metadata_rows", side_effect=normalize):
+                with self.assertRaisesRegex(ApiError, "data_changed"):
+                    self.library.search_titles("Synthetic")
+        self.assertIsNone(self.library._generation)
+
+    def test_invalid_metadata_query_does_not_activate_account(self):
+        with self.assertRaises(ApiError):
+            self.library.search_titles("\n")
+        with self.assertRaises(ApiError):
+            self.library.related_movies(0)
+        self.assertEqual(self.calls, [])
+
     def _view_reply(self, path, headers):
         if path.startswith("/users/me/lists?"):
             return Response(200, body=[{"ids": {"trakt": 1}, "name": "Synthetic list"}])

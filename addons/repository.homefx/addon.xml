@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="repository.homefx" name="HomeFX Repository Candidate" version="0.1.0" provider-name="susanto-dev">
+<addon id="repository.homefx" name="HomeFX Preview Repository" version="0.2.0" provider-name="susanto-dev">
   <extension point="xbmc.addon.repository">
     <dir minversion="21.0.0">
       <info>https://susanto-dev.github.io/homefx/repository/addons.xml</info>
@@ -9,8 +9,8 @@
     </dir>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">Local candidate for HomeFX installation and updates</summary>
-    <description lang="en_GB">Test artifact only. The repository endpoint is reserved and is not deployed. Installation and upgrade behavior require device validation before activation.</description>
+    <summary lang="en_GB">Experimental HomeFX installation and updates for Kodi 21</summary>
+    <description lang="en_GB">Experimental repository for the synthetic HomeFX preview. No separate skin, real account connection or playback is included. Installation and upgrade behavior on Kodi 21 requires device validation.</description>
     <platform>all</platform><license>MIT</license>
     <source>https://github.com/susanto-dev/homefx</source>
   </extension>

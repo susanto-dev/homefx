@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.8.0
+## Current preview: 0.9.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
@@ -19,18 +19,19 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.8.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+Version 0.9.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
 account/session coordination, a cancellable account-flow controller, saved account-list
 preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is
 information only. Playback and Real-Debrid setup explains the remaining source/account
 gates. Inactive Real-Debrid and playback modules use injected callbacks in tests; no
-provider transport, credentials or player is connected to the preview. The 0.8 foundation
+provider transport, credentials or player is connected to the preview. The provider foundation
 adds a separate private provider store, bounded HTTPS/session coordination, and complete
 movie watched-state joins, exercised with fabricated responses. Device readiness displays bounded local runtime capabilities
-without reading account profiles or making network requests. A local Kodi repository generator produces review artifacts; it
-supports checksum-pinned retention of older reviewed packages but does not activate
-a public installation/update channel. Existing profiles keep their selected lists;
+without reading account profiles or making network requests. The 0.9 preview adds inactive title-search and similar-movie contracts.
+An experimental Kodi repository supplies installation and updates after the reviewed
+Pages deployment; retained packages are checksum-pinned and immutable. HTTP integrity
+and device acceptance are separate checks. Existing profiles keep their selected lists;
 open My movie list from a movie context menu or enable it in list selection.
 
 Original geometric placeholder artwork is included; no third-party skin or artwork
@@ -39,15 +40,18 @@ is bundled. The current skin stays installed separately.
 ## Build and try
 
 ```sh
-python3 -m pip install -r tools/build-requirements.txt
+python3 -m pip install --require-hashes -r tools/build-requirements.txt
 python3 -m unittest discover -s tests -v
 python3 tools/package.py
 ```
 
 The ZIP and SHA-256 sidecar appear in `dist/`.
-The public preview download page is https://susanto-dev.github.io/homefx/. Install the ZIP manually through
-Kodi's add-on browser. See [TV testing](docs/testing-on-tv.md) for the safe preview
-procedure and widget setup. No hosted repository or automatic update channel exists yet.
+The experimental preview page is https://susanto-dev.github.io/homefx/. After the
+reviewed deployment, add that URL in Kodi File manager, install
+`repository.homefx-0.2.0.zip`, then choose **Install from repository → HomeFX Preview
+Repository → Video add-ons → HomeFX Preview**. A manual video ZIP remains available.
+See [TV testing](docs/testing-on-tv.md) for installation and widget checks.
+Repository installation and upgrades on the TV are not yet verified.
 
 ## Development
 
@@ -58,7 +62,7 @@ procedure and widget setup. No hosted repository or automatic update channel exi
 - [Real-Debrid and playback plan](docs/playback-plan.md)
 - [Architecture](docs/architecture.md), [decisions](docs/decisions.md), [backlog](docs/backlog.md)
 - [Security reporting](SECURITY.md) and [weekly scanning / manual triage](docs/security.md)
-- [Packaging and future releases](docs/releases.md)
+- [Packaging and preview releases](docs/releases.md)
 
 Original code currently carries the existing MIT licence. The owner's final licence
 preference remains pending. No third-party code reuse is authorized by that licence.

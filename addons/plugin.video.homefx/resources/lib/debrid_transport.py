@@ -146,17 +146,22 @@ class Transport:
 
     connection_factory is trusted test code, never configuration from a user or
     service response. DNS duration is OS-bound; socket reads share an elapsed
-    deadline. The caller must coordinate cross-invocation service rate limits.
+    deadline. rate_limits optionally coordinates shared local profile limits; no
+    store is created by default. The caller remains responsible for wider quotas.
     """
     def __init__(self, timeout=10, total_timeout=30, max_bytes=2 * 1024 * 1024,
                  cancelled=lambda: False, clock=time.monotonic,
-                 connection_factory=http.client.HTTPSConnection):
+                 connection_factory=http.client.HTTPSConnection, rate_limits=None):
         for value in (timeout, total_timeout):
             if type(value) not in (int, float) or not 0 < value <= 60:
                 raise TransportError("invalid_configuration")
         if (type(max_bytes) is not int or not 1024 <= max_bytes <= 8 * 1024 * 1024
                 or not all(callable(x) for x in (cancelled, clock, connection_factory))):
             raise TransportError("invalid_configuration")
+        if rate_limits is not None and not all(
+                callable(getattr(rate_limits, name, None)) for name in ("reserve", "observe")):
+            raise TransportError("invalid_configuration")
+        self._rate_limits = rate_limits
         self._timeout, self._total, self._max_bytes = timeout, total_timeout, max_bytes
         self._cancelled, self._clock, self._factory = cancelled, clock, connection_factory
 
@@ -248,6 +253,13 @@ class Transport:
         connection = response = None
         try:
             deadline = _Deadline(self._timeout, self._total, self._clock, self._cancelled)
+            deadline.remaining()
+            if self._rate_limits is not None:
+                wait = self._rate_limits.reserve()
+                if type(wait) is not int or not 0 <= wait <= 3600:
+                    raise TransportError("transport_failed")
+                if wait:
+                    return Response(429, {"retry-after": str(wait)}, None)
             context = ssl.create_default_context()
             connection = self._factory("api.real-debrid.com", port=443,
                                        timeout=deadline.remaining(), context=context)
@@ -289,6 +301,8 @@ class Transport:
                         transfer = value.lower()
                     else:
                         safe[key] = value
+            if self._rate_limits is not None:
+                self._rate_limits.observe(response.status, safe)
             if 300 <= response.status < 400:
                 raise TransportError("redirect_refused")
             if transfer not in (None, "chunked") or (transfer is not None and length is not None):

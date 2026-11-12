@@ -41,17 +41,32 @@ def _snapshot(root):
 def _build(root):
     site = root / "site"
     candidate = root / "repository"
-    build_site.build_site(site, package_output=root / "package")
-    repository.build(candidate)
+    inventory = package.ROOT / "releases/inventory.json"
+    retained = inventory if inventory.exists() or inventory.is_symlink() else None
+    build_site.build_site(site, package_output=root / "package", retain_manifest=retained)
+    repository.build(candidate, retain_manifest=retained)
     verified = verify_repository.verify(candidate)
+    public_verified = verify_repository.verify(site / "repository", channel="preview")
+    if verified != public_verified:
+        raise ReproducibilityError("inconsistent repository output")
     site_files, site_dirs = _snapshot(site)
-    archive = "plugin.video.homefx-" + package.validate() + ".zip"
-    if site_dirs or set(site_files) != {archive, archive + ".sha256", "LICENSE.txt", "index.html"}:
+    public_files, public_dirs = _snapshot(site / "repository")
+    archive = "plugin.video.homefx-" + verified["current"]["plugin.video.homefx"] + ".zip"
+    bootstrap = "repository.homefx-" + verified["current"]["repository.homefx"] + ".zip"
+    expected_files = {"repository/" + name for name in public_files}
+    expected_files.update({archive, archive + ".sha256", bootstrap, bootstrap + ".sha256",
+                           "LICENSE.txt", "index.html"})
+    expected_dirs = {"repository"} | {"repository/" + name for name in public_dirs}
+    if set(site_files) != expected_files or site_dirs != expected_dirs:
         raise ReproducibilityError("invalid preview output")
-    package_path = candidate / "plugin.video.homefx" / archive
-    if (site_files[archive] != package_path.read_bytes()
-            or site_files[archive + ".sha256"] != package_path.with_suffix(".zip.sha256").read_bytes()
-            or site_files["LICENSE.txt"] != (package.ROOT / "LICENSE").read_bytes()
+    for ident, name in (("plugin.video.homefx", archive), ("repository.homefx", bootstrap)):
+        package_path = candidate / ident / name
+        public_path = site / "repository" / ident / name
+        for suffix in ("", ".sha256"):
+            if (site_files[name + suffix] != Path(str(package_path) + suffix).read_bytes()
+                    or site_files[name + suffix] != Path(str(public_path) + suffix).read_bytes()):
+                raise ReproducibilityError("inconsistent preview output")
+    if (site_files["LICENSE.txt"] != (package.ROOT / "LICENSE").read_bytes()
             or not site_files["index.html"]):
         raise ReproducibilityError("inconsistent preview output")
     repository_files, repository_dirs = _snapshot(candidate)

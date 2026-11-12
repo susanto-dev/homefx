@@ -76,7 +76,9 @@ tool inventory. It adds no paid service or Kodi runtime dependency.
 No paid scanner subscription is introduced. Bandit and pip-audit are Apache-2.0
 open-source tools used only in development. Public standard-runner compute is free;
 account artifact-storage limits still apply. Tool upgrades and licence reviews are
-manual. The tool inventory pins versions; package hashes are not yet locked.
+manual. The development inventories pin versions and reviewed package hashes. Installs use
+`--require-hashes --only-binary=:all:`. Ruff adds fatal Python lint checks; see
+[tooling licences and checker limitations](tooling-licenses.md).
 
 
 ## External Action pins and update discovery
@@ -128,10 +130,12 @@ external account changes are noticed on the next access. No background worker or
 private persistent metadata cache is introduced. Live Kodi account actions remain
 disabled, including with manually installed profile files.
 
-The generated repository candidate is a CI review artifact only. SHA-256 checks
-verify index/package bytes but are not signatures or a substitute for trusted HTTPS
-publication. Candidate paths are not copied into the deployed preview site. Activation
-requires separate retained-version, installation, upgrade and rollback checks.
+The candidate channel remains a CI review artifact. The separate experimental preview
+channel is included in the Pages deployment on merge. SHA-256 checks verify index/package
+bytes but are not signatures or a substitute for trusted HTTPS publication. Source-controlled
+release inventories preserve retained versions; checks reject removal, replacement and
+current packages that differ from the reviewed archives. Postdeployment HTTP verification
+compares the exact uploaded artifact. Installation, upgrades and rollback still need TV tests.
 
 ## Private selections and explicit action contracts
 
@@ -183,7 +187,7 @@ they upload only candidate/report artifacts and have no public-comment operation
 
 The inactive Real-Debrid open-source grant receives user-bound client credentials
 after consent. These secrets are not bundled public application credentials. The Kodi preview does not construct provider storage or enable account access. The
-inactive 0.8 stack includes a separate private store, durable refresh claims and
+inactive provider stack includes a separate private store, durable refresh claims and
 bounded transport; their Android behavior and live service recovery remain gates.
 
 Resolved URLs are sensitive. Error messages and representations omit response bodies,
@@ -198,4 +202,20 @@ other code running as Kodi or from copied backups. Conservative interrupted-refr
 recovery clears active material and requires reauthorization. Session errors and
 representations omit account secrets and resolved links. The API transport never
 follows redirects or opens returned media URLs; source/player destination validation
-and shared service-rate limits remain outside this batch.
+remains a live-integration gate.
+
+
+## Shared request budgets
+
+The optional inactive request limiter stores only provider names, attempt timestamps
+and cooldowns in a separate private SQLite file. It stores no account IDs, credentials,
+queries or history. Real-Debrid reservations cap attempts at 250 per rolling 60 seconds
+within one local profile; Trakt shares server-provided 429 cooldowns without guessing
+a numeric quota. Both transports can use the limiter, but the preview creates neither
+accounts nor limiter storage. Independent devices/profiles are not coordinated.
+
+Atomic reservations count attempts even if I/O later fails. Local blocks do not issue
+requests or extend cooldowns; no sleeps, queues or automatic retries are introduced.
+Retry-After values are bounded; invalid clocks, storage corruption and unsafe paths
+fail closed. This unencrypted state is not a defence against code running as Kodi or
+restored profile backups. Android storage and clock behavior require device validation.

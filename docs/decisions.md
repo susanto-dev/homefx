@@ -153,3 +153,34 @@ Reconcile every product, release and quality backlog item in backlog.md. Disting
 implemented code, fabricated service evidence, unresolved choices and pending TV checks.
 Existing source/provider, licence and release choices stay open; no paid service, new
 dependency or third-party source is introduced by this batch.
+
+## Experimental repository-first channel and quality checks (0.9.0 / 0.2.0)
+
+The owner authorized continuing the remaining safe batches in one larger PR and
+specifically requested repository-first Kodi installation. This supersedes earlier
+manual-download-only and repository-publication holds. Publish the experimental
+preview repository through the existing Pages workflow after the maintainer merges
+protected main. No direct main push, automatic merge or PR discussion comment is needed.
+
+Ship video 0.9.0 and repository 0.2.0. The website offers a root bootstrap ZIP, then
+Install from repository → HomeFX Preview Repository → Video add-ons → HomeFX Preview.
+Retain the manual video download. Keep the existing skin installed separately; no
+skin code/assets are redistributed. Account/provider/title-search contracts remain
+inactive and use fabricated tests; no live credentials or playable sources are added.
+
+Use a reviewed inventory to preserve every recorded package version and immutable
+path/hash. Require current packages to match fresh builds and compare history against
+the reviewed base revision. Current versions alone enter the index. Limits fail
+closed; increasing bounds needs review rather than automatic deletion. Retention
+supports investigation and explicit downgrade, not a guarantee of profile rollback.
+
+Build a complete verified preview tree, check isolated repeatability, then verify the
+exact deployed artifact against public HTTPS bytes. Deployment and HTTP checks do not
+replace pending repository install/upgrade or other device acceptance. Preserve live
+account, playback, subtitle, resume and scrobbling gates.
+
+Add development-only Ruff correctness checks and hash-locked tooling installs, while
+keeping full-SHA external Action pins and weekly manual update triage. The official
+Kodi add-on checker is still a documented coverage gap. Existing MIT notices and the
+pending final owner licence preference remain unchanged; no paid service or runtime
+third-party Python dependency is added.

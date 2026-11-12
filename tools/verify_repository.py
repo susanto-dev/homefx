@@ -1,4 +1,4 @@
-"""Read-only integrity and structure checks for an unpublished repository candidate."""
+"""Read-only integrity and structure checks for an explicit repository output channel."""
 import argparse
 import hashlib
 import io
@@ -133,10 +133,12 @@ def _semantic(element):
             (element.tail or "").strip(), tuple(_semantic(child) for child in element))
 
 
-def _verify(root):
+def _verify(root, channel):
     files, directories = _snapshot(root)
-    _require(ROOT_FILES <= set(files), "candidate topology")
-    _require(files["CANDIDATE.txt"] == repository.CANDIDATE_NOTICE.encode("utf-8"), "inactive notice")
+    notice_name, notice = repository.channel_notice(channel)
+    root_files = (ROOT_FILES - {"CANDIDATE.txt"}) | {notice_name}
+    _require(root_files <= set(files), "candidate topology")
+    _require(files[notice_name] == notice.encode("utf-8"), "channel notice")
     index = files["addons.xml"]
     _require(files["addons.xml.sha256"] == (hashlib.sha256(index).hexdigest() + "\n").encode("ascii"), "index checksum")
     manifests = package.parse_manifest(index)
@@ -149,7 +151,7 @@ def _verify(root):
         indexed[ident] = manifest
     records = _inventory(files["release-inventory.json"])
     latest = {ident: max((item["version"] for item in records if item["id"] == ident), key=repository._version) for ident in IDS}
-    expected = set(ROOT_FILES)
+    expected = set(root_files)
     for ident in IDS:
         _require(indexed[ident].get("version") == latest[ident], "index latest version")
     for item in records:
@@ -172,14 +174,14 @@ def _verify(root):
     return {"packages": len(records), "retained": len(records) - 2, "current": latest}
 
 
-def verify(path):
-    """Check a local candidate without changing it; return only validated identities/counts.
+def verify(path, channel="candidate"):
+    """Check local repository output without changing it; return validated identities/counts.
 
     Checksums establish consistency, not authenticity. Run on a quiescent local
     artifact; concurrent modification is not supported.
     """
     try:
-        return _verify(path)
+        return _verify(path, channel)
     except VerificationError:
         raise
     except Exception:
@@ -189,11 +191,12 @@ def verify(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", type=Path)
+    parser.add_argument("--channel", choices=("candidate", "preview"), default="candidate")
     args = parser.parse_args()
     try:
-        result = verify(args.path)
+        result = verify(args.path, channel=args.channel)
     except VerificationError as error:
-        parser.exit(1, "Candidate verification failed: " + str(error) + "\n")
+        parser.exit(1, "Repository verification failed: " + str(error) + "\n")
     print("Checked {packages} packages ({retained} retained).".format(**result))
     for ident, version in sorted(result["current"].items()):
         print(ident + " " + version)
