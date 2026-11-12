@@ -36,3 +36,13 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Validate package and preview site
         run: python tools/build_site.py
+      - name: Build inactive repository candidate
+        run: python tools/repository.py
+      - name: Save repository candidate for manual review
+        if: matrix.python == '3.12'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: repository-candidate
+          path: dist/repository/
+          retention-days: 7
+          if-no-files-found: error

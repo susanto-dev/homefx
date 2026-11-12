@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlencode
 
 BASE = "plugin://plugin.video.homefx/"
 ROUTES = {"home", "list", "show", "continue", "next", "upcoming", "search",
-          "similar", "play", "watched", "select", "reset", "info", "sequence"}
+          "similar", "play", "watched", "select", "reset", "info", "sequence", "setup"}
 
 
 def url(route, **params):

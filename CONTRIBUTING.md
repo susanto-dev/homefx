@@ -15,8 +15,10 @@ not duplicate implementation. Update the authoritative documentation alongside a
 behavior change; record significant choices in [decisions](docs/decisions.md).
 
 Build, merge, push and publish are distinct operations. Work within the authorized
-scope; pushes to main publish the preview through the Pages workflow after checks pass. Product choices belong
-to the maintainer; resolve ordinary engineering choices within the agreed scope.
+scope. Main is protected: submit changes through a PR, never push directly to main
+or bypass protection. Merging main publishes the preview through the Pages workflow
+after checks pass. Product choices belong to the maintainer; resolve ordinary
+engineering choices within the agreed scope.
 
 Never commit account data, tokens, private lists/history, Kodi profiles, or logs.
 Use fabricated fixtures. Verify exact licences and provenance before adding any

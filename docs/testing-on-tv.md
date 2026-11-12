@@ -1,4 +1,4 @@
-# TV acceptance — preview 0.2.0
+# TV acceptance — preview 0.3.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,
@@ -24,7 +24,9 @@ package SHA-256, steps, expected/observed behavior and elapsed load times.
 8. Click an upcoming movie and a released movie: both explain demo limitations.
    Browse the full list from HomeFX. Record whether this skin also permits a clickable
    widget title or needs a separate menu/submenu shortcut; do not assume support.
-9. Restart Kodi and verify demo selections/overrides persist. Reset demo data and
+9. Open Trakt connection setup. Confirm it only shows guidance and neither asks for
+   credentials nor starts a login.
+10. Restart Kodi and verify demo selections/overrides persist. Reset demo data and
    verify the original states return. Check empty search and cancellation behavior.
 
 Playback/subtitle/resume/scrobbling acceptance is DEFERRED, not passed. The displayed

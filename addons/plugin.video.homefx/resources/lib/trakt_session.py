@@ -1,0 +1,158 @@
+"""Inactive account coordinator; construction performs no network or storage I/O.
+
+Callers supply a private token store and request callbacks. This module neither
+constructs a transport nor enables an account screen. A new login disconnects the
+previous local account; server-side revocation remains a separate user action.
+"""
+import time
+
+from .trakt_auth import AuthError, DeviceLogin, _number, _text, refresh_tokens
+from .trakt_client import ApiError, Client
+
+
+class Session:
+    """Coordinate one invocation while checking the shared store generation.
+
+    No request is automatically repeated after an authentication error. Read
+    results from a generation changed during the request are discarded. Callers
+    must still cancel outstanding network I/O through their transport callback.
+    """
+    READS = frozenset(("lists", "list_items", "paused", "show_progress",
+                       "season_episodes", "settings"))
+
+    def __init__(self, store, oauth_request, api_request, client_id, redirect_uri,
+                 clock=time.time, monotonic=time.monotonic, refresh_margin=60):
+        if not _text(client_id, 256) or not _text(redirect_uri, 2048):
+            raise AuthError("invalid_client_identity")
+        if not _number(refresh_margin, 0, 300):
+            raise AuthError("invalid_session_configuration")
+        self._store = store
+        self._oauth = oauth_request
+        self._api = api_request
+        self._client_id = client_id
+        self._redirect_uri = redirect_uri
+        self._clock, self._monotonic = clock, monotonic
+        self._margin = refresh_margin
+        self._login = None
+        self._login_generation = None
+
+    def __repr__(self):
+        return "Session(<private account>)"
+
+    def status(self):
+        """Read local status only; never refresh or expose tokens/device codes."""
+        snapshot = self._store.snapshot()
+        if self._login is not None and snapshot.generation != self._login_generation:
+            self.cancel_login()
+        state = snapshot.state
+        if state == "ready" and snapshot.tokens.expires_at <= self._clock() + self._margin:
+            state = "refresh_required"
+        return {"state": state, "generation": snapshot.generation,
+                "login": self._login.state if self._login is not None else "idle"}
+
+    def begin_login(self):
+        """Start an explicit account replacement and return a redacted prompt."""
+        self.cancel_login()
+        prior = self._store.snapshot()
+        if not self._store.disconnect(expected_generation=prior.generation):
+            raise AuthError("session_changed")
+        expected = prior.generation + 1
+        login = DeviceLogin(self._oauth, self._client_id, self._monotonic)
+        self._login, self._login_generation = login, expected
+        prompt = login.begin()
+        if self._login is not login or self._store.snapshot().generation != expected:
+            login.cancel()
+            return None
+        return prompt
+
+    def poll_login(self):
+        login = self._login
+        if login is None:
+            raise AuthError("login_not_started")
+        expected = self._login_generation
+        if self._store.snapshot().generation != expected:
+            self.cancel_login()
+            return "cancelled"
+        state = login.poll()
+        if self._login is not login or self._store.snapshot().generation != expected:
+            login.cancel()
+            return "cancelled"
+        if state == "authorized":
+            if login.tokens.expires_at <= self._clock() + self._margin:
+                self.cancel_login()
+                raise AuthError("invalid_token_response")
+            if not self._store.install(login.tokens, expected_generation=expected):
+                self.cancel_login()
+                return "cancelled"
+            self._login, self._login_generation = None, None
+        return state
+
+    def cancel_login(self):
+        if self._login is not None:
+            self._login.cancel()
+        self._login, self._login_generation = None, None
+
+    def disconnect(self):
+        self.cancel_login()
+        self._store.disconnect()
+
+    def _current(self, generation):
+        snapshot = self._store.snapshot()
+        if snapshot.generation != generation or snapshot.state != "ready":
+            raise AuthError("session_changed")
+        return snapshot
+
+    def _ready(self):
+        snapshot = self._store.snapshot()
+        if snapshot.state == "refreshing":
+            raise AuthError("refresh_busy")
+        if snapshot.state != "ready":
+            raise AuthError("reauthentication_required")
+        if snapshot.tokens.expires_at <= self._clock() + self._margin:
+            refreshed = refresh_tokens(self._store, self._oauth, self._client_id,
+                                       self._redirect_uri, snapshot.generation)
+            if refreshed is None:
+                current = self._store.snapshot()
+                if current.state == "refreshing":
+                    raise AuthError("refresh_busy")
+                raise AuthError("session_changed")
+            snapshot = self._current(snapshot.generation + 1)
+            if snapshot.tokens.expires_at <= self._clock() + self._margin:
+                self._store.disconnect(expected_generation=snapshot.generation)
+                raise AuthError("reauthentication_required")
+        return snapshot
+
+    def cache_key(self):
+        """Usable account generation; may refresh once, never returns a token."""
+        return self._ready().generation
+
+    def assert_current(self, generation):
+        """Validate a cached/read result immediately before returning it."""
+        snapshot = self._current(generation)
+        if snapshot.tokens.expires_at <= self._clock():
+            raise AuthError("session_changed")
+
+    def read(self, operation, *args):
+        if not isinstance(operation, str) or operation not in self.READS:
+            raise ApiError("unsupported_operation")
+        snapshot = self._ready()
+        generation = snapshot.generation
+
+        def guarded_request(method, path, headers, body=None):
+            self.assert_current(generation)
+            response = self._api(method, path, headers, body)
+            self.assert_current(generation)
+            return response
+
+        client = Client(guarded_request, self._client_id, snapshot.tokens.access_token)
+        try:
+            result = getattr(client, operation)(*args)
+            self.assert_current(generation)
+            return result
+        except ApiError as error:
+            # A late 401 must not disconnect an account installed in the meantime.
+            if error.kind == "reauthenticate":
+                self._store.disconnect(expected_generation=generation)
+            else:
+                self._current(generation)
+            raise

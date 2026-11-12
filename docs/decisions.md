@@ -50,3 +50,21 @@ PR checks validate Python 3.8 and 3.12 plus the package; the actual TV interpret
 and SQLite capability remain unverified. Independent review covers the combined
 commit before the maintainer merges. Merging main publishes the synthetic preview;
 it does not activate a real account or an automatic Kodi update channel.
+
+## 2026-11-12 — Connectivity and repository candidates
+
+Use PRs exclusively for protected main. Parallel implementation covers bounded HTTPS
+transport, session/library orchestration and local update-repository generation, with
+independent review of the integrated head. Public material remains tool-neutral.
+
+Transport uses only the two fixed Trakt hosts and rejects redirects. Network I/O is
+inactive in the Kodi preview; tests inject responses rather than use accounts.
+Account/session coordination rechecks credential generation before serving cached data
+and uses conditional token-store updates so stale login/logout results cannot overwrite
+a newer account. Cached list/progress responses live only in bounded invocation memory.
+
+The repository generator targets a reserved HTTPS path and creates a candidate artifact
+for review, separate from dist/site. It is not deployed by the Pages workflow. Public
+repository activation and retained-version/rollback policy remain future gates. The
+existing manual-video preview advances to 0.3.0 on merge. Original MIT notices remain
+unchanged, with no third-party source/assets or paid service added.

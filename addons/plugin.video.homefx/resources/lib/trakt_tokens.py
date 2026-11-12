@@ -116,20 +116,37 @@ class TokenStore:
             return Snapshot(row[1], row[0], tokens)
         return self._transaction(read)
 
-    def install(self, tokens):
+    def install(self, tokens, expected_generation=None):
+        """Replace tokens, optionally only if a login still owns this generation."""
         if not isinstance(tokens, TokenSet):
             raise AuthError("invalid_token_response")
+        if expected_generation is not None and (type(expected_generation) is not int or
+                                                expected_generation < 0):
+            raise AuthError("invalid_store_configuration")
         def write(conn):
-            conn.execute("UPDATE credential SET generation=generation+1,state='ready',"
-                         "owner=NULL,deadline=NULL,access=?,refresh=?,expires=? WHERE id=1",
-                         (tokens.access_token, tokens.refresh_token, tokens.expires_at))
-        self._transaction(write)
+            query = ("UPDATE credential SET generation=generation+1,state='ready',"
+                     "owner=NULL,deadline=NULL,access=?,refresh=?,expires=? WHERE id=1")
+            parameters = (tokens.access_token, tokens.refresh_token, tokens.expires_at)
+            if expected_generation is not None:
+                query += " AND generation=?"
+                parameters += (expected_generation,)
+            return conn.execute(query, parameters).rowcount == 1
+        return self._transaction(write)
 
-    def disconnect(self):
+    def disconnect(self, expected_generation=None):
+        """Clear local credentials; conditional callers cannot erase a newer login."""
+        if expected_generation is not None and (type(expected_generation) is not int or
+                                                expected_generation < 0):
+            raise AuthError("invalid_store_configuration")
         def clear(conn):
-            conn.execute("UPDATE credential SET generation=generation+1,state='disconnected',"
-                         "owner=NULL,deadline=NULL,access=NULL,refresh=NULL,expires=NULL WHERE id=1")
-        self._transaction(clear)
+            query = ("UPDATE credential SET generation=generation+1,state='disconnected',"
+                     "owner=NULL,deadline=NULL,access=NULL,refresh=NULL,expires=NULL WHERE id=1")
+            parameters = ()
+            if expected_generation is not None:
+                query += " AND generation=?"
+                parameters = (expected_generation,)
+            return conn.execute(query, parameters).rowcount == 1
+        return self._transaction(clear)
 
     def claim_refresh(self, expected_generation):
         def claim(conn):

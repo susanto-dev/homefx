@@ -10,6 +10,7 @@ third-party Python packages. Optional lint tools are not required or claimed as 
 python3 -m pip install -r tools/build-requirements.txt
 python3 -m unittest discover -s tests -v
 python3 tools/package.py
+python3 tools/repository.py
 ```
 
 The package command parses XML, checks the entry point/API dependency/assets/licence,
@@ -20,8 +21,9 @@ full Kodi add-on checker. Add that checker and a pinned linter in a later CI bat
 Pure catalogue/routing logic lives under resources/lib; only default.py imports
 Kodi modules. Tests use the standard-library unittest runner and synthetic fixtures.
 Tests never log into services. This project does not need Docker, a server, or an
-Android application. Trakt foundations use injected request callbacks and mocked responses; an actual
-network transport belongs to a later batch.
+Android application. Trakt transport/session/library tests use injected connections
+and fabricated responses. Local socket-pair tests exercise HTTP parsing without
+contacting online services. The Kodi adapter does not enable that network stack.
 
 Future CI should use reviewed immutable Action pins, minimal read permissions,
 stable check names, and no service secrets on PRs. Release permissions must be
@@ -43,3 +45,16 @@ The compatibility matrix uses Ubuntu 22.04 for Python 3.8 and Ubuntu 24.04 for
 Python 3.12. `ubuntu-latest` resolved to 26.04 during the first run and lacked a
 Python 3.8 distribution, so that job failed before tests; explicit runner versions
 keep the intended interpreter coverage. Hosted image contents still change over time.
+
+The repository generator writes a local candidate under `dist/repository` (or
+`--output PATH`). It accepts a fresh directory or identical prior output, and refuses
+to overwrite differing content. Use a new output directory for a changed candidate;
+inspect before removing old build output. Validation uploads the Python 3.12 candidate
+as a seven-day artifact for manual review. It is separate from `dist/site` and is not
+an operational update channel. Never publish arbitrary CI artifacts as releases
+without inspecting their source/head and completing the publication gates.
+
+Main is protected and accepts PRs only. Do not bypass branch protection or use direct
+main pushes. Keep code/review evidence in ordinary project language; local development
+instructions belong here, contribution policy in CONTRIBUTING.md, and release gates
+in releases.md.

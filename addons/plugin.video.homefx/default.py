@@ -59,6 +59,13 @@ def main():
     try:
         route, params = routes.parse(sys.argv[2] if len(sys.argv) > 2 else "")
         key = params.get("id", "")
+        if route == "setup":
+            message("Trakt connection is not enabled in this preview.\n"
+                    "The lists and watched changes remain local demonstrations.\n"
+                    "Setup instructions: github.com/susanto-dev/homefx — docs/account-setup.md\n"
+                    "Only a public client ID and registered redirect URI will be needed. "
+                    "Never enter or share a client secret or account tokens here.")
+            return
         if route in {"play", "watched", "info", "sequence", "similar", "show"} and key not in items:
             raise ValueError("Demo title not found")
         if route == "select":
@@ -115,6 +122,7 @@ def main():
                 add(label, target)
             add("Search demo titles…", "search")
             add("Select demo widget lists…", "select", False)
+            add("Trakt connection setup…", "setup", False)
             add("Reset demo data…", "reset", False)
         else:
             query = params.get("q", "")
