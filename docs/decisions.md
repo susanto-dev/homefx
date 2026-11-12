@@ -119,3 +119,12 @@ It detects damaged/mismatched artifact contents without mutating them. Checksums
 structural checks are not signatures or independent source approval. The reserved
 repository endpoint remains inactive. No new dependency, paid service, licence change
 or third-party code/assets is introduced.
+
+## Browsing expansion (0.6.0)
+
+Keep the current skin and expose a Widget sources directory plus stable content
+URLs. List filters and season navigation extend the synthetic preview while live
+activation remains gated. A release date is metadata, not evidence of a playable
+source. Movie watched status stays unknown when list/paused responses cannot establish
+it; do not infer unwatched from absence. Release checks compare isolated builds
+without publishing repository artifacts or adding dependencies.

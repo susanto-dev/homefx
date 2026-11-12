@@ -3,11 +3,15 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.5.0
+## Current preview: 0.6.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
 continue-watching, next aired unwatched episodes, and a seven-day upcoming view.
+Widget sources groups the content folders for skin configuration. List context menus
+filter all, unwatched, released unwatched or upcoming titles. Series context menus
+open season folders with watched and aired-unwatched counts. Upcoming saved movies
+have their own folder; release dates do not establish playable availability.
 Movie context menus offer related demo movies, editable title search, and add/remove
 actions for My movie list—including upcoming movies. Episode menus offer all
 episodes or aired unwatched episodes in narrative order. Watch-state
@@ -15,7 +19,7 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.5.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+Version 0.6.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
 account/session coordination, a cancellable account-flow controller, saved account-list
 preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is

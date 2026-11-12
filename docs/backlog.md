@@ -13,25 +13,20 @@ Real recommendations need a reviewed metadata provider and terms. Upcoming movie
 release dates require a defined release type/region; they do not prove playability.
 No batch depends on a separate always-on server or standalone Android application.
 
-## Combined batch: Activation readiness (0.5.0)
+## Combined batch: Browsing and widget sources (0.6.0)
 
-Three parallel sub-batches prepare the next real-device validation step:
+Four parallel slices extend the preview and its mocked service foundation:
 
-1. A visible Device readiness report shows bounded local version/capability fields,
-   without opening account profiles, exporting diagnostics or contacting services.
-2. An injected account-flow controller tests confirmation, device polling intervals,
-   cancellation, bounded waits and disconnect failure semantics. It is not wired to
-   the Kodi connection menu; registration/live/device gates remain unmet.
-3. A standalone read-only repository verifier checks detached candidate topology,
-   index/package/inventory checksums and references before artifact upload. It does
-   not publish, install, execute retained code or certify provenance.
+1. List filters, saved upcoming movies, season folders/counts and unknown-date handling in the new model filters.
+2. A dedicated Widget sources directory, scope-preserving episode menus, quiet empty
+   folders and strict route validation in the Kodi adapter.
+3. Inactive Trakt movie/continue/episode views with guarded joins and explicit unknown
+   movie watched status. List metadata alone cannot support an unwatched-movie claim.
+4. Two isolated package/site/candidate builds compared byte-for-byte, with candidate
+   verification before accepting either output. CI runs this on both Python versions.
 
-Validation and Security scans already ran on PR creation/update/reopening. Their
-explicit event lists now include ready_for_review, so promotion reruns checks.
-These workflows report checks/artifacts only and do not post PR comments.
-
-Next external gates: run the readiness screen and TV checklist; register a Trakt
-application and provide its public client ID/registered redirect URI (never its
-secret); verify actual login/refresh before enabling account routes. Real data views,
-action outcomes and playback still require service/device testing. Repository
-activation remains separate, after retained-version review and install/upgrade tests.
+TV acceptance is still pending. Live account routes require registration and verified
+login/refresh; movie history, complete extended metadata, real recommendations and
+playback remain separate work. Repository hosting remains inactive pending reviewed
+retention plus install/upgrade tests. The next device step is to install this preview,
+check widget sources and filtered season navigation, and record Device readiness.

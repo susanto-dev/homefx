@@ -69,3 +69,9 @@ ZIPs/assets and topology, then require rejection without repairing or changing i
 Valid retained-version candidates must still verify. After marking a draft ready,
 check the newly triggered validation/security runs rather than reusing earlier green
 checks from before promotion.
+
+The 0.6 regression suite covers list/date boundaries, season counts and scope, safe
+empty widget directories, duplicate or malformed route arguments, and fixed UI error
+messages. Mocked Trakt view tests cover unknown watched status and account/revision
+changes during joined reads. Repeatability tests deliberately change output bytes,
+add unexpected files and corrupt candidates to prove the check rejects them.

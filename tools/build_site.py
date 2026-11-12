@@ -5,8 +5,8 @@ from pathlib import Path
 from package import ROOT, build, validate
 
 
-def build_site(output=None):
-    archive = build()
+def build_site(output=None, package_output=None):
+    archive = build(output=package_output)
     version = validate()
     site = Path(output) if output else ROOT / 'dist/site'
     site.mkdir(parents=True, exist_ok=True)
