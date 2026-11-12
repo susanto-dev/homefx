@@ -91,6 +91,9 @@ class Library:
     def __init__(self, session, cache=None):
         self._session = session
         self._cache = cache if cache is not None else MemoryCache()
+        # A caller may reuse a cache across profiles whose generations coincide.
+        # An opaque per-library namespace keeps their private entries distinct.
+        self._cache_namespace = object()
         self._generation = None
         self._selected = ()
 
@@ -113,7 +116,7 @@ class Library:
             if generation != self._generation:
                 self.clear()
                 self._generation = generation
-            key = (operation,) + args
+            key = (self._cache_namespace, generation, operation) + args
             found, value = self._cache.get(key)
             if not found:
                 value = self._session.read(operation, *args)

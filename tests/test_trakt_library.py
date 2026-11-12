@@ -119,6 +119,26 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(self.cache._entries, {})
         self.assertEqual(self.store.snapshot().state, "disconnected")
 
+    def test_shared_cache_never_crosses_library_account_boundaries(self):
+        with tempfile.TemporaryDirectory() as profile:
+            other_store = TokenStore(profile)
+            other_store.install(TokenSet("synthetic-account-b", "synthetic-refresh-b", 10000))
+            self.assertEqual(other_store.snapshot().generation, self.store.snapshot().generation)
+
+            def other_api(method, path, headers, body=None):
+                if path.startswith('/users/me/lists?'):
+                    return Response(200, body=[{'ids': {'trakt': 3}, 'name': 'Account B private'}])
+                return Response(200, body=[])
+
+            other_session = Session(other_store, lambda *args: None, other_api,
+                                    'synthetic-client', 'https://example.invalid/callback',
+                                    clock=lambda: 1000)
+            other = Library(other_session, self.cache)
+            self.assertEqual(self.library.lists()[0].name, 'Account A')
+            self.assertEqual(other.lists()[0].name, 'Account B private')
+            self.assertEqual(self.library.lists()[0].name, 'Account A')
+            self.assertEqual(other.lists()[0].name, 'Account B private')
+
     def test_switch_between_list_lookup_and_item_request_cannot_use_old_ref(self):
         original = self.session.cache_key
         calls = [0]

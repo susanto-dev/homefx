@@ -52,3 +52,5 @@ Cache TTL is 30 seconds by default, bounded to 32 entries/1 MiB serialized data,
 with copy isolation. There is no private persistent metadata cache or background
 observer. External account changes invalidate data when the next read observes them;
 Library.disconnect clears its cache before clearing local credential state.
+Cache keys also include an opaque library-instance identity, so shared cache injection
+cannot mix accounts whose independent profile generation counters happen to match.

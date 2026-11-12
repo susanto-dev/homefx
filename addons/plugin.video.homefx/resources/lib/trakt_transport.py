@@ -205,7 +205,9 @@ class Transport:
         if not any(re.fullmatch(pattern, parsed.path) for pattern in allowed):
             raise TransportError("invalid_request")
         try:
-            query = parse_qsl(parsed.query, keep_blank_values=True, strict_parsing=True, max_num_fields=6)
+            # Python 3.8 strict parsing rejects an empty query; it means no fields.
+            query = (parse_qsl(parsed.query, keep_blank_values=True, strict_parsing=True,
+                               max_num_fields=6) if parsed.query else [])
         except ValueError:
             raise TransportError("invalid_request") from None
         if len(dict(query)) != len(query):

@@ -4,7 +4,7 @@
 |---|---|---|
 | 1 | Mocked widgets, context menus, guidance, tests, local ZIP | Implemented; cloud checks recorded in delivery; TV acceptance pending |
 | 2 | Trakt authentication feasibility | Mocked lifecycle, protected token rotation, transport and session coordination implemented; registration/live login/refresh still pending ([evidence](trakt-authentication.md)) |
-| 3 | Personal lists and watch progress | Read API, normalized views and invocation-memory library cache mocked; live transport, actual list selection, caching, manual watched writes and list additions pending |
+| 3 | Personal lists and watch progress | Read API, normalized views and invocation-memory library cache mocked; live UI integration, durable list selection, persistent caching, manual watched writes and list additions pending |
 | 4 | Umbrella playback experiment | Pending: installed version, movie/episode identity, cancellation, subtitles, resume, one scrobbling owner, next-episode choice |
 | 5 | Repository installation and updates | Local candidate package/index generation implemented; fresh install/upgrade and update-channel publication pending |
 | 6 | Optional native playback / skin changes | Only if a demonstrated need justifies scope and licensing review |
