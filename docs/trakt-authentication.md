@@ -101,7 +101,9 @@ Read API pagination contracts were checked against the same official snapshot:
 and [paused playback](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/sync/index.ts).
 A full page without pagination headers fails conservatively instead of presenting
 an incomplete result as complete. Movie watched IDs must be supplied from a complete
-snapshot; a missing snapshot remains unknown. Live responses still need validation.
+snapshot; a missing snapshot remains unknown. The 0.8 library obtains a bounded
+complete snapshot for movie list joins; see [movie history](movie-history-contract.md).
+Live responses still need validation.
 
 ## Explicit actions and identity
 

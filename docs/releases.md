@@ -49,12 +49,12 @@ steps, without accounts, analytics or external assets. GitHub Pages/standard
 public-repository runners require no paid plan; account storage limits still apply.
 No paid services, custom domain or larger runners are provisioned.
 
-Version 0.7.0 adds inactive Real-Debrid authorization/API contracts, playback
-coordination and an informational playback setup screen. Existing browsing, readiness
+Version 0.8.0 adds inactive Real-Debrid private storage, bounded transport/session
+coordination, complete movie watched-state joins and a reconciled full backlog. Existing browsing, readiness
 and release verification remain available. Demo data and saved widget routes remain compatible; there is no credential migration or automatic account connection.
 The Validation workflow performs tests/package checks on PRs and main pushes without
 publication. On merge, Security scans and the existing managed CodeQL checks also
-run, and Publish preview builds/deploys the 0.7.0 video download only. Runner images and package
+run, and Publish preview builds/deploys the 0.8.0 video download only. Runner images and package
 registries remain external mutable inputs even though Action commits and dependency
 versions are pinned. No automatic update PRs, account writes or new hosting are added.
 

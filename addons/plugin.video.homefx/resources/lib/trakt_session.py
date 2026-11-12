@@ -20,7 +20,7 @@ class Session:
     must still cancel outstanding network I/O through their transport callback.
     """
     READS = frozenset(("lists", "list_items", "paused", "show_progress",
-                       "season_episodes", "settings"))
+                       "season_episodes", "settings", "watched_movies"))
 
     def __init__(self, store, oauth_request, api_request, client_id, redirect_uri,
                  clock=time.time, monotonic=time.monotonic, refresh_margin=60,

@@ -181,6 +181,38 @@ class Client:
         return self._pages("/users/" + _identifier(owner) + "/lists/" +
                            _identifier(list_id) + "/items?extended=full")
 
+    def watched_movies(self):
+        """Complete unpaginated watched IDs, or an error; never a partial set.
+
+        The typed personal watched endpoint has no page/limit contract. Reject
+        pagination metadata rather than interpreting a partial response as all
+        history. Large histories fail the configured item/transport byte bound.
+        """
+        response = self._get("/users/me/watched/movies")
+        if any(str(key).lower().startswith("x-pagination-") for key in response.headers):
+            raise ApiError("invalid_pagination")
+        rows = response.body
+        if not isinstance(rows, list):
+            raise ApiError("invalid_response")
+        if len(rows) > self.max_items:
+            raise ApiError("result_limit")
+        identifiers, seen = [], set()
+        for row in rows:
+            if (not isinstance(row, dict) or type(row.get("plays")) is not int
+                    or not 1 <= row["plays"] <= 2 ** 63 - 1
+                    or row.get("type", "movie") != "movie"):
+                raise ApiError("invalid_progress")
+            movie = row.get("movie")
+            ids = movie.get("ids") if isinstance(movie, dict) else None
+            if not isinstance(ids, dict):
+                raise ApiError("invalid_progress")
+            ident = ids.get("trakt")
+            if type(ident) is not int or not 1 <= ident <= 2 ** 63 - 1 or ident in seen:
+                raise ApiError("invalid_progress")
+            seen.add(ident)
+            identifiers.append(ident)
+        return tuple(identifiers)
+
     def paused(self):
         return self._pages("/sync/playback")
 

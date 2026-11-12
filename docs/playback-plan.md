@@ -1,6 +1,6 @@
 # Real-Debrid and playback
 
-Real-Debrid is part of HomeFX's plan. The 0.7 preview adds inactive contracts and a
+Real-Debrid is part of HomeFX's plan. The 0.8 preview adds inactive provider storage/transport/session foundations and a
 setup information screen; it does not sign in, resolve a real source or start Kodi's
 player. Existing widgets and the installed skin remain the browsing surface.
 
@@ -37,11 +37,13 @@ shared application secrets bundled in the add-on. Registration is still required
 The documentation does not identify the precise not-yet-authorized credentials-poll
 response. The prototype fails closed unless tests inject an explicit pending-response
 classifier. A real registration/device experiment must establish that behavior before
-supplying any production classifier. No credentials are persisted by these modules.
+supplying any production classifier. The authorization module itself stores nothing. The separate 0.8 provider store is
+exercised only by tests; the current Kodi adapter does not create it.
 
 The API documents a 250-request/minute ceiling and 429 responses. Local bounds are
-not a cross-invocation quota manager. Future transport must enforce TLS, fixed API
-hosts, byte/time limits, safe form encoding, cancellation and redacted failures.
+not a cross-invocation quota manager. The inactive transport enforces TLS, a fixed API host, byte/time limits, form
+encoding, cancellation checks and redacted failures. Device verification is pending;
+OS DNS resolution is outside Python socket deadlines.
 Mutating resolution requests are not automatically retried after uncertain outcomes.
 
 ## Security, terms and costs
@@ -55,8 +57,9 @@ from HomeFX's source licence; no subscription, Remote Traffic or paid option is 
 or enabled here. Verify current pricing in the service's own account/checkout UI before
 purchase. No third-party source/assets, new dependency or licence fee was added.
 
-Before activation, store user-bound client secrets and access/refresh tokens in a
-separate protected provider store. Do not mix them into Trakt records, Kodi settings,
+The 0.8 store keeps user-bound client secrets and access/refresh tokens in a separate
+protected provider directory when explicitly constructed. Validate its permissions
+and recovery on the TV before activation. Do not mix them into Trakt records, Kodi settings,
 plugin URLs, logs, source control or backups shared for support. Resolved URLs may
 contain bearer-like secrets; keep them in memory and redact representations/errors.
 URL syntax checks do not establish DNS safety, redirect policy, content identity or
@@ -66,8 +69,9 @@ permission. Network and player adapters must enforce the remaining boundaries.
 
 1. Review registrations and public client IDs. Never send a client secret or token in
    chat or a PR. Verify device polling, expiry, denial and refresh using the TV.
-2. Implement and review provider-specific durable storage and bounded transport.
-   Test interrupted responses, disconnect/account replacement and concurrent attempts.
+2. Validate the implemented provider-specific storage, transport and session stack on
+   the TV. Automated tests cover interrupted responses, disconnect/account replacement
+   and competing refresh attempts; they do not prove Android behavior.
 3. Choose the first live path after the Umbrella experiment and direct-resolution
    evidence. Confirm the source's rights and title identity explicitly.
 4. Wire one Kodi player adapter behind an explicit live-mode gate. A callback accepting

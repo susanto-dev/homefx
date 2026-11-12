@@ -140,3 +140,16 @@ Retain both the Umbrella experiment and a direct-resolution candidate until evid
 supports the first live path. Source-provider selection, secure persistent credentials,
 transport, Kodi playback and one resume/scrobbling owner remain explicit gates. No paid
 service purchase, new dependency, third-party source reuse or licence change is made.
+
+## Provider coordination and complete watch-state evidence (0.8.0)
+
+Continue a larger parallel batch with independent review: separate provider storage,
+bounded API transport, session/refresh coordination and full movie watched snapshots.
+No live route or account is enabled. Treat interrupted provider refresh conservatively
+as reauthentication, without assuming the service's refresh token is single-use.
+A failed or incomplete movie watched snapshot must never imply everything is unwatched.
+
+Reconcile every product, release and quality backlog item in backlog.md. Distinguish
+implemented code, fabricated service evidence, unresolved choices and pending TV checks.
+Existing source/provider, licence and release choices stay open; no paid service, new
+dependency or third-party source is introduced by this batch.

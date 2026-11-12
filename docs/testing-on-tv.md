@@ -1,4 +1,4 @@
-# TV acceptance — preview 0.7.0
+# TV acceptance — preview 0.8.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,

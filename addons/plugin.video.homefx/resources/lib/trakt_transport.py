@@ -221,10 +221,13 @@ class Transport:
             raise TransportError("invalid_request")
         slug = r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}"
         allowed = (r"/users/me/lists", r"/users/likes/lists", r"/users/settings",
+                   r"/users/me/watched/movies",
                    r"/users/" + slug + r"/lists/" + slug + r"/items",
                    r"/sync/playback", r"/shows/[1-9][0-9]{0,19}/progress/watched",
                    r"/shows/[1-9][0-9]{0,19}/seasons/[0-9]{1,5}")
         if not any(re.fullmatch(pattern, parsed.path) for pattern in allowed):
+            raise TransportError("invalid_request")
+        if parsed.path == "/users/me/watched/movies" and parsed.query:
             raise TransportError("invalid_request")
         try:
             # Python 3.8 strict parsing rejects an empty query; it means no fields.
@@ -266,7 +269,7 @@ class Transport:
             for key, value in raw_headers:
                 key = key.lower()
                 if key in {"content-type", "content-length", "content-encoding", "retry-after",
-                           "x-pagination-page", "x-pagination-page-count", "x-pagination-limit"}:
+                           "x-pagination-page", "x-pagination-page-count", "x-pagination-limit"} or key.startswith("x-pagination-"):
                     if key in seen or not isinstance(value, str) or len(value) > 256 or any(
                             ord(c) < 32 or ord(c) > 126 for c in value):
                         raise TransportError("invalid_response")

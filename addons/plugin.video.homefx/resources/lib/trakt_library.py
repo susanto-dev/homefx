@@ -241,16 +241,13 @@ class Library:
 
 
     def movie_view(self, key, now=None, movie_filter="all"):
-        """Normalize one available list with partial progress and unknown watched state.
+        """Join list metadata, complete watched IDs and pauses for one account.
 
-        The current client does not fetch a complete movie watched snapshot.
-        Unwatched filters therefore fail explicitly, even for an empty list.
-        all/upcoming are metadata views, never playable-content catalogues.
+        Snapshot failures propagate; absence means unwatched only after a complete
+        authenticated response. These are metadata views, not playable catalogues.
         """
         if not isinstance(movie_filter, str) or movie_filter not in {"all", "unwatched", "released_unwatched", "upcoming"}:
             raise ApiError("invalid_filter")
-        if movie_filter in {"unwatched", "released_unwatched"}:
-            raise ApiError("watched_status_unavailable")
         try:
             generation = self._session.cache_key()
             revision = self._data_revision()
@@ -264,8 +261,10 @@ class Library:
                     metadata.append(item.get("movie"))
             pauses = self._read("paused", expected_generation=generation,
                                 expected_revision=revision)
-            rows = trakt_views.movie_filter(trakt_views.movies(metadata, None, pauses, now),
-                                            movie_filter)
+            watched = self._read("watched_movies", expected_generation=generation,
+                                 expected_revision=revision)
+            rows = trakt_views.movie_filter(
+                trakt_views.movies(metadata, frozenset(watched), pauses, now), movie_filter)
             self._assert_view(generation, revision)
             return rows
         except (AuthError, ApiError):

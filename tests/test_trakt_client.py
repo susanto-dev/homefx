@@ -33,6 +33,38 @@ def item(ident, name="Example list"):
 
 
 class ClientTests(unittest.TestCase):
+    def test_watched_movies_complete_snapshot_has_no_pagination_request(self):
+        request = Transport(response([{"plays": 2, "movie": {"ids": {"trakt": 10}}},
+                                      {"plays": 1, "movie": {"ids": {"trakt": 20}}}]))
+        result = Client(request, "id", "token").watched_movies()
+        self.assertEqual(result, (10, 20))
+        self.assertEqual(request.calls[0][1], "/users/me/watched/movies")
+        self.assertEqual(Client(Transport(response([])), "id", "token").watched_movies(), ())
+
+    def test_watched_movies_rejects_partial_oversized_and_invalid_evidence(self):
+        valid = {"plays": 1, "movie": {"ids": {"trakt": 10}}}
+        invalid = [{}, {"plays": 0, "movie": {"ids": {"trakt": 10}}},
+                   {"plays": True, "movie": {"ids": {"trakt": 10}}},
+                   {"plays": 1, "movie": {"ids": {"trakt": True}}},
+                   {"plays": 1, "movie": {"ids": {"trakt": -1}}},
+                   {"plays": 1, "movie": {"ids": {"trakt": 2 ** 63}}},
+                   {"plays": 1, "type": "episode", "movie": {"ids": {"trakt": 10}}},
+                   {"plays": 1, "movie": []}]
+        for body in ({}, [valid, valid], *([row] for row in invalid)):
+            with self.subTest(body=body), self.assertRaises(ApiError):
+                Client(Transport(response(body)), "id", "token").watched_movies()
+        with self.assertRaisesRegex(ApiError, "result_limit"):
+            Client(Transport(response([valid, valid])), "id", "token", max_items=1).watched_movies()
+        for headers in ({"X-Pagination-Page": "1"}, {"x-pagination-page-count": "1"},
+                        {"X-Pagination-Limit": "100"}):
+            with self.subTest(headers=headers), self.assertRaisesRegex(ApiError, "invalid_pagination"):
+                Client(Transport(Response(200, headers, [valid])), "id", "token").watched_movies()
+        for status in (401, 403, 429, 500):
+            request = Transport(Response(status))
+            with self.subTest(status=status), self.assertRaises(ApiError):
+                Client(request, "id", "token").watched_movies()
+            self.assertEqual(len(request.calls), 1)
+
     def test_lists_deduplicate_and_preserve_ownership(self):
         request = Transport(response([item(12)]),
                             response([{"list": item(12)}, {"list": item(13)}]))

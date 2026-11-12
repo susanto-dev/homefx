@@ -108,6 +108,19 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(self.api_calls, [])
         self.assertNotIn("synthetic", repr(self.session))
 
+    def test_watched_snapshot_read_is_guarded_by_account_generation(self):
+        self.install()
+        self.api_reply = lambda: Response(200, body=[
+            {"plays": 1, "movie": {"ids": {"trakt": 10}}}])
+        self.assertEqual(self.session.read("watched_movies"), (10,))
+        self.assertEqual(self.api_calls[-1][1], "/users/me/watched/movies")
+        def changed():
+            self.store.install(TokenSet("synthetic-other", "synthetic-other-refresh", 5000))
+            return Response(200, body=[])
+        self.api_reply = changed
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.read("watched_movies")
+
     def test_fresh_read_does_not_refresh(self):
         self.install()
         self.assertEqual(self.session.read("settings"), {"limits": {}})
