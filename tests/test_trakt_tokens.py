@@ -77,6 +77,21 @@ class TokenStoreTests(unittest.TestCase):
             with self.assertRaisesRegex(AuthError, "^token_store_unavailable$"):
                 TokenStore(temp)
 
+    def test_conditional_install_and_disconnect_preserve_newer_account(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = TokenStore(temp)
+            old = TokenSet("synthetic-access", "synthetic-refresh", 10000)
+            new = TokenSet("new-access", "new-refresh", 11000)
+            self.assertTrue(store.install(old, expected_generation=0))
+            self.assertTrue(store.disconnect(expected_generation=1))
+            self.assertTrue(store.install(new, expected_generation=2))
+            self.assertFalse(store.install(old, expected_generation=2))
+            self.assertFalse(store.disconnect(expected_generation=2))
+            self.assertEqual(store.snapshot().tokens, new)
+            self.assertEqual(store.snapshot().generation, 3)
+            with self.assertRaisesRegex(AuthError, "invalid_store_configuration"):
+                store.disconnect(expected_generation=True)
+
     def test_empty_store_and_disconnect(self):
         with tempfile.TemporaryDirectory() as temp:
             store = TokenStore(temp)

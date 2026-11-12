@@ -153,3 +153,11 @@ class AdapterTests(unittest.TestCase):
         self.commands.clear()
         self.run_route('select')
         self.assertEqual(self.commands, [])
+
+    def test_setup_is_information_only_without_network_or_token_storage(self):
+        with patch('socket.create_connection', side_effect=AssertionError('Unexpected network')):
+            self.run_route('setup')
+        self.assertIn('not enabled', self.messages[-1])
+        self.assertIn('Never enter or share a client secret', self.messages[-1])
+        self.assertFalse((Path(self.temp.name) / 'trakt').exists())
+        self.assertEqual(self.commands, [])

@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.2.0
+## Current preview: 0.3.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies three selectable demo lists, a series episode browser,
@@ -13,9 +13,11 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.2.0 also contains inactive Trakt authentication, token-storage and read
-API foundations tested with fabricated responses. These are not connected to the
-Kodi menus and do not enable real accounts.
+Version 0.3.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+account/session coordination and read-library foundations tested with fabricated responses. These are not connected to the
+Kodi account actions and do not enable real accounts. The connection-setup menu is
+information only. A local Kodi repository generator produces review artifacts; it
+does not activate a public installation/update channel.
 
 Original geometric placeholder artwork is included; no third-party skin or artwork
 is bundled. The current skin stays installed separately.
@@ -37,7 +39,8 @@ procedure and widget setup. No hosted repository or automatic update channel exi
 
 - [Contributing and review](CONTRIBUTING.md)
 - [Development](docs/development.md) and [testing](docs/testing.md)
-- [Trakt authentication feasibility](docs/trakt-authentication.md)
+- [Account setup and activation gates](docs/account-setup.md)
+- [Trakt authentication contracts](docs/trakt-authentication.md)
 - [Architecture](docs/architecture.md), [decisions](docs/decisions.md), [backlog](docs/backlog.md)
 - [Security reporting](SECURITY.md) and [weekly scanning / manual triage](docs/security.md)
 - [Packaging and future releases](docs/releases.md)

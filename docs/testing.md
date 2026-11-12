@@ -30,3 +30,16 @@ sanitized errors, pagination bounds and API failures, list identity/ownership, a
 the separation of metadata, watched progress and paused playback. Future and unknown
 air dates must not become aired-unwatched candidates. None of these tests establishes
 that a real Trakt account or HTTP transport works.
+
+Connectivity tests cover fixed-host request allowlists, TLS configuration, rejected
+redirects, bounded response bodies and JSON nesting, cancellation/deadline handling,
+connection lifetime, sanitized failures and account/session changes. Combined tests
+pass fabricated HTTP bodies through transport, session and library into selected lists,
+including refresh and cross-account cache invalidation. Cache tests include TTL,
+copy isolation, bounded retention and failed/incomplete responses.
+
+Repository tests check the actual packaged manifest/index relationship, deterministic
+bytes, ZIP/index checksums, invalid IDs/versions/unsafe XML/archive members, private
+file exclusion and refusal to replace differing candidate output. The candidate
+repository stays outside the site directory. Run TV fresh-install/upgrade tests only
+after the separate publication gates are met; no remote update passed in CI.

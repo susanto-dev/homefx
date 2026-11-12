@@ -27,11 +27,12 @@ created during this investigation.
 
 ## Implemented mocked foundations
 
-The 0.2.0 candidate implements caller-driven device polling, terminal/cancellation
+The 0.3.0 candidate retains caller-driven device polling, terminal/cancellation
 states, token validation, and refresh orchestration with injected responses only.
 The caller supplies the public client ID and registered redirect URI; neither is
-preconfigured. There is no client-secret parameter. No live transport or Kodi
-account screen exists, so these modules cannot independently contact a service.
+preconfigured. There is no client-secret parameter. A fixed-host HTTPS transport
+is implemented but not wired to Kodi account actions; the new setup menu provides
+information only. Tests never supply a real application identity or contact Trakt.
 
 Token state uses a dedicated SQLite file below a supplied private profile directory.
 Short transactions persist refresh ownership before sending a request and clear
@@ -48,14 +49,18 @@ and surface service/rate/account-limit errors without an automatic retry loop.
 Liked lists are not assumed writable. View normalization is separate from API
 requests and joins metadata, watched status and pause records by stable identity.
 No Trakt write, scrobbling, persistent metadata cache or live list widget is enabled.
+Session/Library now coordinate these reads with expiry checks, account-generation
+guards and a bounded invocation-memory cache. See [architecture](architecture.md)
+for cache invalidation and [account setup](account-setup.md) for activation gates.
 
 ## Gates before live account access
 
 1. Register a development application and verify the documented public-client flow
    using its client ID and registered redirect URI. Never provide a client secret.
-2. Implement and independently review a TLS-verifying transport with host binding,
-   redirect rejection, byte/time bounds, cancellation and sanitized diagnostics.
-   Injected callbacks are a test boundary, not proof of those network protections.
+2. Review and verify the implemented TLS transport with the registered application
+   and on the device: host binding, redirect rejection, byte/time bounds, cancellation
+   and sanitized diagnostics. Mocked connection/socketpair tests are not evidence
+   of real network behavior. OS DNS resolution remains outside socket deadlines.
 3. Add explicit connect/disconnect/account-switch UX and a revocation policy. Keep
    tokens out of widget routes, exported logs, backups and packaged artifacts.
 4. Validate real device login and rotated-token refresh; check cancelled/expired

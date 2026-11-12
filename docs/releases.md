@@ -9,19 +9,36 @@ Before future publication: review the source revision, run checks, record the ca
 hash and TV acceptance, verify notices and scan coverage, then obtain publication
 approval. Do not describe code merged or built as installed, tested on TV, or published.
 
-Future repository work: separately version repository.homefx; generate addons.xml and
-its change checksum from packaged manifests; host immutable versioned ZIPs over HTTPS;
-make packages available before updating the index. Validate fresh install and upgrade.
-The Kodi index checksum is a change detector, not an authenticity signature.
+## Local repository candidate
 
-Retain known-good packages. Document manual recovery and local-data compatibility;
-a downgrade is not assumed safe after data migrations. No index generator, Kodi automatic updater, or signing infrastructure exists yet.
+`python3 tools/repository.py` builds both reviewed add-on packages, reads their
+packaged manifests and generates `dist/repository/addons.xml` with a SHA-256 change
+marker. Versioned ZIPs and SHA-256 sidecars live beneath each add-on ID. The repository
+add-on points to the reserved HTTPS path `https://susanto-dev.github.io/homefx/repository/`.
+**That path is not published by this batch.** The candidate includes CANDIDATE.txt and
+is useful for inspection; installing its repository ZIP now does not create a working
+update channel. Validation retains it as a seven-day review artifact, not a release.
+
+The manifest uses Kodi 21's SHA-256 index verification and ZIP sidecar verification.
+These detect corruption, not authenticity if the host itself is compromised. The
+repository relies on HTTPS and review of what is published; no signing infrastructure
+is claimed. Contracts were checked against the [official repository guide](https://kodi.wiki/view/Add-on_repositories)
+and [Kodi 21.2 implementation](https://github.com/xbmc/xbmc/blob/21.2-Omega/xbmc/addons/Repository.cpp).
+No upstream implementation or artwork is copied.
+
+Before activation, choose retained-version/rollback policy and publish immutable
+versioned packages before the index. Preserve known-good packages and check saved
+widget/profile compatibility; a downgrade after a migration is not presumed safe.
+Then validate fresh repository installation, video installation, upgrade, checksum
+failure, offline behavior and rollback on the actual Kodi device. The generator's
+success is not a device acceptance result. Repository activation remains separate
+from authorization to publish the synthetic manual-download preview.
 
 ## Public preview publishing
 
 The Publish preview workflow tests and builds the candidate, then deploys only
 `dist/site` to GitHub Pages on pushes to main or manual dispatch from main.
-Merging/pushing main therefore publishes a preview after checks pass. The build
+Merging a PR into protected main therefore publishes a preview after checks pass. The build
 job has read-only repository access; only deployment receives Pages write and
 OIDC permissions. Official Actions are commit-pinned. Artifacts expire after one
 day. `python3 tools/build_site.py` reproduces the download directory locally.
@@ -32,10 +49,10 @@ steps, without accounts, analytics or external assets. GitHub Pages/standard
 public-repository runners require no paid plan; account storage limits still apply.
 No paid services, custom domain or larger runners are provisioned.
 
-Version 0.2.0 adds inactive Trakt foundations. Existing demo data and widget routes
+Version 0.3.0 adds inactive transport/session/library foundations and setup guidance. Existing demo data and widget routes
 are unchanged; there is no credential migration or automatic account connection.
 The Validation workflow performs tests/package checks on PRs and main pushes without
 publication. On merge, Security scans and the existing managed CodeQL checks also
-run, and Publish preview builds/deploys the 0.2.0 download. Runner images and package
+run, and Publish preview builds/deploys the 0.3.0 video download only. Runner images and package
 registries remain external mutable inputs even though Action commits and dependency
 versions are pinned. No automatic update PRs, account writes or new hosting are added.

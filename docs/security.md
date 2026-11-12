@@ -4,19 +4,21 @@ Current preview: no outbound requests or accounts. Only synthetic watched overri
 and demo list selection are saved in the Kodi profile. Reset clears these overrides.
 The package includes only an explicit file list. Do not package any user profile.
 
-Inactive authentication foundations use injected responses, never a bundled client
+Inactive authentication/session foundations use injected responses, never a bundled client
 secret or a live account configuration. Their dedicated profile token database uses
 owner-only directory/file permissions on POSIX systems and fails closed on other
 platforms. Android/Kodi SQLite and permission support still need device testing. Tokens and device prompts
 have redacted object representations; public failures omit raw transport/response
 details. This does not sanitize an arbitrary caller that logs request arguments.
-A future transport/UI must preserve the same boundary.
+The implemented transport preserves this boundary; future UI wiring must do so too.
 
 A durable refresh claim removes the old token pair from the active row before the
 request. Only one invocation wins, and the matching claimant atomically installs
 the rotated pair. Ambiguous failure or expired claims require reauthentication;
 they never release the old token for retry. Disconnect/new login invalidates stale
-completion. Requests must time out before the bounded claim expires.
+completion. Connected request I/O has a budget shorter than the bounded claim lifetime. OS DNS
+resolution is not interruptible by socket timeouts; an expired claim rejects any
+late response and never permits reuse of the consumed token.
 
 The store is not encrypted and is not a vault against other code running as Kodi.
 Local disconnect clears active rows; secure-delete is best effort, not guaranteed
@@ -107,3 +109,26 @@ Online mode optionally accepts GH_TOKEN for authenticated GitHub API reads.
 Never log that value. The checker covers nested uses, not bundled libraries,
 runtime downloads or the runner image. SHA pinning protects against moved tags;
 it does not prove an Action is trustworthy or free of vulnerabilities.
+
+## Inactive transport and session boundary
+
+The standard-library transport uses fixed HTTPS hosts, default certificate/hostname
+verification, strict route/header/body allowlists and no environment proxies or
+redirect following. It bounds JSON bytes/nesting/numeric values, rejects duplicate
+keys and nonfinite numbers, and does not expose raw service failures. Socket I/O
+shares a deadline; cancellation is checked between blocking operations. DNS duration
+remains OS-bound, so actual cancellation/load behavior must be measured on TV.
+
+Session reads check credential generation around remote calls and cache hits. A
+401 clears only the generation used by that request, never a newer account. Conditional
+login installation prevents stale login completion from restoring a disconnected or
+replaced session. No data call is retried automatically. Library cache entries are
+copied and bounded to invocation memory; local library disconnect clears them, while
+external account changes are noticed on the next access. No background worker or
+private persistent metadata cache is introduced. Live Kodi account actions remain
+disabled, including with manually installed profile files.
+
+The generated repository candidate is a CI review artifact only. SHA-256 checks
+verify index/package bytes but are not signatures or a substitute for trusted HTTPS
+publication. Candidate paths are not copied into the deployed preview site. Activation
+requires separate retained-version, installation, upgrade and rollback checks.

@@ -13,6 +13,8 @@ FILES = ("LICENSE", "addon.xml", "default.py", "resources/__init__.py",
          "resources/lib/routes.py", "resources/lib/state.py",
          "resources/lib/trakt_auth.py", "resources/lib/trakt_tokens.py",
          "resources/lib/trakt_client.py", "resources/lib/trakt_views.py",
+         "resources/lib/trakt_transport.py", "resources/lib/trakt_session.py",
+         "resources/lib/trakt_library.py",
          "resources/art/icon.png", "resources/art/poster.png", "resources/art/fanart.png")
 
 

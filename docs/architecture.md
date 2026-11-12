@@ -1,8 +1,8 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-Only plugin.video.homefx exists in the first batch. repository.homefx and any skin
-component are deferred. A skin fork requires a demonstrated limitation first.
+plugin.video.homefx supplies the synthetic preview. repository.homefx is a local
+candidate only, with no hosted update channel. A separate skin component is deferred. A skin fork requires a demonstrated limitation first.
 
 The preview boundary is: Kodi adapter → pure route/catalogue logic → invented data.
 Demo preferences and watched overrides live in the add-on profile as demo.json.
@@ -27,16 +27,30 @@ deferred.
 
 ## Inactive Trakt foundations
 
-Four pure modules are packaged for later integration: `trakt_auth` owns device-login
-and refresh orchestration, `trakt_tokens` owns profile token state, `trakt_client`
-owns bounded read API requests, and `trakt_views` merges metadata with progress.
-They accept injected request functions and fabricated fixtures in tests. No HTTP
-transport, account configuration or production client identity is included.
-`default.py` does not import these modules; existing saved widget routes retain
-their synthetic behavior. Merely installing the ZIP does not create token storage.
+The auth/token/client/view modules separate device login, profile credentials, API
+requests and metadata/watch joins. The transport module supplies fixed-host HTTPS
+callbacks; Session coordinates login/refresh/account changes and Library combines
+read operations with a bounded invocation-memory cache. No public client identity
+or account configuration is shipped. `default.py` does not import this stack;
+existing saved widget routes retain synthetic behavior. Its new setup route only
+shows guidance. Merely installing the video ZIP does not create token storage.
 
-OAuth and Standard API hosts are separate constants. A future transport must keep
-TLS verification enabled, reject redirects across hosts, bound response bytes and
-timeouts, and avoid logging headers, bodies or exception details containing secrets.
-Injected request callbacks currently receive relative paths; their implementation
-will be a separate reviewed boundary, not an implicit network guarantee.
+Transport binds OAuth to auth.trakt.tv and read-only data calls to api.trakt.tv,
+uses the standard certificate/hostname-verifying TLS context, refuses redirects
+and proxies, and bounds connected I/O and JSON parsing. Cancellation is checked at
+I/O boundaries. OS DNS resolution is not interruptible by Python's socket timeout;
+there is no claim of an absolute DNS-inclusive deadline. Target TLS/runtime behavior
+still requires device tests. No network test uses a real account.
+
+Session checks token expiry before reads, permits one durable refresh claimant and
+never automatically repeats a failed data request. Conditional generation updates
+prevent stale login or 401 responses from overwriting a replacement account. Library
+checks shared state before returning cache hits and validates the whole metadata/
+progress join. Refresh also changes generation and conservatively resets invocation
+list selections; stable account-bound saved widget selection remains future work.
+Cache TTL is 30 seconds by default, bounded to 32 entries/1 MiB serialized data,
+with copy isolation. There is no private persistent metadata cache or background
+observer. External account changes invalidate data when the next read observes them;
+Library.disconnect clears its cache before clearing local credential state.
+Cache keys also include an opaque library-instance identity, so shared cache injection
+cannot mix accounts whose independent profile generation counters happen to match.

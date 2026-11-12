@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="repository.homefx" name="HomeFX Repository Candidate" version="0.1.0" provider-name="susanto-dev">
+  <extension point="xbmc.addon.repository">
+    <dir minversion="21.0.0">
+      <info>https://susanto-dev.github.io/homefx/repository/addons.xml</info>
+      <checksum verify="sha256">https://susanto-dev.github.io/homefx/repository/addons.xml.sha256</checksum>
+      <datadir zip="true">https://susanto-dev.github.io/homefx/repository/</datadir>
+      <hashes>sha256</hashes>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Local candidate for HomeFX installation and updates</summary>
+    <description lang="en_GB">Test artifact only. The repository endpoint is reserved and is not deployed. Installation and upgrade behavior require device validation before activation.</description>
+    <platform>all</platform><license>MIT</license>
+    <source>https://github.com/susanto-dev/homefx</source>
+  </extension>
+</addon>
