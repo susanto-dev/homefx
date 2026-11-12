@@ -1,7 +1,7 @@
 # TV acceptance — preview 0.1.0
 
-Status: NOT RUN. Target: Kodi 21.2, Arctic Zephyr Reloaded 3.0.3, Vertical
-Multi-Widget Netflix. Record device, embedded Python and Skin Shortcuts versions,
+Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
+Record device, embedded Python, skin and widget-configuration component versions,
 package SHA-256, steps, expected/observed behavior and elapsed load times.
 
 1. Transfer the locally built ZIP to the TV. In Kodi, use Add-ons → Install from

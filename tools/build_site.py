@@ -18,7 +18,7 @@ def build_site(output=None):
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HomeFX — Kodi preview</title>
 <style>body{font:18px/1.6 system-ui,sans-serif;background:#18263a;color:#eef5fa;max-width:48rem;margin:4rem auto;padding:0 1.5rem}a{color:#9ce3ef}h1{font-size:3rem;line-height:1.1}code{overflow-wrap:anywhere}li{margin:.5rem 0}.download{display:inline-block;background:#9ce3ef;color:#18263a;padding:.8rem 1.2rem;border-radius:.4rem;font-weight:700}a:focus-visible{outline:3px solid white;outline-offset:5px}</style>
-</head><body><main><p>Kodi 21.2 · Arctic Zephyr Reloaded</p><h1>HomeFX Preview</h1>
+</head><body><main><p>Kodi 21.2 · Personal home-screen widgets</p><h1>HomeFX Preview</h1>
 <p>Version VERSION — a small prototype for movie lists, episode browsing and home-screen widgets.</p>
 <p><strong>Synthetic data only.</strong> No Trakt login, playable sources or playback. Watched changes affect local demo data only. Kodi installation and TV compatibility have not yet been verified.</p>
 <p><a class="download" href="ARCHIVE">Download preview ZIP</a></p>

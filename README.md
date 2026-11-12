@@ -1,7 +1,7 @@
 # HomeFX
 
-A personal Kodi video add-on project, targeting Kodi 21.2 and the existing
-Arctic Zephyr Reloaded 3.0.3 Vertical Multi-Widget Netflix layout.
+A personal Kodi video add-on project targeting Kodi 21.2, with configurable
+home-screen widgets and standard folder browsing.
 
 ## Current preview: 0.1.0
 
