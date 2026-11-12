@@ -58,3 +58,9 @@ Main is protected and accepts PRs only. Do not bypass branch protection or use d
 main pushes. Keep code/review evidence in ordinary project language; local development
 instructions belong here, contribution policy in CONTRIBUTING.md, and release gates
 in releases.md.
+
+For a retained-version candidate, pass `--retain-manifest PATH` to the repository
+builder. The inventory names only local, reviewed ZIPs and their expected SHA-256
+checksums. See releases.md for its schema and trust boundary. No build step downloads
+old releases, and no retained archive code is executed. Use a fresh output directory
+when candidate bytes change. Tests include the old-version/current-index distinction.

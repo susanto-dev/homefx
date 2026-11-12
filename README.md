@@ -3,21 +3,26 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.3.0
+## Current preview: 0.4.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
-The preview supplies three selectable demo lists, a series episode browser,
+The preview supplies four selectable demo lists, a series episode browser,
 continue-watching, next aired unwatched episodes, and a seven-day upcoming view.
-Movie context menus offer related demo movies and editable title search. Watch-state
+Movie context menus offer related demo movies, editable title search, and add/remove
+actions for My movie list—including upcoming movies. Episode menus offer all
+episodes or aired unwatched episodes in narrative order. Watch-state
 changes are local demonstration overrides, never Trakt updates. A separate episode
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.3.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
-account/session coordination and read-library foundations tested with fabricated responses. These are not connected to the
+Version 0.4.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+account/session coordination, saved account-list preferences and explicit action
+contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is
 information only. A local Kodi repository generator produces review artifacts; it
-does not activate a public installation/update channel.
+supports checksum-pinned retention of older reviewed packages but does not activate
+a public installation/update channel. Existing profiles keep their selected lists;
+open My movie list from a movie context menu or enable it in list selection.
 
 Original geometric placeholder artwork is included; no third-party skin or artwork
 is bundled. The current skin stays installed separately.

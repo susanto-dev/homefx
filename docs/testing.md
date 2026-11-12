@@ -43,3 +43,17 @@ bytes, ZIP/index checksums, invalid IDs/versions/unsafe XML/archive members, pri
 file exclusion and refusal to replace differing candidate output. The candidate
 repository stays outside the site directory. Run TV fresh-install/upgrade tests only
 after the separate publication gates are met; no remote update passed in CI.
+
+The 0.4.0 preview tests local saved-movie persistence/migration, future-release
+membership, duplicate-safe additions, cancelled removals and all/aired-unwatched
+folder filters. Account preference tests exercise verified UUID boundaries,
+refresh/restart retention, private storage and account-switch races. Action tests
+use fabricated history/list responses, never actual writes, and cover ambiguity,
+no replay, rejected liked lists and stale-account outcomes. Cache revision tests
+prevent an action from leaving an invocation's previous watch/list result in use.
+
+Retention tests verify that older validated packages remain available while only
+current versions enter the index; conflicts, numeric version ordering, malformed
+inventories, unsafe paths and corrupt retained packages must fail. A local integration
+check can reuse a published HomeFX ZIP after verifying its known reviewed checksum;
+this is packaging evidence, not a Kodi upgrade or rollback test.

@@ -279,3 +279,47 @@ class TransportTests(unittest.TestCase):
                        {"max_bytes": 2}, {"max_bytes": True}, {"cancelled": None}):
             with self.assertRaisesRegex(TransportError, "^invalid_configuration$"):
                 Transport(**kwargs)
+
+
+class MutationTransportTests(unittest.TestCase):
+    def test_post_201_json_is_parsed_with_same_tls_and_close_guards(self):
+        factory = Connections([wire(b'{"added":{"movies":1}}', status=201)])
+        body = {'movies': [{'ids': {'trakt': 11}}]}
+        result = Transport(connection_factory=factory).mutation_request(
+            'POST', '/users/me/lists/7/items', HEADERS, body)
+        self.assertEqual(result.status, 201)
+        self.assertEqual(result.body, {'added': {'movies': 1}})
+        self.assertEqual(factory.calls[0][0], 'api.trakt.tv')
+        self.assertTrue(factory.calls[0][1]['context'].check_hostname)
+        self.assertTrue(factory.sockets[0].closed)
+        self.assertIn(b'POST /users/me/lists/7/items HTTP/1.1', b''.join(factory.sockets[0].sent))
+
+    def test_only_single_explicit_history_or_owned_list_post_can_connect(self):
+        factory = Connections([])
+        transport = Transport(connection_factory=factory)
+        good = {'movies': [{'ids': {'trakt': 11}}]}
+        cases = [('DELETE', '/users/me/lists/7/items', good),
+                 ('POST', '/sync/history/remove', good),
+                 ('POST', '/users/other/lists/7/items', good),
+                 ('POST', '/users/me/lists/7/items?secret=x', good),
+                 ('POST', '/users/me/lists/7/items', {'movies': good['movies'] * 2}),
+                 ('POST', '/users/me/lists/7/items', dict(good, client_secret='synthetic')),
+                 ('POST', '/sync/history', good)]
+        for method, path, body in cases:
+            with self.subTest(path=path), self.assertRaisesRegex(TransportError, '^invalid_request$'):
+                transport.mutation_request(method, path, HEADERS, body)
+        with self.assertRaisesRegex(TransportError, '^invalid_request$'):
+            transport.api_request('POST', '/users/me/lists/7/items', HEADERS, good)
+        self.assertEqual(factory.calls, [])
+
+    def test_history_post_json_and_429_safe_header(self):
+        factory = Connections([wire(b'{"added":{}}'), wire(b'private', status=429,
+                              headers=[('Retry-After', '90')])])
+        body = {'episodes': [{'ids': {'trakt': 11}, 'watched_at': '2026-11-12T00:00:00Z'}]}
+        transport = Transport(connection_factory=factory)
+        self.assertEqual(transport.mutation_request('POST', '/sync/history', HEADERS, body).body,
+                         {'added': {}})
+        response = transport.mutation_request('POST', '/sync/history', HEADERS, body)
+        self.assertEqual(response.headers, {'retry-after': '90'})
+        self.assertIsNone(response.body)
+        self.assertEqual(len(factory.calls), 2)

@@ -68,3 +68,33 @@ for review, separate from dist/site. It is not deployed by the Pages workflow. P
 repository activation and retained-version/rollback policy remain future gates. The
 existing manual-video preview advances to 0.3.0 on merge. Original MIT notices remain
 unchanged, with no third-party source/assets or paid service added.
+
+## 2026-11-12 — Combined workflow and retained-candidate batches
+
+Bundle related sub-batches in one PR so the maintainer reviews one integrated result.
+Use parallel implementation with independent review; no PR review/status comments.
+Keep evidence and limitations in the PR description, then mark the draft ready.
+Protected main remains PR-only and the maintainer merges.
+
+The visible 0.4.0 preview adds local saved movies (including future releases) and
+an aired-unwatched episode filter while preserving all-episode browsing and existing
+widget routes. These remain synthetic actions, never queued future Trakt writes.
+
+Account list selections use the service's stable user UUID, not a mutable username.
+They may persist across token refresh/restart, but never substitute for verification
+of the current account. Private list IDs are separate from cached metadata/history.
+Explicit library disconnect clears all saved list choices in this local profile
+without fetching account identity; normal account switches stay isolated. Hashing an account key is a namespace, not encryption or anonymization.
+
+Explicit action contracts support one mark-watched or owned-list movie addition.
+They do not auto-retry: a lost response can hide a successful write, and repeated
+history plays are not deduplicated by Trakt. Unknown results require reconciliation.
+Remote mark-unwatched/history deletion and scrobbling remain outside this batch.
+No live action is enabled by installing the preview, even with a manually copied
+profile. Action attempts invalidate invocation read caches.
+
+Repository retention is opt-in through an explicitly reviewed, checksum-pinned local
+inventory. The generator never downloads retained packages, promotes older versions
+into the current index, or overwrites a different package at an existing version.
+This prepares a future update channel without activating one. Existing MIT terms
+remain unchanged; no new dependency, paid service or third-party code/assets added.

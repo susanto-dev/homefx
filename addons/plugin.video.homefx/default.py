@@ -47,8 +47,20 @@ def main():
                         routes.url("search", q=item["title"]) + ")"),
                        ("Information (demo)", "RunPlugin(" + routes.url("info", id=key) + ")")]
             if item["kind"] == "movie":
+                saved = key in prefs["saved_movies"]
+                actions.append(("Remove from my movie list (demo)" if saved else
+                                "Add to my movie list (demo)", "RunPlugin(" +
+                                routes.url("collect", id=key, value="0" if saved else "1") + ")"))
+                actions.append(("Open my movie list (demo)", "Container.Update(" +
+                                routes.url("list", id="saved") + ")"))
                 actions.append(("Similar movies (demo)", "Container.Update(" +
                                 routes.url("similar", id=key) + ")"))
+            if item["kind"] in {"tvshow", "episode"}:
+                show_id = key if item["kind"] == "tvshow" else item["show"]
+                actions.extend([("Browse aired unwatched episodes (demo)", "Container.Update(" +
+                                 routes.url("show", id=show_id, filter="aired_unwatched") + ")"),
+                                ("Browse all episodes (demo)", "Container.Update(" +
+                                 routes.url("show", id=show_id, filter="all") + ")")])
             if item["kind"] == "episode":
                 actions.append(("Preview next-episode choice", "RunPlugin(" +
                                 routes.url("sequence", id=key) + ")"))
@@ -66,8 +78,23 @@ def main():
                     "Only a public client ID and registered redirect URI will be needed. "
                     "Never enter or share a client secret or account tokens here.")
             return
-        if route in {"play", "watched", "info", "sequence", "similar", "show"} and key not in items:
+        if route in {"play", "watched", "info", "sequence", "similar", "show", "collect"} and key not in items:
             raise ValueError("Demo title not found")
+        if route == "collect":
+            if items[key]["kind"] != "movie" or params.get("value") not in {"0", "1"}:
+                raise ValueError("Invalid demo movie-list action")
+            saved = prefs["saved_movies"]
+            if params["value"] == "1":
+                if key not in saved:
+                    saved.append(key)
+            elif key in saved:
+                if not dialog.yesno("HomeFX Preview", "Remove this movie from your local demo movie list?"):
+                    return
+                saved.remove(key)
+            state.save(profile, prefs)
+            dialog.notification("HomeFX Preview", "Local movie list updated; Trakt is not connected")
+            xbmc.executebuiltin("Container.Refresh")
+            return
         if route == "select":
             keys = list(model.LISTS)
             chosen = dialog.multiselect("Select demo widget lists", list(model.LISTS.values()),
@@ -78,8 +105,8 @@ def main():
                 xbmc.executebuiltin("Container.Refresh")
             return
         if route == "reset":
-            if dialog.yesno("HomeFX Preview", "Reset local demo watch states and list selection?"):
-                state.save(profile, {"watched": {}, "selected": list(model.LISTS)})
+            if dialog.yesno("HomeFX Preview", "Reset local demo watch states, movie list and widget selection?"):
+                state.save(profile, {"watched": {}, "selected": list(model.LISTS), "saved_movies": []})
                 xbmc.executebuiltin("Container.Refresh")
             return
         if route == "watched":
@@ -131,7 +158,8 @@ def main():
                 if not query:
                     xbmcplugin.endOfDirectory(handle, succeeded=True, cacheToDisc=False)
                     return
-            result = model.view(route, items, prefs, key, query)
+            result = model.view(route, items, prefs, key, query,
+                                episode_filter=params.get("filter", "all"))
             kinds = {x["kind"] for x in result}
             content = {"movie": "movies", "episode": "episodes", "tvshow": "tvshows"}
             if len(kinds) == 1:

@@ -132,3 +132,26 @@ The generated repository candidate is a CI review artifact only. SHA-256 checks
 verify index/package bytes but are not signatures or a substitute for trusted HTTPS
 publication. Candidate paths are not copied into the deployed preview site. Activation
 requires separate retained-version, installation, upgrade and rollback checks.
+
+## Private selections and explicit action contracts
+
+Optional account preferences store only bounded selected-list IDs under a SHA-256
+namespace derived from the verified user UUID. They use a separate owner-private
+SQLite file, never tokens, titles, watch history or a copy of account settings.
+The hash is not encryption or anonymization. The profile remains sensitive and
+must not be shared. Library disconnect clears all saved choices in that local
+profile, even if account identity was never fetched; it does not contact Trakt.
+
+The stable UUID is rechecked after token-generation changes before restoring choices.
+Missing or malformed identity fails closed; mutable usernames are not a fallback.
+Cache keys include library identity, credential generation and local action revision.
+Compound reads reject changes during the operation. These checks protect invocation
+isolation, not arbitrary code already running as the Kodi user.
+
+Explicit action contracts permit one mark-watched history addition or a movie addition
+to an owned list. Liked-list status is not permission to write. Validated input precedes
+refresh or network work; no mutation callback is configured in the preview. Calls are
+never queued or automatically retried. A timeout or malformed response can hide a
+successful remote action, so the result stays uncertain and local watched state is
+not changed. Reconcile service state before any manual retry; repeated history plays
+can create duplicate records. Remote history deletion is not implemented.

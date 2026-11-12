@@ -171,3 +171,74 @@ class SessionTests(unittest.TestCase):
         with self.assertRaisesRegex(AuthError, "session_changed"):
             self.session.read("settings")
         self.assertEqual(len(self.api_calls), 1)
+
+
+class SessionMutationTests(unittest.TestCase):
+    install = SessionTests.install
+
+    def setUp(self):
+        SessionTests.setUp(self)
+        self.writes = []
+        self.write_reply = None
+        def mutation(*args):
+            self.writes.append(args)
+            return self.write_reply() if self.write_reply else Response(200, body={
+                'added': {'movies': 1, 'episodes': 0},
+                'updated': {'movies': 0, 'episodes': 0}, 'not_found': {}})
+        self.session._mutation = mutation
+
+    def mark(self):
+        from datetime import datetime, timezone
+        return self.session.mutate('mark_watched', 'movie', 11,
+                                   datetime(2026, 11, 12, tzinfo=timezone.utc))
+
+    def test_disabled_and_invalid_actions_do_not_refresh_or_write(self):
+        from resources.lib.trakt_client import ListRef
+        self.install(expires=900)
+        with self.assertRaisesRegex(ApiError, 'invalid_action'):
+            self.session.mutate('add_movie_to_list', ListRef(7, 'other', 'Liked', False), 11)
+        self.session._mutation = None
+        self.assertEqual(self.mark().reason, 'writes_disabled')
+        self.assertEqual(self.writes + self.oauth_calls, [])
+        self.assertEqual(self.session.data_revision, 0)
+
+    def test_refresh_before_write_and_revision_invalidation(self):
+        self.install(expires=900)
+        self.assertEqual(self.mark().outcome, 'confirmed')
+        self.assertEqual(len(self.oauth_calls), 1)
+        self.assertEqual(len(self.writes), 1)
+        self.assertEqual(self.writes[0][2]['Authorization'], 'Bearer synthetic-access-new')
+        self.assertEqual(self.session.data_revision, 1)
+
+    def test_uncertain_write_is_not_retried_or_installed_as_watched(self):
+        self.install()
+        before = self.store.snapshot()
+        def timeout():
+            raise OSError('synthetic-private-response')
+        self.write_reply = timeout
+        self.assertEqual(self.mark().outcome, 'uncertain')
+        self.assertEqual(len(self.writes), 1)
+        self.assertEqual(self.session.data_revision, 1)
+        self.assertEqual(self.store.snapshot(), before)
+
+    def test_stale_success_or_401_does_not_claim_or_disconnect_new_account(self):
+        for status in (200, 401):
+            self.install()
+            def switch():
+                self.store.install(TokenSet('synthetic-replacement', 'synthetic-new-refresh', 5000))
+                return Response(status)
+            self.write_reply = switch
+            result = self.mark()
+            self.assertEqual((result.outcome, result.reason), ('uncertain', 'session_changed'))
+            self.assertEqual(self.store.snapshot().tokens.access_token, 'synthetic-replacement')
+        self.assertEqual(len(self.writes), 2)
+        self.assertEqual(self.session.data_revision, 2)
+
+    def test_current_401_disconnects_once_and_does_not_retry(self):
+        self.install()
+        self.write_reply = lambda: Response(401)
+        result = self.mark()
+        self.assertEqual(result.reason, 'reauthenticate')
+        self.assertEqual(self.store.snapshot().state, 'disconnected')
+        self.assertEqual(len(self.writes), 1)
+        self.assertEqual(self.session.data_revision, 1)

@@ -10,6 +10,11 @@ Self-review is not independent approval. Seek independent review for authenticat
 watch-history writes, playback state, and publishing. Revisit affected conclusions
 when source changes. Check route consumers, saved widgets, manifests and packages.
 
+Keep validation and limitations in the PR description; do not post review or status
+comments on PRs. After independent review and successful checks, mark the draft ready
+for the maintainer to merge. Related implementation batches may share one PR when
+their combined scope and publication effects remain clear.
+
 Run the checks in [development](docs/development.md). Tests must prove behavior,
 not duplicate implementation. Update the authoritative documentation alongside a
 behavior change; record significant choices in [decisions](docs/decisions.md).

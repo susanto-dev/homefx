@@ -49,10 +49,52 @@ steps, without accounts, analytics or external assets. GitHub Pages/standard
 public-repository runners require no paid plan; account storage limits still apply.
 No paid services, custom domain or larger runners are provisioned.
 
-Version 0.3.0 adds inactive transport/session/library foundations and setup guidance. Existing demo data and widget routes
+Version 0.4.0 adds saved-movie/episode-filter preview workflows plus inactive
+account preferences/action contracts and retained-candidate tooling. Existing demo data and widget routes
 are unchanged; there is no credential migration or automatic account connection.
 The Validation workflow performs tests/package checks on PRs and main pushes without
 publication. On merge, Security scans and the existing managed CodeQL checks also
-run, and Publish preview builds/deploys the 0.3.0 video download only. Runner images and package
+run, and Publish preview builds/deploys the 0.4.0 video download only. Runner images and package
 registries remain external mutable inputs even though Action commits and dependency
 versions are pinned. No automatic update PRs, account writes or new hosting are added.
+
+## Retaining reviewed versions locally
+
+Pass `--retain-manifest /path/to/inventory.json` when building a candidate. Paths in
+this exact-schema JSON are relative to the inventory file's directory:
+
+```json
+{
+  "schema": 1,
+  "packages": [
+    {
+      "id": "plugin.video.homefx",
+      "version": "0.3.0",
+      "path": "archives/plugin.video.homefx-0.3.0.zip",
+      "sha256": "bce8783aacf432ba48411d3d32d6e4bb0755d22337f6a72840f758039f154b27"
+    }
+  ]
+}
+```
+
+That example checksum identifies the reviewed 0.3.0 preview; independently verify
+any supplied file before adding it to a release inventory. The generator validates
+exact checksum, filename/manifest identity, bounded safe archive contents and the
+original licence. An inventory is a maintainer-reviewed trust input: matching a
+checksum does not independently audit the source or prove provenance.
+
+Retained ZIPs and sidecars keep their immutable versioned paths. Only the current
+build's versions enter addons.xml; retaining an old ZIP never makes it the update
+target. A duplicate current version must be byte-identical. Conflicting bytes or a
+retained version newer than the current build are rejected, using numeric version
+ordering. The builder refuses traversal, symlinks, unsafe XML/ZIP entries and an
+existing output tree that differs from the proposed candidate.
+
+Limits: 64 KiB input inventory, at most 32 total current/retained packages, and
+64 MiB aggregate retained ZIP input, in addition to per-package/content bounds.
+Output includes release-inventory.json for the complete candidate, usable as a
+reviewed input to the next build. Nothing is fetched, deleted, published or installed.
+
+Keeping an older ZIP is not an automatic rollback. A downgrade still needs an explicit
+Kodi action and profile compatibility checks; the index continues to advertise the
+current version. No production retention or deletion schedule is configured here.

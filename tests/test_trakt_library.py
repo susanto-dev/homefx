@@ -190,3 +190,127 @@ class LibraryTests(unittest.TestCase):
         with self.assertRaisesRegex(AuthError, "reauthentication_required"):
             self.library.episode_view(10, 1)
         self.assertEqual(self.cache._entries, {})
+
+
+class PersistentLibraryTests(unittest.TestCase):
+    def setUp(self):
+        from resources.lib.trakt_preferences import AccountPreferences
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.store = TokenStore(self.temp.name)
+        self.store.install(TokenSet('synthetic-account-a', 'synthetic-refresh-a', 10000))
+        self.preferences = AccountPreferences(self.temp.name)
+        self.settings_calls = 0
+        self.intercept = None
+        self.revision = [0]
+
+        def api(method, path, headers, body=None):
+            account = 'b' if headers['Authorization'].endswith('account-b') else 'a'
+            if self.intercept:
+                result = self.intercept(path, account)
+                if result is not None:
+                    return result
+            if path == '/users/settings':
+                self.settings_calls += 1
+                return Response(200, body={'user': {'ids': {'uuid': 'synthetic-uuid-' + account,
+                                                           'slug': 'mutable-name'}},
+                                           'account': {'token': 'must-not-be-cached'}})
+            if path.startswith('/users/me/lists?'):
+                return Response(200, body=[{'ids': {'trakt': 1}, 'name': 'Private ' + account}])
+            return Response(200, body=[])
+
+        self.api = api
+        self.session = Session(self.store, lambda *args: None, api, 'synthetic-client',
+                               'https://example.invalid/callback', clock=lambda: 1000)
+        self.library = Library(self.session, preferences=self.preferences)
+
+    def test_restart_and_same_account_rotation_restore_selection(self):
+        self.library.select_lists(['trakt-list:1'])
+        restarted = Library(self.session, preferences=self.preferences)
+        self.assertEqual([r.key for r in restarted.selected_lists()], ['trakt-list:1'])
+        self.store.install(TokenSet('synthetic-account-a', 'new-synthetic-refresh', 20000))
+        self.assertEqual([r.key for r in restarted.selected_lists()], ['trakt-list:1'])
+        self.assertEqual(self.settings_calls, 3)
+        cached = repr(restarted._cache._entries)
+        self.assertNotIn('must-not-be-cached', cached)
+        self.assertNotIn('mutable-name', cached)
+
+    def test_distinct_accounts_and_disconnect_forget_local_choices(self):
+        self.library.select_lists(['trakt-list:1'])
+        self.store.install(TokenSet('synthetic-account-b', 'synthetic-refresh-b', 10000))
+        self.assertEqual(self.library.selected_lists(), [])
+        self.library.select_lists(['trakt-list:1'])
+        self.assertEqual(self.library.selected_lists()[0].name, 'Private b')
+        self.store.install(TokenSet('synthetic-account-a', 'synthetic-refresh-a', 10000))
+        self.assertEqual(self.library.selected_lists()[0].name, 'Private a')
+        Library(self.session, preferences=self.preferences).disconnect()  # no prior identity read
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), [])
+        self.assertEqual(self.preferences.load('synthetic-uuid-b'), [])
+        self.assertEqual(self.store.snapshot().state, 'disconnected')
+
+    def test_missing_identity_or_removed_list_is_not_silently_accepted(self):
+        self.intercept = lambda path, account: Response(200, body={'user': {'ids': {'slug': 'only-slug'}}}) if path == '/users/settings' else None
+        with self.assertRaisesRegex(AuthError, 'invalid_account_identity'):
+            self.library.select_lists(['trakt-list:1'])
+        self.intercept = None
+        self.preferences.save('synthetic-uuid-a', ['trakt-list:999'])
+        with self.assertRaisesRegex(ApiError, 'unavailable_selection'):
+            self.library.selected_lists()
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), ['trakt-list:999'])
+
+    def test_switch_during_identity_lookup_cannot_load_another_account(self):
+        def intercept(path, account):
+            if path == '/users/settings':
+                self.store.install(TokenSet('synthetic-account-b', 'synthetic-refresh-b', 10000))
+            return None
+        self.intercept = intercept
+        with self.assertRaisesRegex(AuthError, 'session_changed'):
+            self.library.selected_lists()
+        self.assertIsNone(self.library._account)
+        self.assertEqual(self.library._selected, ())
+
+    def test_switch_during_save_never_writes_new_accounts_selection(self):
+        original = self.preferences.save
+        def save(uuid, keys):
+            self.store.install(TokenSet('synthetic-account-b', 'synthetic-refresh-b', 10000))
+            original(uuid, keys)
+        self.preferences.save = save
+        with self.assertRaisesRegex(AuthError, 'session_changed'):
+            self.library.select_lists(['trakt-list:1'])
+        self.assertEqual(self.preferences.load('synthetic-uuid-b'), [])
+        self.assertEqual(self.library._selected, ())
+
+    def test_data_revision_invalidates_cache_but_keeps_selection(self):
+        class RevisionSession:
+            def __init__(self, inner):
+                self.inner, self.data_revision = inner, 0
+            def __getattr__(self, key):
+                return getattr(self.inner, key)
+        wrapped = RevisionSession(self.session)
+        library = Library(wrapped, preferences=self.preferences)
+        library.select_lists(['trakt-list:1'])
+        self.intercept = lambda path, account: Response(200, body=[{'ids': {'trakt': 1}, 'name': 'Changed'}]) if path.startswith('/users/me/lists?') else None
+        self.assertEqual(library.selected_lists()[0].name, 'Private a')
+        wrapped.data_revision += 1
+        self.assertEqual(library.selected_lists()[0].name, 'Changed')
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), ['trakt-list:1'])
+        self.assertEqual(self.settings_calls, 1)
+
+    def test_mutation_during_read_discards_results_and_preserves_saved_selection(self):
+        self.preferences.save('synthetic-uuid-a', ['trakt-list:1'])
+        class RevisionSession:
+            def __init__(self, inner):
+                self.inner, self.data_revision = inner, 0
+            def __getattr__(self, key):
+                return getattr(self.inner, key)
+        wrapped = RevisionSession(self.session)
+        library = Library(wrapped, preferences=self.preferences)
+        def mutate(path, account):
+            if path.startswith('/users/me/lists?'):
+                wrapped.data_revision += 1
+            return None
+        self.intercept = mutate
+        with self.assertRaisesRegex(ApiError, 'data_changed'):
+            library.selected_lists()
+        self.assertEqual(library._cache._entries, {})
+        self.assertEqual(self.preferences.load('synthetic-uuid-a'), ['trakt-list:1'])

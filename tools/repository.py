@@ -5,7 +5,9 @@ fallback when custom Content-SHA256 headers are absent. These hashes detect
 corruption but are not signatures. HTTPS and trusted publication remain essential.
 """
 import argparse
+import ast
 import hashlib
+import json
 import os
 from pathlib import Path, PurePosixPath
 import re
@@ -22,6 +24,9 @@ REPO_FILES = ("LICENSE", "addon.xml")
 BASE_URL = "https://susanto-dev.github.io/homefx/repository/"
 MAX_PACKAGE = 16 * 1024 * 1024
 MAX_CONTENT = 32 * 1024 * 1024
+MAX_INVENTORY = 64 * 1024
+MAX_RETAINED = 32
+MAX_RETAINED_BYTES = 64 * 1024 * 1024
 CANDIDATE_NOTICE = """HomeFX repository candidate — NOT AN ACTIVE UPDATE CHANNEL
 
 These artifacts are for review and device-test preparation only. The HTTPS endpoint
@@ -35,6 +40,10 @@ Kodi 21.2/Android TV. No live installation, update or rollback is claimed here.
 addons.xml.sha256 is a verified Kodi change marker, not a signature or authenticity
 proof. ZIP SHA-256 sidecars support Kodi integrity checks and manual comparison;
 the hosting origin must still be trusted. Do not upload profiles, private configuration or credentials.
+
+Retained versions are copied only from an explicitly reviewed local inventory.
+The index advertises current builds only. Retention does not activate a downgrade;
+manual rollback and profile compatibility still require separate device validation.
 """
 
 
@@ -86,7 +95,7 @@ def _repository_manifest(source):
     return data, root.get("version")
 
 
-def inspect_package(path, expected_id, expected_version, allowed_files):
+def inspect_package(path, expected_id, expected_version, allowed_files, required_files=None):
     """Read bounded allowlisted ZIP members without extracting arbitrary paths."""
     path = Path(path)
     if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_PACKAGE:
@@ -97,7 +106,10 @@ def inspect_package(path, expected_id, expected_version, allowed_files):
     try:
         with ZipFile(path) as archive:
             members = archive.infolist()
-            if len(members) != len(expected) or {i.filename for i in members} != expected:
+            names = {i.filename for i in members}
+            required = expected if required_files is None else {
+                expected_id + "/" + item for item in required_files}
+            if (len(members) != len(names) or not required <= names <= expected):
                 raise ValueError("ZIP entries differ from allowlist")
             if sum(i.file_size for i in members) > MAX_CONTENT:
                 raise ValueError("Uncompressed package exceeds size bound")
@@ -117,6 +129,150 @@ def inspect_package(path, expected_id, expected_version, allowed_files):
     if contents.get("LICENSE") != (ROOT / "LICENSE").read_bytes():
         raise ValueError("Packaged licence differs from root licence")
     return root, contents
+
+
+def _version(value):
+    if (not isinstance(value, str) or not re.fullmatch(
+            r"(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})", value)):
+        raise ValueError("Invalid release version")
+    result = tuple(int(part) for part in value.split("."))
+    if result == (0, 0, 0):
+        raise ValueError("Invalid release version")
+    return result
+
+
+def _no_symlinks(path):
+    if any(item.is_symlink() for item in (path,) + tuple(path.parents)):
+        raise ValueError("Symlinked inventory input")
+
+
+def _inventory(path):
+    """Read a reviewed local inventory; hashes are not source approval or signatures."""
+    path = Path(path).absolute()
+    _no_symlinks(path)
+    data = _safe_file(path.parent, path.name, MAX_INVENTORY)
+
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("Duplicate inventory field")
+            result[key] = value
+        return result
+
+    try:
+        manifest = json.loads(data.decode("utf-8"), object_pairs_hook=unique_pairs)
+    except (UnicodeError, ValueError, RecursionError):
+        raise ValueError("Invalid release inventory") from None
+    if (not isinstance(manifest, dict) or set(manifest) != {"schema", "packages"}
+            or type(manifest["schema"]) is not int or manifest["schema"] != 1
+            or not isinstance(manifest["packages"], list)
+            or len(manifest["packages"]) > MAX_RETAINED):
+        raise ValueError("Invalid release inventory")
+    records, seen = [], set()
+    for item in manifest["packages"]:
+        if (not isinstance(item, dict) or set(item) != {"id", "version", "path", "sha256"}
+                or item["id"] not in ("plugin.video.homefx", "repository.homefx")
+                or not isinstance(item["sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])):
+            raise ValueError("Invalid release inventory entry")
+        _version(item["version"])
+        identity = (item["id"], item["version"])
+        if identity in seen:
+            raise ValueError("Duplicate release identity")
+        seen.add(identity)
+        relative = item["path"]
+        if (not isinstance(relative, str) or not 1 <= len(relative) <= 512
+                or not re.fullmatch(r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*", relative)
+                or any(part in (".", "..") for part in relative.split("/"))):
+            raise ValueError("Unsafe inventory path")
+        source = path.parent / relative
+        _no_symlinks(source)
+        if source.name != item["id"] + "-" + item["version"] + ".zip":
+            raise ValueError("Inventory package filename mismatch")
+        records.append((dict(item), source))
+    return records
+
+
+def _retained_contract(manifest, contents, ident):
+    """Check old package shape and syntax, never execute or approve retained code."""
+    expected_point = ("xbmc.python.pluginsource" if ident == "plugin.video.homefx"
+                      else "xbmc.addon.repository")
+    extensions = manifest.findall("extension")
+    if (len(extensions) != 2 or {node.get("point") for node in extensions} != {
+            expected_point, "xbmc.addon.metadata"}
+            or manifest.findtext("./extension[@point='xbmc.addon.metadata']/license") != "MIT"):
+        raise ValueError("Invalid retained extension contract")
+    if ident == "plugin.video.homefx":
+        dep = manifest.find("./requires/import[@addon='xbmc.python']")
+        plugin = manifest.find("./extension[@point='xbmc.python.pluginsource']")
+        if (len(manifest.findall("./requires/import")) != 1 or dep is None
+                or dep.get("version") != "3.0.1" or plugin is None
+                or plugin.get("library") != "default.py" or plugin.findtext("provides") != "video"):
+            raise ValueError("Invalid retained video contract")
+    else:
+        # A retained repository must keep the same reviewed origin and integrity policy.
+        directory = manifest.find("./extension[@point='xbmc.addon.repository']/dir")
+        if (manifest.findall("requires") or directory is None
+                or len(manifest.findall("./extension[@point='xbmc.addon.repository']/dir")) != 1
+                or directory.get("minversion") != "21.0.0"
+                or directory.findtext("info") != BASE_URL + "addons.xml"
+                or directory.findtext("checksum") != BASE_URL + "addons.xml.sha256"
+                or directory.find("checksum").get("verify") != "sha256"
+                or directory.findtext("datadir") != BASE_URL
+                or directory.find("datadir").get("zip") != "true"
+                or directory.findtext("hashes") != "sha256"):
+            raise ValueError("Invalid retained repository contract")
+    for name, data in contents.items():
+        if name.endswith(".py"):
+            try:
+                ast.parse(data.decode("utf-8"), feature_version=(3, 8))
+            except (SyntaxError, UnicodeError, ValueError, RecursionError):
+                raise ValueError("Invalid retained Python syntax") from None
+
+
+def _retain(records, staged, current):
+    total = 0
+    for item, source in records:
+        ident, version = item["id"], item["version"]
+        if _version(version) > _version(current[ident]):
+            raise ValueError("Retained release is newer than current build")
+        data = _safe_file(source.parent, source.name, MAX_PACKAGE)
+        total += len(data)
+        if total > MAX_RETAINED_BYTES:
+            raise ValueError("Retained packages exceed total size bound")
+        if hashlib.sha256(data).hexdigest() != item["sha256"]:
+            raise ValueError("Retained package checksum mismatch")
+        target = staged / ident / source.name
+        if target.exists():
+            if target.read_bytes() != data:
+                raise ValueError("Existing version has different package bytes")
+            continue
+        # Inspect the exact bytes whose digest was checked, not a second source read.
+        target.write_bytes(data)
+        allowed = package.FILES if ident == "plugin.video.homefx" else REPO_FILES
+        required = ("LICENSE", "addon.xml", "default.py", "resources/__init__.py",
+                    "resources/lib/__init__.py") if ident == "plugin.video.homefx" else REPO_FILES
+        manifest, contents = inspect_package(target, ident, version, allowed, required)
+        _retained_contract(manifest, contents, ident)
+        target.with_suffix(".zip.sha256").write_text(
+            item["sha256"] + "  " + target.name + "\n", encoding="ascii")
+
+
+def _write_inventory(output):
+    records = []
+    for ident in ("plugin.video.homefx", "repository.homefx"):
+        for path in (output / ident).glob("*.zip"):
+            version = path.name[len(ident) + 1:-4]
+            records.append({"id": ident, "version": version,
+                            "path": path.relative_to(output).as_posix(),
+                            "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+    if len(records) > MAX_RETAINED:
+        raise ValueError("Repository exceeds release count bound")
+    records.sort(key=lambda item: (item["id"], _version(item["version"])))
+    data = {"schema": 1, "packages": records}
+    (output / "release-inventory.json").write_text(
+        json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _repo_zip(source, output, version):
@@ -154,25 +310,30 @@ def _write_index(packages, output):
 def _tree_bytes(directory):
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError("Unsafe output directory")
-    result = {}
+    result, total = {}, 0
     for path in directory.rglob("*"):
         if path.is_symlink():
             raise ValueError("Unsafe output entry")
         if path.is_file():
             if path.stat().st_size > MAX_CONTENT:
                 raise ValueError("Output file exceeds size bound")
+            total += path.stat().st_size
+            if len(result) >= 256 or total > MAX_RETAINED_BYTES + 2 * MAX_PACKAGE + MAX_CONTENT:
+                raise ValueError("Output tree exceeds size bound")
             result[path.relative_to(directory).as_posix()] = path.read_bytes()
         elif not path.is_dir():
             raise ValueError("Unexpected output entry")
     return result
 
 
-def build(output=None, video_source=package.ADDON, repository_source=REPOSITORY):
+def build(output=None, video_source=package.ADDON, repository_source=REPOSITORY,
+          retain_manifest=None):
     """Build fresh or verify an identical output tree; never overwrite stale files."""
     output = Path(output) if output is not None else ROOT / "dist/repository"
     video_source, repository_source = Path(video_source), Path(repository_source)
     repo_data, repo_version = _repository_manifest(repository_source)
     video_version = package.validate(video_source)
+    retained = _inventory(retain_manifest) if retain_manifest is not None else []
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".repository-candidate-", dir=str(output.parent)) as temporary:
         staged = Path(temporary) / "repository"
@@ -187,6 +348,9 @@ def build(output=None, video_source=package.ADDON, repository_source=REPOSITORY)
             raise ValueError("Repository package changed during build")
         _write_index([(video_zip, "plugin.video.homefx", video_version, package.FILES),
                       (repo_zip, "repository.homefx", repo_version, REPO_FILES)], staged)
+        _retain(retained, staged, {"plugin.video.homefx": video_version,
+                                   "repository.homefx": repo_version})
+        _write_inventory(staged)
         (staged / "CANDIDATE.txt").write_text(CANDIDATE_NOTICE, encoding="utf-8")
         if output.exists() or output.is_symlink():
             if _tree_bytes(output) != _tree_bytes(staged):
@@ -199,5 +363,6 @@ def build(output=None, video_source=package.ADDON, repository_source=REPOSITORY)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, help="Fresh or identical candidate directory")
+    parser.add_argument("--retain-manifest", type=Path, help="Reviewed local release inventory")
     args = parser.parse_args()
-    print(build(args.output))
+    print(build(args.output, retain_manifest=args.retain_manifest))

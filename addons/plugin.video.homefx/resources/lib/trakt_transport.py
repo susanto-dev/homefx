@@ -14,7 +14,8 @@ import ssl
 import time
 from urllib.parse import parse_qsl, urlsplit
 
-from .trakt_client import Response
+from .trakt_client import ApiError, Response
+from .trakt_actions import validate_request
 
 
 class TransportError(Exception):
@@ -174,8 +175,15 @@ class Transport:
 
     def api_request(self, method, path, headers, body=None):
         self._api_path(path)
+        if method != "GET" or body is not None:
+            raise TransportError("invalid_request")
+        outbound = self._api_headers(headers)
+        return self._request("api.trakt.tv", method, path, outbound, None)
+
+    @staticmethod
+    def _api_headers(headers):
         required = {"Authorization", "trakt-api-key", "trakt-api-version", "Content-Type"}
-        if (method != "GET" or body is not None or not isinstance(headers, dict)
+        if (not isinstance(headers, dict)
                 or set(headers) != required
                 or any(not _text(v, 4096) for k, v in headers.items() if k != "Authorization")
                 or not isinstance(headers["Authorization"], str)
@@ -188,7 +196,21 @@ class Transport:
         # Authorization intentionally contains one space; its token must not.
         outbound = dict(headers)
         outbound["Accept"] = "application/json"
-        return self._request("api.trakt.tv", method, path, outbound, None)
+        return outbound
+
+    def mutation_request(self, method, path, headers, body=None):
+        if method != "POST":
+            raise TransportError("invalid_request")
+        try:
+            validate_request(path, body)
+        except ApiError:
+            raise TransportError("invalid_request") from None
+        outbound = self._api_headers(headers)
+        payload = json.dumps(body, ensure_ascii=True, separators=(",", ":")).encode("ascii")
+        if len(payload) > 1024:
+            raise TransportError("invalid_request")
+        return self._request("api.trakt.tv", method, path, outbound, payload,
+                             success_statuses=(200, 201))
 
     @staticmethod
     def _api_path(path):
@@ -220,7 +242,7 @@ class Transport:
             if not valid:
                 raise TransportError("invalid_request")
 
-    def _request(self, host, method, path, headers, body):
+    def _request(self, host, method, path, headers, body, success_statuses=(200,)):
         connection = response = None
         try:
             deadline = _Deadline(self._timeout, self._total, self._clock, self._cancelled)
@@ -261,7 +283,7 @@ class Transport:
                         safe[key] = value
             if 300 <= response.status < 400:
                 raise TransportError("redirect_refused")
-            if response.status != 200:
+            if response.status not in success_statuses:
                 return Response(response.status, safe, None)
             if (content_type is None or content_type.split(";", 1)[0].strip().lower() != "application/json"
                     or encoding not in (None, "identity")):
