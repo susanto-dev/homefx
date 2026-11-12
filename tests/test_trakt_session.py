@@ -48,6 +48,32 @@ class SessionTests(unittest.TestCase):
     def install(self, expires=5000):
         self.store.install(TokenSet("synthetic-access-old", "synthetic-refresh-old", expires))
 
+    def test_confirmed_login_and_disconnect_reject_stale_generation(self):
+        self.install()
+        stale = self.store.snapshot().generation
+        self.install()
+        self.session.begin_login()
+        current = self.session.login_timing()
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.begin_login(expected_generation=stale)
+        self.assertFalse(self.session.disconnect(expected_generation=stale))
+        self.assertEqual(self.session.login_timing(), current)
+        self.assertEqual(len(self.oauth_calls), 1)
+
+    def test_login_timing_excludes_codes_and_cancellation_during_poll_blocks_install(self):
+        self.session.begin_login()
+        timing = self.session.login_timing()
+        self.assertEqual(timing, {"state": "pending", "next_poll": 5, "expires_at": 600})
+        self.tick[0] = 5
+        cancelled = [False]
+        def reply(*args):
+            cancelled[0] = True
+            return token_response()
+        self.oauth_reply = reply
+        self.assertEqual(self.session.poll_login(cancelled=lambda: cancelled[0]), "cancelled")
+        self.assertEqual(self.store.snapshot().state, "disconnected")
+        self.assertEqual(self.session.login_timing()["state"], "idle")
+
     def test_status_never_refreshes_and_session_construction_has_no_io(self):
         class NoStore:
             def __getattr__(self, name):

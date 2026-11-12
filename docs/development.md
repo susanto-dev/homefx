@@ -11,6 +11,7 @@ python3 -m pip install -r tools/build-requirements.txt
 python3 -m unittest discover -s tests -v
 python3 tools/package.py
 python3 tools/repository.py
+python3 tools/verify_repository.py dist/repository
 ```
 
 The package command parses XML, checks the entry point/API dependency/assets/licence,
@@ -64,3 +65,14 @@ builder. The inventory names only local, reviewed ZIPs and their expected SHA-25
 checksums. See releases.md for its schema and trust boundary. No build step downloads
 old releases, and no retained archive code is executed. Use a fresh output directory
 when candidate bytes change. Tests include the old-version/current-index distinction.
+
+Validation and Security scans explicitly run for PR opened, synchronize, reopened
+and ready_for_review events. Draft creation already runs checks; promotion reruns
+them against the same source head. Wait for those fresh runs before treating the
+ready PR as mergeable. They use existing full-SHA Action pins, read-only repository
+permissions and no comment-posting step. Weekly security/update discovery remains.
+
+The repository verifier is read-only and separate from generation. It validates the
+candidate before CI uploads it and can inspect a detached/copied artifact locally.
+It does not repair mismatches, publish files or establish source trust. Use a fresh
+candidate directory when source changes; the generator's immutable-output guard stays.

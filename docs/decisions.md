@@ -98,3 +98,24 @@ inventory. The generator never downloads retained packages, promotes older versi
 into the current index, or overwrites a different package at an existing version.
 This prepares a future update channel without activating one. Existing MIT terms
 remain unchanged; no new dependency, paid service or third-party code/assets added.
+
+## 2026-11-12 — Activation readiness and PR event coverage
+
+Keep one reviewed PR for the device-readiness, account-flow and detached-repository
+verification sub-batches. Main remains protected and no review/status comments are
+posted. Existing PR checks already covered creation/update/reopening; explicitly add
+ready_for_review so draft promotion reruns validation/security without new automation
+that writes to PR discussions. External review automation is maintainer-managed.
+
+Device readiness is local and deliberately limited to safe version/capability fields.
+It does not read account settings, profiles, watch history or network services, create
+a token store, or label the device integration as passed. The controller for future
+account UI uses injected callbacks and mocked responses; confirmation is tied to the
+observed session so a delayed dialog cannot replace or disconnect a newer account.
+No live route or client registration is supplied by this batch.
+
+A read-only candidate verifier runs after generation and before CI artifact upload.
+It detects damaged/mismatched artifact contents without mutating them. Checksums and
+structural checks are not signatures or independent source approval. The reserved
+repository endpoint remains inactive. No new dependency, paid service, licence change
+or third-party code/assets is introduced.

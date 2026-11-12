@@ -57,3 +57,15 @@ current versions enter the index; conflicts, numeric version ordering, malformed
 inventories, unsafe paths and corrupt retained packages must fail. A local integration
 check can reuse a published HomeFX ZIP after verifying its known reviewed checksum;
 this is packaging evidence, not a Kodi upgrade or rollback test.
+
+Readiness tests reject arbitrary private strings/raw exceptions and prove the report
+route skips profile loading and network calls. Account-flow tests use synthetic codes,
+fake clocks/UI and injected requests to exercise replacement confirmation, timed polling,
+expiry/cancellation, stale confirmations and cleanup failure. No real user authorization
+or Kodi dialog responsiveness is inferred from these tests.
+
+Detached-repository verification tests deliberately alter index, inventory, sidecars,
+ZIPs/assets and topology, then require rejection without repairing or changing inputs.
+Valid retained-version candidates must still verify. After marking a draft ready,
+check the newly triggered validation/security runs rather than reusing earlier green
+checks from before promotion.

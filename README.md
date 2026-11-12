@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.4.0
+## Current preview: 0.5.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
@@ -15,11 +15,12 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.4.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
-account/session coordination, saved account-list preferences and explicit action
-contracts tested with fabricated responses. These are not connected to the
+Version 0.5.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+account/session coordination, a cancellable account-flow controller, saved account-list
+preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is
-information only. A local Kodi repository generator produces review artifacts; it
+information only. Device readiness displays bounded local runtime capabilities
+without reading account profiles or making network requests. A local Kodi repository generator produces review artifacts; it
 supports checksum-pinned retention of older reviewed packages but does not activate
 a public installation/update channel. Existing profiles keep their selected lists;
 open My movie list from a movie context menu or enable it in list selection.

@@ -49,12 +49,12 @@ steps, without accounts, analytics or external assets. GitHub Pages/standard
 public-repository runners require no paid plan; account storage limits still apply.
 No paid services, custom domain or larger runners are provisioned.
 
-Version 0.4.0 adds saved-movie/episode-filter preview workflows plus inactive
-account preferences/action contracts and retained-candidate tooling. Existing demo data and widget routes
+Version 0.5.0 adds local readiness reporting, an inactive account-flow controller
+and detached repository verification. Saved-movie/filter workflows remain available. Existing demo data and widget routes
 are unchanged; there is no credential migration or automatic account connection.
 The Validation workflow performs tests/package checks on PRs and main pushes without
 publication. On merge, Security scans and the existing managed CodeQL checks also
-run, and Publish preview builds/deploys the 0.4.0 video download only. Runner images and package
+run, and Publish preview builds/deploys the 0.5.0 video download only. Runner images and package
 registries remain external mutable inputs even though Action commits and dependency
 versions are pinned. No automatic update PRs, account writes or new hosting are added.
 
@@ -98,3 +98,17 @@ reviewed input to the next build. Nothing is fetched, deleted, published or inst
 Keeping an older ZIP is not an automatic rollback. A downgrade still needs an explicit
 Kodi action and profile compatibility checks; the index continues to advertise the
 current version. No production retention or deletion schedule is configured here.
+
+## Verify a detached candidate
+
+Run `python3 tools/verify_repository.py PATH` on a generated or copied candidate
+before considering publication. The verifier checks bounded safe topology, index
+integrity, package and sidecar digests, inventory coverage, current-version references,
+manifest/assets and retained package structure. It never repairs or modifies the
+candidate. A successful result establishes internal integrity, not provenance,
+a signature, live hosting or Kodi installation/upgrade compatibility.
+
+Validation runs this verifier before uploading the candidate artifact. Promotion from
+draft reruns Validation and Security scans; the fresh checks must finish successfully.
+No PR event deploys the preview or repository. The existing main-merge Pages workflow
+still publishes only the synthetic manual video download.

@@ -13,29 +13,25 @@ Real recommendations need a reviewed metadata provider and terms. Upcoming movie
 release dates require a defined release type/region; they do not prove playability.
 No batch depends on a separate always-on server or standalone Android application.
 
-## Combined batch: Workflows and retained candidates (0.4.0)
+## Combined batch: Activation readiness (0.5.0)
 
-Four related sub-batches share one PR and independent review:
+Three parallel sub-batches prepare the next real-device validation step:
 
-1. Visible synthetic workflows: My movie list accepts future movies and supports
-   duplicate-safe add/cancellable remove; episode context menus switch between all
-   episodes and aired unwatched episodes. Existing routes/profile selections remain.
-2. Durable selected-list preferences are bound to verified stable account identity,
-   survive refresh/restart, and stay separate across accounts. No live Kodi account
-   mode is enabled; only fabricated settings/list responses are tested.
-3. Explicit single-item mark-watched and owned movie-list-add contracts validate
-   outcomes and never retry uncertain writes. Writes are disabled by default and
-   not exposed by Kodi routes. Remote mark-unwatched/history deletion is excluded.
-4. Candidate repository retention accepts a bounded local inventory of reviewed ZIPs
-   and expected checksums. Older versions remain available in the generated tree;
-   only current versions enter the index. No publication or automatic downgrade.
+1. A visible Device readiness report shows bounded local version/capability fields,
+   without opening account profiles, exporting diagnostics or contacting services.
+2. An injected account-flow controller tests confirmation, device polling intervals,
+   cancellation, bounded waits and disconnect failure semantics. It is not wired to
+   the Kodi connection menu; registration/live/device gates remain unmet.
+3. A standalone read-only repository verifier checks detached candidate topology,
+   index/package/inventory checksums and references before artifact upload. It does
+   not publish, install, execute retained code or certify provenance.
 
-Before live account work: register an application, provide its public client ID and
-registered redirect URI (never its secret), verify login/refresh and device TLS/SQLite,
-then wire account UX and real list views. Confirmed action contracts still need live
-validation and UI ownership/reconciliation; duplicate history plays are possible
-if a user manually retries an uncertain action. Playback remains a separate gate.
+Validation and Security scans already ran on PR creation/update/reopening. Their
+explicit event lists now include ready_for_review, so promotion reruns checks.
+These workflows report checks/artifacts only and do not post PR comments.
 
-Before repository activation: approve the retention inventory, publish immutable
-packages before the index, test fresh install/upgrade and deliberate manual rollback
-on the actual TV. The reserved repository path remains outside the deployed site.
+Next external gates: run the readiness screen and TV checklist; register a Trakt
+application and provide its public client ID/registered redirect URI (never its
+secret); verify actual login/refresh before enabling account routes. Real data views,
+action outcomes and playback still require service/device testing. Repository
+activation remains separate, after retained-version review and install/upgrade tests.

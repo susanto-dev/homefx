@@ -7,17 +7,13 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 import xbmcvfs
-from resources.lib import catalogue as model, state, routes
+from resources.lib import catalogue as model, state, routes, readiness
 
 
 def main():
     addon = xbmcaddon.Addon()
     handle = int(sys.argv[1])
-    profile = Path(xbmcvfs.translatePath(addon.getAddonInfo("profile"))) / "demo.json"
-    prefs = state.load(profile)
-    items = model.apply_state(model.catalogue(), prefs)
     dialog = xbmcgui.Dialog()
-    art_root = addon.getAddonInfo("path") + "/resources/art/"
 
     def message(text):
         dialog.ok("HomeFX Preview — demo only", text)
@@ -70,6 +66,16 @@ def main():
 
     try:
         route, params = routes.parse(sys.argv[2] if len(sys.argv) > 2 else "")
+        if route == "readiness":
+            dialog.ok("HomeFX — Device readiness", readiness.report(
+                lambda: addon.getAddonInfo("version"),
+                lambda: xbmc.getInfoLabel("System.BuildVersion"),
+                lambda: xbmcaddon.Addon("plugin.video.umbrella").getAddonInfo("version")))
+            return
+        profile = Path(xbmcvfs.translatePath(addon.getAddonInfo("profile"))) / "demo.json"
+        prefs = state.load(profile)
+        items = model.apply_state(model.catalogue(), prefs)
+        art_root = addon.getAddonInfo("path") + "/resources/art/"
         key = params.get("id", "")
         if route == "setup":
             message("Trakt connection is not enabled in this preview.\n"
@@ -150,6 +156,7 @@ def main():
             add("Search demo titles…", "search")
             add("Select demo widget lists…", "select", False)
             add("Trakt connection setup…", "setup", False)
+            add("Device readiness", "readiness", False)
             add("Reset demo data…", "reset", False)
         else:
             query = params.get("q", "")

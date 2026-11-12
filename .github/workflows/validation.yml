@@ -3,6 +3,7 @@ name: Validation
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
@@ -38,6 +39,8 @@ jobs:
         run: python tools/build_site.py
       - name: Build inactive repository candidate
         run: python tools/repository.py
+      - name: Verify candidate before upload
+        run: python tools/verify_repository.py dist/repository
       - name: Save repository candidate for manual review
         if: matrix.python == '3.12'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

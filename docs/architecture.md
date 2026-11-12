@@ -77,3 +77,16 @@ Reads through the same session are refused while a mutation callback is pending;
 completion invalidates again even if the callback raises. Preference snapshots
 carry a persistent epoch used for conditional saves; disconnect invalidates credentials
 first and advances the epoch while clearing choices, rejecting delayed saves.
+
+## Readiness and future account UI
+
+The readiness route is handled before profile/state loading. A bounded report of
+local interpreter/standard-library and installed add-on capability is shown only on
+request. Arbitrary strings, paths and exceptions are not echoed into the report.
+No network probe, file export, account-store creation or playback handoff is performed.
+
+`account_flow` sits above Session behind injected UI/wait/cancellation callbacks.
+It coordinates a future device-code screen and explicit local disconnect; it is not
+imported or enabled by the Kodi connection menu. The flow confirms account replacement,
+respects poll timing/expiry, checks cancellation and always closes progress UI. Its
+bounded waiting is not proof of actual Kodi responsiveness or live authorization.
