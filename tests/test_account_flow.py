@@ -225,3 +225,31 @@ class AccountFlowTests(unittest.TestCase):
         self.assertEqual(self.flow.connect(), FlowResult.CANCELLED)
         self.assertEqual(self.ui.codes, [])
         self.assertEqual(self.session.status()['login'], 'idle')
+
+    def test_replacement_attempt_during_wait_is_neither_polled_nor_cancelled(self):
+        def replace(seconds):
+            self.tick += seconds
+            self.session.begin_login()
+            return False
+        self.flow.wait = replace
+        self.assertEqual(self.flow.connect(), FlowResult.SESSION_CHANGED)
+        self.assertEqual(self.session.login_timing()['state'], 'pending')
+        self.assertEqual(self.calls, [('/oauth/device/code', 0), ('/oauth/device/code', 1)])
+        self.assertEqual(self.store.snapshot().state, 'disconnected')
+
+    def test_failed_begin_cannot_claim_and_cancel_competing_attempt(self):
+        original = self.session.begin_login
+        def competing(**kwargs):
+            original()
+            return original(**kwargs)
+        self.session.begin_login = competing
+        self.assertEqual(self.flow.connect(), FlowResult.SESSION_CHANGED)
+        self.assertEqual(self.session.login_timing()['state'], 'pending')
+        self.assertEqual(self.calls, [('/oauth/device/code', 0)])
+        self.assertEqual(self.ui.codes, [])
+
+    def test_replacement_in_poll_callback_survives_old_controller_cleanup(self):
+        self.token_hook = lambda: self.session.begin_login()
+        self.assertEqual(self.flow.connect(), FlowResult.SESSION_CHANGED)
+        self.assertEqual(self.session.login_timing()['state'], 'pending')
+        self.assertEqual(self.store.snapshot().state, 'disconnected')

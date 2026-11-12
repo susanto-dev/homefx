@@ -9,6 +9,8 @@ must have transport timeouts: this controller cannot interrupt blocking I/O.
 from enum import Enum
 from math import isfinite
 
+from .trakt_auth import AuthError
+
 
 class FlowResult(str, Enum):
     AUTHORIZED = "authorized"
@@ -68,12 +70,16 @@ class AccountFlow:
                 return FlowResult.CANCELLED
             if self.session.status()["generation"] != generation:
                 return FlowResult.SESSION_CHANGED
-            attempt = generation + 1
             prompt = self.session.begin_login(expected_generation=generation)
-            if prompt is None or self.cancelled():
+            if prompt is None:
+                raise _Stopped(FlowResult.SESSION_CHANGED)
+            # Ownership is acquired only after issuance succeeds for this generation.
+            attempt = generation + 1
+            if self.cancelled():
                 raise _Stopped(FlowResult.CANCELLED)
             if self.clock() >= deadline:
                 raise _Stopped(FlowResult.TIMEOUT)
+            self.session.login_timing(expected_generation=attempt)
             opened = True
             self.ui.show_code(prompt.user_code, prompt.verification_url)
             # A second limit protects against a broken/non-advancing scheduler.
@@ -88,7 +94,7 @@ class AccountFlow:
                 if now >= deadline:
                     result = FlowResult.TIMEOUT
                     break
-                timing = self.session.login_timing()
+                timing = self.session.login_timing(expected_generation=attempt)
                 if timing["state"] != "pending":
                     result = self._terminal(timing["state"])
                     break
@@ -98,7 +104,7 @@ class AccountFlow:
                 if now >= timing["next_poll"]:
                     def abort():
                         return self.cancelled() or self.clock() >= deadline
-                    state = self.session.poll_login(cancelled=abort)
+                    state = self.session.poll_login(cancelled=abort, expected_generation=attempt)
                     if state != "pending":
                         result = self._terminal(state)
                         if state == "cancelled" and self.clock() >= deadline:
@@ -114,6 +120,9 @@ class AccountFlow:
                         break
         except _Stopped as stopped:
             result = stopped.result
+        except AuthError as error:
+            result = (FlowResult.SESSION_CHANGED if error.args == ("session_changed",)
+                      else FlowResult.FAILED)
         except Exception:
             result = FlowResult.FAILED
         finally:

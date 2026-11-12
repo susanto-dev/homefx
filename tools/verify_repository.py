@@ -89,6 +89,11 @@ def _inventory(data):
 def _archive(data, ident, version):
     allowed = set(package.FILES if ident == IDS[0] else repository.REPO_FILES)
     required = {"LICENSE", "addon.xml", "default.py", "resources/__init__.py", "resources/lib/__init__.py"} if ident == IDS[0] else allowed
+    if ident == IDS[0]:
+        local_manifest = repository._manifest(
+            repository._safe_file(package.ADDON, "addon.xml", 1024 * 1024), ident)
+        if version == local_manifest.get("version"):
+            required = allowed
     with ZipFile(io.BytesIO(data)) as archive:
         entries = archive.infolist()
         names = [entry.filename for entry in entries]

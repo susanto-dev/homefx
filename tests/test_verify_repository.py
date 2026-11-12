@@ -98,6 +98,14 @@ class VerificationTests(unittest.TestCase):
         self.rewrite_zip(lambda contents: contents.update({"plugin.video.homefx/private.json": b"{}"}))
         self.rejected()
 
+    def test_current_runtime_file_missing_after_rehash(self):
+        # Remove a non-core module while keeping both outer hashes consistent.
+        runtime = next(name for name in package.FILES
+                       if name.startswith("resources/lib/")
+                       and name.endswith(".py") and not name.endswith("__init__.py"))
+        self.rewrite_zip(lambda contents: contents.pop("plugin.video.homefx/" + runtime))
+        self.rejected()
+
     def test_invalid_api_after_rehash(self):
         def change(contents):
             key = "plugin.video.homefx/addon.xml"
@@ -175,12 +183,22 @@ class VerificationTests(unittest.TestCase):
         target.write_bytes(b"changed")
         self.rejected()
 
-    def retained_candidate(self):
+    def retained_candidate(self, subset=False):
         source = self.root / "older-source"
         shutil.copytree(package.ADDON, source)
         manifest = source / "addon.xml"
         manifest.write_text(manifest.read_text().replace('version="' + package.validate() + '"', 'version="0.0.1"', 1))
         archive = package.build(source, self.root / "older")
+        if subset:
+            with ZipFile(archive) as zipped:
+                contents = {entry.filename: zipped.read(entry) for entry in zipped.infolist()}
+            removable = next(name for name in contents
+                             if "/resources/lib/" in name and name.endswith(".py")
+                             and not name.endswith("__init__.py"))
+            del contents[removable]
+            with ZipFile(archive, "w") as zipped:
+                for name, data in contents.items():
+                    zipped.writestr(name, data)
         inventory = self.root / "retained.json"
         inventory.write_text(json.dumps({"schema": 1, "packages": [{"id": "plugin.video.homefx", "version": "0.0.1", "path": "older/" + archive.name, "sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}]}))
         self.candidate = self.root / "with-retained"
@@ -189,6 +207,10 @@ class VerificationTests(unittest.TestCase):
 
     def test_retained_release_roundtrip(self):
         self.retained_candidate()
+        self.assertEqual(verifier.verify(self.candidate)["retained"], 1)
+
+    def test_retained_historical_runtime_subset(self):
+        self.retained_candidate(subset=True)
         self.assertEqual(verifier.verify(self.candidate)["retained"], 1)
 
     def test_index_must_select_latest_inventory_version(self):

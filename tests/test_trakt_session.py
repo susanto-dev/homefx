@@ -74,6 +74,29 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(self.store.snapshot().state, "disconnected")
         self.assertEqual(self.session.login_timing()["state"], "idle")
 
+    def test_pinned_poll_rechecks_after_cancellation_callback(self):
+        self.session.begin_login()
+        attempt = self.store.snapshot().generation
+        self.tick[0] = 5
+        def replaced():
+            self.session.begin_login()
+            return False
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.poll_login(cancelled=replaced, expected_generation=attempt)
+        self.assertEqual(self.session.login_timing()["state"], "pending")
+        self.assertEqual([call[1] for call in self.oauth_calls],
+                         ["/oauth/device/code", "/oauth/device/code"])
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.login_timing(expected_generation=attempt)
+
+    def test_failed_code_issuance_releases_only_its_own_attempt(self):
+        def failed(*args):
+            raise OSError("synthetic-private-error")
+        self.oauth_reply = failed
+        with self.assertRaises(AuthError):
+            self.session.begin_login(expected_generation=0)
+        self.assertEqual(self.session.login_timing()["state"], "idle")
+
     def test_status_never_refreshes_and_session_construction_has_no_io(self):
         class NoStore:
             def __getattr__(self, name):

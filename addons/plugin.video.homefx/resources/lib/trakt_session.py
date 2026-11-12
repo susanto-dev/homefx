@@ -68,13 +68,26 @@ class Session:
         expected = prior.generation + 1
         login = DeviceLogin(self._oauth, self._client_id, self._monotonic)
         self._login, self._login_generation = login, expected
-        prompt = login.begin()
+        try:
+            prompt = login.begin()
+        except Exception:
+            login.cancel()
+            if self._login is login:
+                self._login, self._login_generation = None, None
+            raise
         if self._login is not login or self._store.snapshot().generation != expected:
             login.cancel()
             return None
         return prompt
 
-    def poll_login(self, cancelled=None):
+    def _assert_login_generation(self, expected_generation):
+        if expected_generation is not None and (
+                self._login_generation != expected_generation
+                or self._store.snapshot().generation != expected_generation):
+            raise AuthError("session_changed")
+
+    def poll_login(self, cancelled=None, expected_generation=None):
+        self._assert_login_generation(expected_generation)
         login = self._login
         if login is None:
             raise AuthError("login_not_started")
@@ -88,11 +101,16 @@ class Session:
             except Exception:
                 return True
 
-        if aborted():
+        cancelled_before = aborted()
+        self._assert_login_generation(expected_generation)
+        if cancelled_before:
             self.cancel_login(expected_generation=expected)
             return "cancelled"
         state = login.poll()
-        if aborted():
+        self._assert_login_generation(expected_generation)
+        cancelled_after = aborted()
+        self._assert_login_generation(expected_generation)
+        if cancelled_after:
             self.cancel_login(expected_generation=expected)
             return "cancelled"
         if self._login is not login or self._store.snapshot().generation != expected:
@@ -108,9 +126,11 @@ class Session:
             self._login, self._login_generation = None, None
         return state
 
-    def login_timing(self):
+    def login_timing(self, expected_generation=None):
         """Public monotonic scheduling data; contains no codes or credentials."""
+        self._assert_login_generation(expected_generation)
         self.status()
+        self._assert_login_generation(expected_generation)
         login = self._login
         if login is None:
             return {"state": "idle", "next_poll": None, "expires_at": None}
