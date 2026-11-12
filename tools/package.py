@@ -2,7 +2,7 @@
 import ast
 import hashlib
 import re
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 from pathlib import Path
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
@@ -14,8 +14,19 @@ FILES = ("LICENSE", "addon.xml", "default.py", "resources/__init__.py",
          "resources/art/icon.png", "resources/art/poster.png", "resources/art/fanart.png")
 
 
+def parse_manifest(data):
+    """Reject oversized input, DTDs and entities in source and ZIP manifests."""
+    if len(data) > 1024 * 1024:
+        raise ValueError("Manifest exceeds 1 MiB limit")
+    return ET.fromstring(data, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+
+
 def validate(source=ADDON):
-    manifest = ET.parse(source / "addon.xml").getroot()
+    manifest_path = source / "addon.xml"
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise ValueError("Missing or unsafe packaged manifest")
+    with manifest_path.open("rb") as stream:
+        manifest = parse_manifest(stream.read(1024 * 1024 + 1))
     if manifest.tag != "addon" or manifest.get("id") != "plugin.video.homefx":
         raise ValueError("Unexpected add-on ID")
     version = manifest.get("version", "")
@@ -56,7 +67,7 @@ def build(source=ADDON, output=None):
     with ZipFile(dest) as archive:
         if archive.testzip() is not None:
             raise ValueError("Corrupt package")
-        packed = ET.fromstring(archive.read("plugin.video.homefx/addon.xml"))
+        packed = parse_manifest(archive.read("plugin.video.homefx/addon.xml"))
         if packed.get("version") != version:
             raise ValueError("ZIP/manifest version mismatch")
     digest = hashlib.sha256(dest.read_bytes()).hexdigest()

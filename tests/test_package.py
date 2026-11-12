@@ -4,6 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
+from unittest.mock import patch
+from defusedxml.common import DefusedXmlException
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("packager", ROOT / "tools/package.py")
@@ -48,3 +50,43 @@ class PackageTests(unittest.TestCase):
             (src / "default.py").unlink()
             with self.assertRaises(ValueError):
                 p.validate(src)
+
+    def test_rejects_dtd_and_entities_in_source_manifest(self):
+        payloads = [
+            b'<!DOCTYPE addon><addon/>',
+            b'<!DOCTYPE addon [<!ENTITY x "expanded">]><addon>&x;</addon>',
+            b'<!DOCTYPE addon [<!ENTITY x SYSTEM "file:///does-not-exist">]><addon>&x;</addon>',
+        ]
+        for payload in payloads:
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as temp:
+                src = Path(temp) / "source"
+                shutil.copytree(p.ADDON, src)
+                (src / "addon.xml").write_bytes(payload)
+                with self.assertRaises(DefusedXmlException):
+                    p.build(src, Path(temp) / "out")
+                self.assertFalse((Path(temp) / "out").exists())
+
+    def test_rejects_dtd_in_packaged_manifest_readback(self):
+        class AlteredReadback(ZipFile):
+            def read(self, name, *args, **kwargs):
+                if name == "plugin.video.homefx/addon.xml":
+                    return b'<!DOCTYPE addon><addon/>'
+                return super().read(name, *args, **kwargs)
+        with tempfile.TemporaryDirectory() as temp, patch.object(p, "ZipFile", AlteredReadback):
+            with self.assertRaises(DefusedXmlException):
+                p.build(output=Path(temp))
+            self.assertFalse(list(Path(temp).glob("*.sha256")))
+
+    def test_oversized_source_manifest_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            src = Path(temp)
+            (src / "addon.xml").write_bytes(b" " * (1024 * 1024 + 1))
+            with self.assertRaisesRegex(ValueError, "1 MiB"):
+                p.validate(src)
+
+    def test_build_dependencies_are_in_audited_tool_inventory(self):
+        declared = {line for line in (ROOT / 'tools/build-requirements.txt').read_text().splitlines()
+                    if line and not line.startswith('#')}
+        audited = set((ROOT / 'tools/security-requirements.txt').read_text().splitlines())
+        self.assertTrue(declared)
+        self.assertTrue(declared <= audited)

@@ -1,0 +1,2 @@
+# Development-only XML parser; never bundled in the Kodi add-on.
+defusedxml==0.7.1

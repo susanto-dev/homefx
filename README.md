@@ -19,6 +19,7 @@ is bundled. The current skin stays installed separately.
 ## Build and try
 
 ```sh
+python3 -m pip install -r tools/build-requirements.txt
 python3 -m unittest discover -s tests -v
 python3 tools/package.py
 ```

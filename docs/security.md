@@ -49,9 +49,13 @@ The integration could not independently read that setting (HTTP 403); no further
 setting change is needed based on the owner confirmation.
 
 Initial local scan: three XML-parser findings in tools/package.py (B405 and two B314).
-They concern parsing the checked-in manifest and the generated ZIP manifest. They
-remain visible for manual trust-boundary assessment; no automatic fix or suppression
-was applied. The initial tool dependency audit reported no known vulnerabilities.
+They concern parsing the checked-in manifest and the generated ZIP manifest.
+The manually reviewed fix uses defusedxml for both source and ZIP readback,
+rejects DTDs/entities, and bounds source manifest reads to 1 MiB. Regression tests
+cover malicious source and archive readback. No warning suppression was added.
+The initial tool dependency audit reported no known vulnerabilities.
+defusedxml is PSF-licensed, development-only, and already included in the audited
+tool inventory. It adds no paid service or Kodi runtime dependency.
 
 No paid scanner subscription is introduced. Bandit and pip-audit are Apache-2.0
 open-source tools used only in development. Public standard-runner compute is free;

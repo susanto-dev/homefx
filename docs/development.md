@@ -2,10 +2,12 @@
 
 Start with Python 3.8-compatible syntax, the standard library, and a virtual
 environment if desired. The inspected cloud host runs Python 3.12; the TV's exact
-embedded interpreter must still be recorded. No external Python packages are
-needed for this batch. Optional lint tools are not required or claimed as run.
+embedded interpreter must still be recorded. Build tools require defusedxml 0.7.1
+to reject unsafe XML. It is development-only; the Kodi add-on still uses no
+third-party Python packages. Optional lint tools are not required or claimed as run.
 
 ```sh
+python3 -m pip install -r tools/build-requirements.txt
 python3 -m unittest discover -s tests -v
 python3 tools/package.py
 ```

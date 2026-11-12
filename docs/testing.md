@@ -1,6 +1,6 @@
 # Testing
 
-Run `python3 -m unittest discover -s tests -v` from the repository root.
+Install `tools/build-requirements.txt` first. Run `python3 -m unittest discover -s tests -v` from the repository root.
 Tests cover explicit synthetic expected orders/dates, episode identity, calendar
 boundaries, watch-state overrides, search, related-title order, continuation choices,
 URL encoding and malformed routes, local state recovery, reproducible ZIP bytes,
