@@ -33,6 +33,7 @@ procedure and widget setup. No hosted repository or automatic update channel exi
 
 - [Contributing and review](CONTRIBUTING.md)
 - [Development](docs/development.md) and [testing](docs/testing.md)
+- [Trakt authentication feasibility](docs/trakt-authentication.md)
 - [Architecture](docs/architecture.md), [decisions](docs/decisions.md), [backlog](docs/backlog.md)
 - [Security reporting](SECURITY.md) and [weekly scanning / manual triage](docs/security.md)
 - [Packaging and future releases](docs/releases.md)

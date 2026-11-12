@@ -3,7 +3,7 @@
 | Batch | Scope | State / exit condition |
 |---|---|---|
 | 1 | Mocked widgets, context menus, guidance, tests, local ZIP | Implemented; cloud checks recorded in delivery; TV acceptance pending |
-| 2 | Trakt authentication feasibility | Pending: supported secret-free TV login and refresh under no-server constraint |
+| 2 | Trakt authentication feasibility | Documented feasibility; mocked lifecycle next; live login/refresh and registration still pending ([evidence](trakt-authentication.md)) |
 | 3 | Personal lists and watch progress | Pending: actual list selection, ordering decisions, cache, manual watched writes, list additions |
 | 4 | Umbrella playback experiment | Pending: installed version, movie/episode identity, cancellation, subtitles, resume, one scrobbling owner, next-episode choice |
 | 5 | Repository installation and updates | Pending: index generation, fresh install/upgrade, approved static hosting/publication |
