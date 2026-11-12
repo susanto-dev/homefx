@@ -5,7 +5,8 @@ plugin.video.homefx supplies the synthetic preview. repository.homefx is a local
 candidate only, with no hosted update channel. A separate skin component is deferred. A skin fork requires a demonstrated limitation first.
 
 The preview boundary is: Kodi adapter → pure route/catalogue logic → invented data.
-Demo preferences and watched overrides live in the add-on profile as demo.json.
+Demo selected lists, saved movie IDs and watched overrides live in the add-on
+profile as demo.json. The saved collection starts empty and accepts future movies.
 Atomic replacement avoids partial writes; this is not a concurrent credential store.
 The demo does not open a database or start a background service.
 
@@ -15,7 +16,9 @@ Real-Debrid is not a complete playable-title catalogue. An air/release date is n
 proof of source availability. One component must own resume/scrobbling per playback.
 
 Stable plugin routes allow skin widgets and folder browsing to use the same data.
-Routes: list (id=weekend/discover/series), show (id=s1), continue, next, upcoming.
+Routes: list (id=weekend/discover/series/saved), show (id=s1), continue, next, upcoming.
+The show filter defaults to all; filter=aired_unwatched excludes watched, future and
+unknown air dates while preserving episode order. Existing widget URLs remain valid.
 Root selection controls which demo list folders are shown; existing skin widgets
 are configured separately and are not automatically removed when a list is deselected.
 Changing route names later requires considering existing saved widget paths.
@@ -46,11 +49,31 @@ Session checks token expiry before reads, permits one durable refresh claimant a
 never automatically repeats a failed data request. Conditional generation updates
 prevent stale login or 401 responses from overwriting a replacement account. Library
 checks shared state before returning cache hits and validates the whole metadata/
-progress join. Refresh also changes generation and conservatively resets invocation
-list selections; stable account-bound saved widget selection remains future work.
+progress join. Without a preference store, refresh conservatively resets invocation selection.
+With an injected preference store, a new generation re-verifies user.ids.uuid and
+restores only that account's saved list IDs. Durable live widget wiring remains future
+work; private selection records are never embedded into public plugin URLs.
 Cache TTL is 30 seconds by default, bounded to 32 entries/1 MiB serialized data,
 with copy isolation. There is no private persistent metadata cache or background
 observer. External account changes invalidate data when the next read observes them;
 Library.disconnect clears its cache before clearing local credential state.
 Cache keys also include an opaque library-instance identity, so shared cache injection
 cannot mix accounts whose independent profile generation counters happen to match.
+
+## Explicit action contracts
+
+`trakt_actions` prepares validated single-item requests for mark-watched history and
+movie additions to an owned list. Session accepts an optional mutation callback;
+without one it reports writes disabled before authentication/network work. The
+transport exposes a separate strict POST boundary; existing read callbacks remain
+GET-only. Result classification checks the response body, not just its HTTP status.
+Uncertain results are not replayed or used to change local watched status.
+
+Session data revisions invalidate invocation caches after attempted writes, including
+lost responses. This is not cross-device synchronization; other invocations still
+observe bounded cache staleness. Compound reads check revision and credential generation
+so they cannot combine snapshots across an intervening action or account switch.
+Reads through the same session are refused while a mutation callback is pending;
+completion invalidates again even if the callback raises. Preference snapshots
+carry a persistent epoch used for conditional saves; disconnect invalidates credentials
+first and advances the epoch while clearing choices, rejecting delayed saves.

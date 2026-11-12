@@ -1,4 +1,4 @@
-# TV acceptance — preview 0.3.0
+# TV acceptance — preview 0.4.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,
@@ -26,8 +26,14 @@ package SHA-256, steps, expected/observed behavior and elapsed load times.
    widget title or needs a separate menu/submenu shortcut; do not assume support.
 9. Open Trakt connection setup. Confirm it only shows guidance and neither asks for
    credentials nor starts a login.
-10. Restart Kodi and verify demo selections/overrides persist. Reset demo data and
-   verify the original states return. Check empty search and cancellation behavior.
+10. Add a released and a future movie to My movie list through the context menu.
+    Add the same movie twice: it should appear once. Cancel removal, then confirm
+    removal. Enable this fourth list in list selection if an older profile hides it.
+11. From a show or episode context menu, browse aired unwatched episodes. Verify
+    unfinished episodes remain, watched/future episodes are excluded, and All episodes
+    restores the full narrative list. Check both folder navigation and saved widgets.
+12. Restart Kodi and verify demo selections/overrides persist. Reset demo data and
+   verify the original states return and the saved movie list is empty. Check empty search and cancellation behavior.
 
 Playback/subtitle/resume/scrobbling acceptance is DEFERRED, not passed. The displayed
 resume values are synthetic, not a functional player integration. Real Trakt lists,

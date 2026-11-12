@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlencode
 
 BASE = "plugin://plugin.video.homefx/"
 ROUTES = {"home", "list", "show", "continue", "next", "upcoming", "search",
-          "similar", "play", "watched", "select", "reset", "info", "sequence", "setup"}
+          "similar", "play", "watched", "select", "reset", "info", "sequence", "setup", "collect"}
 
 
 def url(route, **params):
@@ -19,4 +19,7 @@ def parse(query):
     route = data.get("route", ["home"])[0]
     if route not in ROUTES:
         raise ValueError("Unknown route")
-    return route, {k: v[0] for k, v in data.items() if k in {"id", "q", "value"}}
+    if "filter" in data and (route != "show" or len(data["filter"]) != 1
+                             or data["filter"][0] not in {"all", "aired_unwatched"}):
+        raise ValueError("Invalid episode filter")
+    return route, {k: v[0] for k, v in data.items() if k in {"id", "q", "value", "filter"}}

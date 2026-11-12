@@ -2,7 +2,7 @@
 from datetime import date, timedelta
 
 LISTS = {"weekend": "Weekend movies (demo)", "discover": "Discover (demo)",
-         "series": "My series (demo)"}
+         "series": "My series (demo)", "saved": "My movie list (demo)"}
 MEMBERS = {"weekend": ["m1", "m2", "m3", "m4"],
            "discover": ["m2", "m5", "s1"], "series": ["s1"]}
 
@@ -57,13 +57,28 @@ def ordered(items, today=None):
     return sorted(items, key=key)
 
 
-def view(route, items, state, key="", query="", today=None):
+def _aired(item, today):
+    try:
+        released = date.fromisoformat(item.get("date", ""))
+    except (TypeError, ValueError):
+        return False
+    return released <= today
+
+
+def view(route, items, state, key="", query="", today=None, episode_filter="all"):
     today = today or date.today()
     values = list(items.values())
     if route == "list":
+        if key == "saved":
+            saved = state.get("saved_movies", [])
+            return ordered([item for ident, item in items.items()
+                            if ident in saved and item["kind"] == "movie"], today)
         return ordered([items[i] for i in MEMBERS.get(key, [])], today)
     if route == "show":
-        return sorted([x for x in values if x.get("show") == key],
+        if episode_filter not in {"all", "aired_unwatched"}:
+            raise ValueError("Unknown episode filter")
+        return sorted([x for x in values if x.get("show") == key and
+                       (episode_filter == "all" or (not x["watched"] and _aired(x, today)))],
                       key=lambda x: (x["season"], x["episode"]))
     if route == "continue":
         return ordered([x for x in values if x["progress"] > 0 and not x["watched"]

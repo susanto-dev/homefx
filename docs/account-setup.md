@@ -1,6 +1,6 @@
 # Preparing a Trakt development connection
 
-The 0.3.0 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.4.0 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
@@ -38,7 +38,8 @@ documented as requiring Premium. Changed terms or a paid option need separate re
 4. Check Kodi's Python/SQLite availability, private profile permissions and TLS trust
    on the actual Android/Google TV. Measure cancellation and slow/offline behavior.
 5. Define account-switch/disconnect UI and service-side revocation guidance before
-   enabling live mode. Local disconnect is not remote revocation or backup erasure.
+   enabling live mode. Local disconnect is not remote revocation or backup erasure. Library disconnect
+   also clears all saved list choices in this local profile.
 6. Verify selected personal/liked lists, read-only progress and UTC date handling.
    Watch-history/list writes, playback, subtitles and scrobbling remain separate work.
 
@@ -59,3 +60,9 @@ For troubleshooting, record only the package checksum, Kodi/Android versions,
 safe error category and steps. Never include authorization headers, tokens, device
 codes, private list contents or watch history. See [security](security.md) and
 [authentication contracts](trakt-authentication.md).
+
+The new action contracts do not enable live writes. Before wiring them into UI,
+verify confirmed/already-present/not-found/error outcomes with the registered app,
+review how to reconcile an uncertain result, and check account-switch behavior.
+Do not add automatic retries for mark-watched: duplicate plays can be recorded.
+The local preview's remove/unwatched actions are demonstrations, not remote deletions.

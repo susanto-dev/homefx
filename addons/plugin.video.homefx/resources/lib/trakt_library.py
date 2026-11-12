@@ -1,4 +1,4 @@
-"""Invocation-memory list and episode reads; no private data is cached on disk."""
+"""Invocation-memory reads with optional account-bound saved list choices."""
 from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import asdict
@@ -8,6 +8,7 @@ import time
 from .trakt_auth import AuthError, _number
 from .trakt_client import ApiError, ListRef
 from . import trakt_views
+from .trakt_preferences import PreferencesError, account_uuid
 
 
 class MemoryCache:
@@ -81,20 +82,25 @@ class MemoryCache:
 class Library:
     """Read through an account session and isolate cache/selection by generation.
 
-    Selected list keys are private invocation preferences, not saved widget URLs.
+    Selected keys optionally persist through a private AccountPreferences store.
+    Only verified user.ids.uuid binds that store; no slug fallback is permitted.
     Every cache hit checks current shared account state before returning data.
     External account changes clear memory on the next access, not in a background
-    observer. Local disconnect clears immediately. Any token rotation also clears
-    selections until a stable service-account identity is added in a later batch.
+    observer. Local disconnect clears memory and all locally saved profile choices.
+    Token rotation restores choices only after rechecking the stable account identity.
     No write, playback or availability claim is made by these reads.
     """
-    def __init__(self, session, cache=None):
+    def __init__(self, session, cache=None, preferences=None):
         self._session = session
         self._cache = cache if cache is not None else MemoryCache()
         # A caller may reuse a cache across profiles whose generations coincide.
         # An opaque per-library namespace keeps their private entries distinct.
         self._cache_namespace = object()
         self._generation = None
+        self._revision = None
+        self._account = None
+        self._preferences = preferences
+        self._preferences_epoch = None
         self._selected = ()
 
     def __repr__(self):
@@ -102,25 +108,54 @@ class Library:
 
     def clear(self):
         self._cache.clear()
-        self._generation, self._selected = None, ()
+        self._generation, self._revision, self._account, self._selected = None, None, None, ()
+        self._preferences_epoch = None
 
     def disconnect(self):
         self.clear()
-        self._session.disconnect()
+        try:
+            # Stop new authenticated loads before invalidating pending preference saves.
+            self._session.disconnect()
+        finally:
+            if self._preferences is not None:
+                self._preferences.clear_all()
 
-    def _read(self, operation, *args, expected_generation=None):
+    def _data_revision(self):
+        return getattr(self._session, 'data_revision', 0)
+
+    def _assert_view(self, generation, revision):
+        self._session.assert_current(generation)
+        if self._data_revision() != revision:
+            raise ApiError('data_changed')
+
+    def _activate(self, generation, revision):
+        self.clear()
+        if self._preferences is not None:
+            settings = self._session.read('settings')
+            self._assert_view(generation, revision)
+            account = account_uuid(settings)
+            epoch, selected = self._preferences.snapshot(account)
+            self._assert_view(generation, revision)
+            self._account, self._selected = account, tuple(selected)
+            self._preferences_epoch = epoch
+        self._generation = generation
+
+    def _read(self, operation, *args, expected_generation=None, expected_revision=None):
         try:
             generation = self._session.cache_key()
+            revision = self._data_revision()
+            if expected_revision is not None and revision != expected_revision:
+                raise ApiError("data_changed")
             if expected_generation is not None and generation != expected_generation:
                 raise AuthError("session_changed")
             if generation != self._generation:
-                self.clear()
-                self._generation = generation
-            key = (self._cache_namespace, generation, operation) + args
+                self._activate(generation, revision)
+            key = (self._cache_namespace, generation, revision, operation) + args
             found, value = self._cache.get(key)
             if not found:
                 value = self._session.read(operation, *args)
-            self._session.assert_current(generation)
+            self._assert_view(generation, revision)
+            self._revision = revision
             if not found:
                 self._cache.put(key, value)
             return value
@@ -139,20 +174,28 @@ class Library:
         if len(set(keys)) != len(keys) or any(key not in available for key in keys):
             raise ApiError("unavailable_selection")
         try:
-            self._session.assert_current(self._generation)
-        except AuthError:
+            self._assert_view(self._generation, self._revision)
+        except (AuthError, ApiError):
             self.clear()
             raise
-        self._selected = tuple(keys)
-        return [available[key] for key in self._selected]
+        try:
+            if self._preferences is not None:
+                if not self._preferences.save(self._account, keys, expected_epoch=self._preferences_epoch):
+                    raise PreferencesError('preferences_changed')
+                self._assert_view(self._generation, self._revision)
+            self._selected = tuple(keys)
+            return [available[key] for key in self._selected]
+        except (AuthError, ApiError):
+            self.clear()
+            raise
 
     def selected_lists(self):
         available = {ref.key: ref for ref in self.lists()}
         if any(key not in available for key in self._selected):
             raise ApiError("unavailable_selection")
         try:
-            self._session.assert_current(self._generation)
-        except AuthError:
+            self._assert_view(self._generation, self._revision)
+        except (AuthError, ApiError):
             self.clear()
             raise
         return [available[key] for key in self._selected]
@@ -165,18 +208,19 @@ class Library:
             raise ApiError("unavailable_selection")
         ref = available[key]
         return self._read("list_items", ref.owner, ref.trakt_id,
-                          expected_generation=self._generation)
+                          expected_generation=self._generation, expected_revision=self._revision)
 
     def episode_view(self, show_id, season, now=None):
         # Guard the whole join as well as each component: mixing account snapshots
         # could otherwise attribute one account's history to another's metadata.
         try:
             generation = self._session.cache_key()
-            metadata = self._read("season_episodes", show_id, season, expected_generation=generation)
-            progress = self._read("show_progress", show_id, expected_generation=generation)
-            pauses = self._read("paused", expected_generation=generation)
+            revision = self._data_revision()
+            metadata = self._read("season_episodes", show_id, season, expected_generation=generation, expected_revision=revision)
+            progress = self._read("show_progress", show_id, expected_generation=generation, expected_revision=revision)
+            pauses = self._read("paused", expected_generation=generation, expected_revision=revision)
             rows = trakt_views.episodes(metadata, progress, pauses, now)
-            self._session.assert_current(generation)
+            self._assert_view(generation, revision)
             return rows
         except (AuthError, ApiError):
             self.clear()

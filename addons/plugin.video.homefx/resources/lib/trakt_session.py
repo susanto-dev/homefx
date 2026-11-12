@@ -5,9 +5,11 @@ constructs a transport nor enables an account screen. A new login disconnects th
 previous local account; server-side revocation remains a separate user action.
 """
 import time
+from threading import Lock
 
 from .trakt_auth import AuthError, DeviceLogin, _number, _text, refresh_tokens
 from .trakt_client import ApiError, Client
+from .trakt_actions import ActionResult, MutationClient, prepare
 
 
 class Session:
@@ -21,7 +23,8 @@ class Session:
                        "season_episodes", "settings"))
 
     def __init__(self, store, oauth_request, api_request, client_id, redirect_uri,
-                 clock=time.time, monotonic=time.monotonic, refresh_margin=60):
+                 clock=time.time, monotonic=time.monotonic, refresh_margin=60,
+                 mutation_request=None):
         if not _text(client_id, 256) or not _text(redirect_uri, 2048):
             raise AuthError("invalid_client_identity")
         if not _number(refresh_margin, 0, 300):
@@ -29,6 +32,10 @@ class Session:
         self._store = store
         self._oauth = oauth_request
         self._api = api_request
+        self._mutation = mutation_request
+        self.data_revision = 0
+        self._mutation_pending = False
+        self._mutation_lock = Lock()
         self._client_id = client_id
         self._redirect_uri = redirect_uri
         self._clock, self._monotonic = clock, monotonic
@@ -103,6 +110,8 @@ class Session:
         return snapshot
 
     def _ready(self):
+        if self._mutation_pending:
+            raise AuthError("action_in_progress")
         snapshot = self._store.snapshot()
         if snapshot.state == "refreshing":
             raise AuthError("refresh_busy")
@@ -156,3 +165,48 @@ class Session:
             else:
                 self._current(generation)
             raise
+
+    def mutate(self, operation, *args):
+        """An explicit single write; failures/uncertainty are never replayed.
+
+        No callback is configured by default. History writes are not idempotent;
+        callers must reconcile an uncertain outcome before attempting another.
+        data_revision changes at both attempt and completion, even when the result
+        is lost. Reads and nested writes are refused while a callback is pending.
+        """
+        request = prepare(operation, *args)
+        if self._mutation is None:
+            return ActionResult('failed', 'writes_disabled')
+        snapshot = self._ready()
+        generation = snapshot.generation
+        attempted = [False]
+        blocked = [False]
+
+        def guarded_request(method, path, headers, body=None):
+            if not self._mutation_lock.acquire(blocking=False):
+                blocked[0] = True
+                raise AuthError('action_in_progress')
+            try:
+                self.assert_current(generation)
+                attempted[0] = True
+                self._mutation_pending = True
+                self.data_revision += 1
+                try:
+                    return self._mutation(method, path, headers, body)
+                finally:
+                    self.data_revision += 1
+                    self._mutation_pending = False
+            finally:
+                self._mutation_lock.release()
+
+        client = MutationClient(guarded_request, self._client_id, snapshot.tokens.access_token)
+        result = client.execute(request)
+        if blocked[0]:
+            return ActionResult('failed', 'action_in_progress')
+        try:
+            self.assert_current(generation)
+        except AuthError:
+            return ActionResult('uncertain' if attempted[0] else 'failed', 'session_changed')
+        if result.reason == 'reauthenticate':
+            self._store.disconnect(expected_generation=generation)
+        return result

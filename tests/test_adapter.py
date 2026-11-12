@@ -51,6 +51,7 @@ class AdapterTests(unittest.TestCase):
         self.answer = 'Lantern'
         self.last_default = None
         self.choices = []
+        self.confirm = True
         owner = self
 
         class Addon:
@@ -60,7 +61,7 @@ class AdapterTests(unittest.TestCase):
         class Dialog:
             def ok(self, title, text): owner.messages.append(text)
             def notification(self, title, text): owner.messages.append(text)
-            def yesno(self, title, text): return True
+            def yesno(self, title, text): return owner.confirm
             def multiselect(self, title, labels, preselect): return owner.selection
             def select(self, title, choices):
                 owner.choices = choices
@@ -161,3 +162,66 @@ class AdapterTests(unittest.TestCase):
         self.assertIn('Never enter or share a client secret', self.messages[-1])
         self.assertFalse((Path(self.temp.name) / 'trakt').exists())
         self.assertEqual(self.commands, [])
+
+    def test_upcoming_movie_collection_is_persistent_and_idempotent(self):
+        self.run_route('list', id='weekend')
+        upcoming = next(li for _, li, _ in self.rows if li.tag.values['title'] == "Tomorrow's Orchard")
+        menu = dict(upcoming.menu)
+        self.assertIn('Add to my movie list (demo)', menu)
+        self.assertIn('Open my movie list (demo)', menu)
+        self.run_route('collect', id='m3', value='1')
+        self.run_route('collect', id='m3', value='1')
+        self.assertEqual(state.load(Path(self.temp.name) / 'demo.json')['saved_movies'], ['m3'])
+        self.run_route('list', id='saved')
+        self.assertEqual(len(self.rows), 1)
+        self.assertIn('Upcoming', self.rows[0][1].label)
+        self.assertIn('Remove from my movie list (demo)', dict(self.rows[0][1].menu))
+        self.assertEqual(self.rows[0][1].tag.values['type'], 'movie')
+        self.assertTrue(all(command == 'Container.Refresh' for command in self.commands))
+        self.assertIn('Trakt is not connected', self.messages[-1])
+
+    def test_cancelled_collection_removal_and_invalid_actions_preserve_state(self):
+        self.run_route('collect', id='m3', value='1')
+        path = Path(self.temp.name) / 'demo.json'
+        before = path.read_bytes()
+        self.commands.clear()
+        self.confirm = False
+        self.run_route('collect', id='m3', value='0')
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(self.commands, [])
+        for ident, value in [('e2', '1'), ('unknown', '1'), ('m3', 'anything')]:
+            self.run_route('collect', id=ident, value=value)
+            self.assertFalse(self.ends[-1]['succeeded'])
+            self.assertEqual(path.read_bytes(), before)
+        self.confirm = True
+        self.run_route('collect', id='m3', value='0')
+        self.run_route('collect', id='m3', value='0')
+        self.assertEqual(state.load(path)['saved_movies'], [])
+
+    def test_episode_filter_context_and_all_episode_fallback(self):
+        self.run_route('list', id='series')
+        menu = dict(self.rows[0][1].menu)
+        self.assertIn('filter=aired_unwatched', menu['Browse aired unwatched episodes (demo)'])
+        self.run_route('show', id='s1', filter='aired_unwatched')
+        self.assertEqual([li.tag.values['episode'] for _, li, _ in self.rows], [2, 4])
+        self.assertIn('resume', self.rows[0][1].tag.values)
+        self.assertIn('filter=all', dict(self.rows[0][1].menu)['Browse all episodes (demo)'])
+        self.run_route('watched', id='e2', value='1')
+        self.run_route('show', id='s1', filter='aired_unwatched')
+        self.assertEqual([li.tag.values['episode'] for _, li, _ in self.rows], [4])
+        self.run_route('show', id='s1', filter='all')
+        self.assertEqual([li.tag.values['episode'] for _, li, _ in self.rows], [1, 2, 3, 4, 5, 6])
+        self.run_route('show', id='s1', filter='invalid')
+        self.assertFalse(self.ends[-1]['succeeded'])
+
+    def test_collection_selection_and_reset_preserve_expected_preferences(self):
+        self.run_route('collect', id='m3', value='1')
+        self.selection = [3]
+        self.run_route('select')
+        self.run_route()
+        self.assertEqual(self.rows[0][1].label, 'My movie list (demo)')
+        self.assertIn('id=saved', self.rows[0][0])
+        self.run_route('reset')
+        restored = state.load(Path(self.temp.name) / 'demo.json')
+        self.assertEqual(restored['saved_movies'], [])
+        self.assertEqual(restored['watched'], {})

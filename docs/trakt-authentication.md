@@ -27,7 +27,7 @@ created during this investigation.
 
 ## Implemented mocked foundations
 
-The 0.3.0 candidate retains caller-driven device polling, terminal/cancellation
+The 0.4.0 candidate retains caller-driven device polling, terminal/cancellation
 states, token validation, and refresh orchestration with injected responses only.
 The caller supplies the public client ID and registered redirect URI; neither is
 preconfigured. There is no client-secret parameter. A fixed-host HTTPS transport
@@ -49,6 +49,8 @@ and surface service/rate/account-limit errors without an automatic retry loop.
 Liked lists are not assumed writable. View normalization is separate from API
 requests and joins metadata, watched status and pause records by stable identity.
 No Trakt write, scrobbling, persistent metadata cache or live list widget is enabled.
+Optional saved selections now bind to verified stable user UUID. Explicit single-item
+action contracts are tested with fabricated responses and remain unwired in Kodi.
 Session/Library now coordinate these reads with expiry checks, account-generation
 guards and a bounded invocation-memory cache. See [architecture](architecture.md)
 for cache invalidation and [account setup](account-setup.md) for activation gates.
@@ -100,3 +102,27 @@ and [paused playback](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb1150
 A full page without pagination headers fails conservatively instead of presenting
 an incomplete result as complete. Movie watched IDs must be supplied from a complete
 snapshot; a missing snapshot remains unknown. Live responses still need validation.
+
+## Explicit actions and identity
+
+The [user settings contract](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/users/index.ts)
+describes user.ids.uuid as globally unique and usable for local identification. It is
+an opaque service string, not assumed to be an RFC UUID or replaced by username.
+Saved list IDs are loaded only after this identity is verified for the current token
+generation. Refresh preserves choices for that identity; different accounts remain
+separate. Explicit library disconnect clears saved choices for the entire local profile.
+
+The history action adds one movie/episode play with an explicit UTC timestamp.
+Movie-list addition requires an owned-list reference; future release dates are not
+an impediment to organizing metadata in a list. Neither action establishes playable
+sources. Responses must confirm counts and item identity; HTTP success alone is not
+accepted as confirmation. Uncertain writes are never replayed automatically. No remote
+mark-unwatched/history-removal action is offered, because deleting history has broader
+semantics than a local preview flag. See security.md for failure/retry handling.
+
+Primary action contracts at the reviewed official snapshot:
+[history endpoint and duplicate-play warning](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/sync/index.ts),
+[history response schema](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/sync/schema/response/historyResponseSchema.ts),
+[personal-list endpoint](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/users/subroutes/userLists.ts),
+and [list-add response schema](https://github.com/trakt/trakt-api/blob/030a5e3cb6aacb11508f250865c0b907ab17b2ed/projects/api/src/contracts/_internal/response/listAddResponseSchema.ts).
+These establish intended contracts, not observed service integration success.
