@@ -14,16 +14,22 @@
       "sha256": "273195a9f20d546e9299dc4a1c40a00e62ab736aa721a8cd70b6dc10e9819317"
     },
     {
-      "id": "repository.homefx",
-      "version": "0.2.0",
-      "path": "archives/repository.homefx-0.2.0.zip",
-      "sha256": "3b61f6e8771c1c3fa77cff09a3d4e98c2871c7181f0fe9193b2deba60abeaef9"
-    },
-    {
       "id": "plugin.video.homefx",
       "version": "0.10.0",
       "path": "archives/plugin.video.homefx-0.10.0.zip",
       "sha256": "dbdea142231e21a0e6113982564b8ac73d64cadf351b11399b1a12638e0f40d2"
+    },
+    {
+      "id": "plugin.video.homefx",
+      "path": "archives/plugin.video.homefx-0.11.0.zip",
+      "sha256": "6ed9d252aeee13300b9c946911c5951fbf6b60511005c311f6f927fc4432b3b6",
+      "version": "0.11.0"
+    },
+    {
+      "id": "repository.homefx",
+      "version": "0.2.0",
+      "path": "archives/repository.homefx-0.2.0.zip",
+      "sha256": "3b61f6e8771c1c3fa77cff09a3d4e98c2871c7181f0fe9193b2deba60abeaef9"
     }
   ]
 }

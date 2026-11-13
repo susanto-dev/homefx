@@ -33,6 +33,73 @@ def item(ident, name="Example list"):
 
 
 class ClientTests(unittest.TestCase):
+    def test_detail_projection_binds_identity_and_nullable_dates(self):
+        movie = {"ids": {"trakt": 9, "tmdb": 100}, "title": "Synthetic", "year": 2026,
+                 "released": "2026-01-01", "overview": "not projected"}
+        episode = {"ids": {"trakt": 30}, "title": None, "season": 0, "number": 1,
+                   "first_aired": None}
+        transport = Transport(response(movie), response(episode))
+        client = Client(transport, "id", "token")
+        self.assertEqual(client.movie_details(9), {"ids": {"trakt": 9}, "title": "Synthetic",
+                                                  "year": 2026, "released": "2026-01-01"})
+        self.assertEqual(client.episode_details(7, 0, 1), {"show_id": 7, "episode": episode})
+        self.assertEqual([call[1] for call in transport.calls],
+                         ["/movies/9?extended=full", "/shows/7/seasons/0/episodes/1?extended=full"])
+
+    def test_details_reject_wrong_identity_coordinates_pagination_and_dates(self):
+        movie = {"ids": {"trakt": 9}, "title": "Synthetic", "released": "2026-01-01"}
+        episode = {"ids": {"trakt": 30}, "title": "Pilot", "season": 1, "number": 2}
+        cases = [("movie_details", (8,), response(movie)),
+                 ("movie_details", (9,), response(movie, pages=1)),
+                 ("movie_details", (9,), response({**movie, "released": "2026-02-30"})),
+                 ("episode_details", (7, 1, 1), response(episode)),
+                 ("episode_details", (7, 1, 2), response(episode, pages=2)),
+                 ("episode_details", (7, 1, 2), response({**episode, "first_aired": "2026-01-01"}))]
+        for operation, args, reply in cases:
+            with self.subTest(operation=operation, args=args), self.assertRaises(ApiError):
+                getattr(Client(Transport(reply), "id", "token"), operation)(*args)
+
+    def test_personal_calendar_projects_utc_window_without_grouped_or_watched_claims(self):
+        row = {"first_aired": "2026-11-13T00:00:00Z",
+               "show": {"ids": {"trakt": 7}, "title": "Synthetic Show", "year": 2026},
+               "episode": {"ids": {"trakt": 30}, "title": None, "season": 1, "number": 1}}
+        transport = Transport(response([row]))
+        result = Client(transport, "id", "token").calendar_shows("2026-11-13", 7)
+        self.assertEqual((result["start_date"], result["days"]), ("2026-11-13", 7))
+        self.assertIsNone(result["entries"][0]["episode"]["first_aired"])
+        self.assertNotIn("watched", result["entries"][0])
+        self.assertEqual(transport.calls[0][1], "/calendars/my/shows/2026-11-13/7?extended=full")
+        self.assertEqual(Client(Transport(response([])), "id", "token").calendar_shows(
+            "2026-11-13")["entries"], [])
+
+    def test_calendar_rejects_truncation_duplicates_conflicts_and_outside_window(self):
+        from copy import deepcopy
+        row = {"first_aired": "2026-11-13T00:00:00Z", "show": {"ids": {"trakt": 7}, "title": "Show"},
+               "episode": {"ids": {"trakt": 30}, "title": "Pilot", "season": 1, "number": 1}}
+        bad_rows = []
+        for field, value in (("first_aired", "2026-11-14T00:00:00Z"),
+                             ("episodes", []), ("episode_type", "full_season"), ("number", False)):
+            item = deepcopy(row); item["episode"][field] = value; bad_rows.append([item])
+        for stamp in ("2026-11-12T23:59:59Z", "2026-11-20T00:00:00Z", "2026-11-13T00:00:00",
+                      "2026-11-13\n00:00:00Z"):
+            bad_rows.append([{**row, "first_aired": stamp}])
+        bad_rows.extend(([row, row], [{**row, "show": {"ids": {"trakt": 0}, "title": "Show"}}]))
+        for body in bad_rows:
+            with self.subTest(body=body), self.assertRaises(ApiError):
+                Client(Transport(response(body)), "id", "token").calendar_shows("2026-11-13")
+        for reply in (response([row], pages=1), response({}), response([row, row])):
+            with self.assertRaises(ApiError):
+                Client(Transport(reply), "id", "token", max_items=1).calendar_shows("2026-11-13")
+
+    def test_calendar_inputs_reject_invalid_dates_and_bounds_before_request(self):
+        transport = Transport()
+        client = Client(transport, "id", "token")
+        for start, days in (("2026-02-30", 7), ("2026-1-01", 7), ("2026-11-13", True),
+                            ("9999-12-31", 1), ("2026-11-13", 32), ("2026-11-13", 0)):
+            with self.assertRaises(ApiError):
+                client.calendar_shows(start, days)
+        self.assertEqual(transport.calls, [])
+
     def test_show_seasons_project_bounded_metadata_without_watch_claims(self):
         source = [{"number": 2, "ids": {"trakt": 22, "tmdb": 99},
                    "title": "Second", "episode_count": 12, "aired_episodes": 4,

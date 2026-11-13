@@ -19,3 +19,8 @@ publication, device acceptance and recovery; retaining a ZIP does not trigger a 
 Video 0.10.0 adds its reviewed current archive while retaining all three initial
 records unchanged. Repository 0.2.0 is reused byte-for-byte; a new repository package
 is unnecessary when only the indexed video add-on changes.
+
+
+Video 0.11.0 was prepared through the verified local proposal helper. Its integration
+preserves the four existing records and their ZIP bytes; only the new video archive
+and prospective inventory are added. Repository 0.2.0 remains unchanged.

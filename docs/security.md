@@ -233,3 +233,13 @@ URL or account token, performs no writes to services, and never concludes a titl
 watched from an end callback. A future Kodi adapter must supply reliable attempt
 identity and serialize callbacks; this module does not establish device behavior.
 Widget setup and repository-version probes run before local profile loading.
+
+
+## Enriched browsing boundaries
+
+Resume enrichment and personal-calendar reads validate identifiers and date windows
+before authenticated operations. Compound results must keep one account generation
+and mutation revision. Request/row bounds limit enrichment; errors are not disguised
+as a successful partial history. No source URLs, credentials or persistent watch data
+are added to these metadata views. Existing local rate-limit guards remain optional
+and inactive until the live connection is assembled and validated on the device.

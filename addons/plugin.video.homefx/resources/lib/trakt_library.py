@@ -374,6 +374,114 @@ class Library:
             self.clear()
             raise
 
+    def enriched_continue_view(self, now=None):
+        """Explicit bounded metadata/history enrichment of paused playback.
+
+        At most 100 pause rows and 50 distinct candidates are accepted. Details
+        are read once per candidate, history once per applicable movie account or
+        show. Unknown episode watched state stays unknown, not unwatched. This
+        method never converts progress percentages into resume seconds.
+        """
+        now = trakt_views._now(now)
+        try:
+            generation = self._session.cache_key()
+            revision = self._data_revision()
+
+            def read(operation, *args):
+                return self._read(operation, *args, expected_generation=generation,
+                                  expected_revision=revision)
+
+            paused = read("paused")
+            if not isinstance(paused, list):
+                raise ApiError("invalid_progress")
+            if len(paused) > 100:
+                raise ApiError("continue_limit_exceeded")
+            candidates, episode_identity = {}, {}
+            for row in paused:
+                if (not isinstance(row, dict) or type(row.get("type")) is not str
+                        or row["type"] not in {"movie", "episode"}):
+                    raise ApiError("invalid_progress")
+                kind = row["type"]
+                item = row.get(kind)
+                ident = trakt_views._id(item)
+                if ident is None or ident >= 2 ** 63:
+                    raise ApiError("invalid_progress")
+                progress, when = row.get("progress"), trakt_views._stamp(row.get("paused_at"))
+                if (type(progress) not in (int, float) or not 0 <= progress <= 100
+                        or when is None or when > now):
+                    raise ApiError("invalid_progress")
+                coordinates = None
+                if kind == "episode":
+                    show_id = trakt_views._id(row.get("show"))
+                    season, episode = item.get("season"), item.get("number")
+                    if (show_id is None or show_id >= 2 ** 63
+                            or type(season) is not int or not 0 <= season <= 10000
+                            or type(episode) is not int or not 1 <= episode <= 10000):
+                        raise ApiError("invalid_progress")
+                    coordinates = (show_id, season, episode)
+                    if ident in episode_identity and episode_identity[ident] != coordinates:
+                        raise ApiError("mismatched_show")
+                    episode_identity[ident] = coordinates
+                key = (kind, ident)
+                previous = candidates.get(key)
+                if previous is not None and when == previous[1] and progress != previous[0]["progress"]:
+                    raise ApiError("conflicting_progress")
+                if previous is None or when > previous[1]:
+                    candidates[key] = (row, when, coordinates)
+            # A more recent zero/complete pause supersedes an older unfinished one.
+            candidates = {key: value for key, value in candidates.items()
+                          if 0 < value[0]["progress"] < 100}
+            if len(candidates) > 50:
+                raise ApiError("continue_limit_exceeded")
+            watched_movies = None
+            if any(kind == "movie" for kind, _ in candidates):
+                watched_movies = read("watched_movies")
+                if (not isinstance(watched_movies, (list, tuple)) or any(
+                        type(ident) is not int or not 1 <= ident < 2 ** 63
+                        for ident in watched_movies)):
+                    raise ApiError("invalid_progress")
+                watched_movies = frozenset(watched_movies)
+            scopes = {}
+            for _, _, coordinates in candidates.values():
+                if coordinates is not None:
+                    show_id, season, _ = coordinates
+                    scopes[show_id] = scopes.get(show_id, False) or season == 0
+            watched_shows = {show_id: read("show_progress", show_id, specials)
+                             for show_id, specials in scopes.items()}
+            result = []
+            for (kind, ident), (pause, _, coordinates) in candidates.items():
+                if kind == "movie":
+                    item = read("movie_details", ident)
+                    if trakt_views._id(item) != ident:
+                        raise ApiError("mismatched_metadata")
+                    rows = trakt_views.movies([item], watched_movies, [pause], now)
+                else:
+                    show_id, season, episode = coordinates
+                    detail = read("episode_details", show_id, season, episode)
+                    item = detail.get("episode") if isinstance(detail, dict) else None
+                    if (not isinstance(detail, dict) or detail.get("show_id") != show_id
+                            or not isinstance(item, dict) or trakt_views._id(item) != ident
+                            or type(item.get("season")) is not int or item["season"] != season
+                            or type(item.get("number")) is not int or item["number"] != episode):
+                        raise ApiError("mismatched_metadata")
+                    untitled = item.get("title") is None
+                    if untitled:
+                        item = dict(item, title="Episode S%02dE%02d" % (season, episode))
+                    rows = trakt_views.episodes({"show_id": show_id, "episodes": [item]},
+                                               watched_shows[show_id], [pause], now)
+                    rows[0]["title_unknown"] = untitled
+                row = rows[0]
+                if row["watched"] is not True and row["release_status"] == "aired" and row["progress"] > 0:
+                    row["playable"] = False
+                    result.append(row)
+            result.sort(key=lambda row: row["id"])
+            result.sort(key=lambda row: row["last_played"], reverse=True)
+            self._assert_view(generation, revision)
+            return result
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
     def search_titles(self, query, kind="movie"):
         """Literal title metadata in server relevance order; never widget-sorted."""
         query, kind = search_arguments(query, kind)

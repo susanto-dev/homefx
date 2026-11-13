@@ -108,3 +108,11 @@ explicit specials, and refresh/account changes during a compound read. Playback
 observation tests separate dispatch from AV start and never infer watched completion.
 Widget setup tests verify fixed routes and local repository-version reporting before
 profile access. These remain mocked or local checks, not TV or live-service evidence.
+
+
+The 0.11 tests exercise enriched resume and calendar joins through actual client and
+session code using fabricated HTTP responses. They cover missing release metadata,
+watched precedence, identity conflicts, changed accounts/revisions, bounded requests,
+UTC windows and personal-calendar filtering. Release-proposal tests prove existing
+records stay immutable and invalid input cannot leave a promoted partial proposal.
+No live account, device or playback acceptance is inferred.

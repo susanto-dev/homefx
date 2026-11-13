@@ -89,7 +89,7 @@ toolchain, not reproducibility between different platforms or toolchain versions
 
 ## Release history and deployed bytes
 
-For video 0.10.0 and repository 0.2.0, record both current ZIPs and every retained
+For video 0.11.0 and repository 0.2.0, record both current ZIPs and every retained
 version in `releases/inventory.json`. Run
 `python tools/release_history.py releases/inventory.json --base-ref BASE_SHA`
 against the reviewed base; existing records cannot be removed or changed. Builders
@@ -110,3 +110,10 @@ Hash locks restrict accepted dependency artifacts, not all supply-chain risk. Re
 pins and hashes together after manual review; weekly dependency/Action discovery does
 not create update PRs. Install security tooling with
 `python -m pip install --require-hashes -r tools/security-requirements.txt`.
+
+
+For a version change, [prepare a verified release proposal](release-preparation.md)
+in a fresh external or dist subdirectory. The helper does not modify releases in
+place. Review its inventory and new ZIPs, integrate only the intended new records,
+then run the history guard against the reviewed base. Never replace published bytes
+to make a changed same-version build pass.

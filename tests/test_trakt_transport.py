@@ -80,6 +80,30 @@ HEADERS = {"Authorization": "Bearer synthetic-access", "trakt-api-key": "synthet
 
 
 class TransportTests(unittest.TestCase):
+    def test_detail_and_calendar_paths_use_fixed_host_and_exact_extended_query(self):
+        factory = Connections([wire(b'{"ids":{"trakt":9},"title":"Movie"}'),
+            wire(b'{"ids":{"trakt":30},"title":null,"season":0,"number":1}'), wire(b'[]')])
+        client = Client(Transport(connection_factory=factory).api_request, "id", "token")
+        client.movie_details(9)
+        client.episode_details(7, 0, 1)
+        client.calendar_shows("2026-11-13", 7)
+        self.assertEqual([call[0] for call in factory.calls], ["api.trakt.tv"] * 3)
+        sent = [b"".join(sock.sent).split(b"\r\n", 1)[0] for sock in factory.sockets]
+        self.assertEqual(sent, [b"GET /movies/9?extended=full HTTP/1.1",
+            b"GET /shows/7/seasons/0/episodes/1?extended=full HTTP/1.1",
+            b"GET /calendars/my/shows/2026-11-13/7?extended=full HTTP/1.1"])
+        empty = Connections([])
+        transport = Transport(connection_factory=empty)
+        for path in ("/movies/9", "/movies/9?extended=full&page=1",
+                     "/shows/7/seasons/1/episodes/1?extended=images",
+                     "/calendars/all/shows/2026-11-13/7?extended=full",
+                     "/calendars/my/shows/2026-02-30/7?extended=full",
+                     "/calendars/my/shows/2026-11-13/32?extended=full",
+                     "/calendars/my/shows/2026-11-13/7?extended=full&group=day"):
+            with self.subTest(path=path), self.assertRaises(TransportError):
+                transport.api_request("GET", path, HEADERS)
+        self.assertEqual(empty.calls, [])
+
     def test_series_contract_uses_exact_routes_and_explicit_special_scope(self):
         factory = Connections([wire(b'[{"number":0,"ids":{"trakt":9}}]'),
                                wire(b'{"seasons":[]}')])

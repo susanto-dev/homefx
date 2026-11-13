@@ -48,6 +48,24 @@ class SessionTests(unittest.TestCase):
     def install(self, expires=5000):
         self.store.install(TokenSet("synthetic-access-old", "synthetic-refresh-old", expires))
 
+    def test_details_and_calendar_validate_before_refresh_and_guard_stale_results(self):
+        self.install(expires=1001)
+        for operation, args in (("movie_details", (True,)), ("episode_details", (7, 1, 0)),
+                                ("calendar_shows", ("2026-02-30",)), ("calendar_shows", ("2026-11-13", 32))):
+            with self.assertRaises(ApiError):
+                self.session.read(operation, *args)
+        self.assertEqual(self.oauth_calls, [])
+        self.assertEqual(self.api_calls, [])
+        self.install()
+        self.api_reply = lambda: Response(200, body=[])
+        self.assertEqual(self.session.read("calendar_shows", "2026-11-13")["entries"], [])
+        def replacement():
+            self.install()
+            return Response(200, body={"ids": {"trakt": 9}, "title": "Movie"})
+        self.api_reply = replacement
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.read("movie_details", 9)
+
     def test_series_validation_precedes_refresh_and_reads_reject_account_change(self):
         self.install(expires=1001)
         for operation, args in (("show_seasons", (True,)), ("show_progress", (7, "true")),

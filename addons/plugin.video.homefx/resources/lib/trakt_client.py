@@ -5,7 +5,7 @@ reject redirects, bound response bytes/time, and never log credentials. Results
 live only in invocation memory. Errors intentionally omit URLs and response data.
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 import re
 import unicodedata
@@ -84,6 +84,79 @@ def season_arguments(show_id, season):
     if type(season) is not int or not 0 <= season <= 10000:
         raise ApiError("invalid_identifier")
     return show_id, season
+
+
+def episode_arguments(show_id, season, episode):
+    show_id, season = season_arguments(show_id, season)
+    if type(episode) is not int or not 1 <= episode <= 10000:
+        raise ApiError("invalid_identifier")
+    return show_id, season, episode
+
+
+def calendar_arguments(start_date, days=7):
+    if (type(start_date) is not str or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", start_date)
+            or type(days) is not int or not 1 <= days <= 31):
+        raise ApiError("invalid_calendar_window")
+    try:
+        start = date.fromisoformat(start_date)
+        start + timedelta(days=days)
+    except (ValueError, OverflowError):
+        raise ApiError("invalid_calendar_window") from None
+    return start_date, days
+
+
+def _metadata_text(value, nullable=False):
+    if value is None and nullable:
+        return None
+    if (type(value) is not str or not value.strip() or len(value) > 1024
+            or any(unicodedata.category(c).startswith("C") for c in value)):
+        raise ApiError("invalid_metadata")
+    return value
+
+
+def _metadata_stamp(value, date_only=False):
+    if type(value) is not str or len(value) > 64:
+        raise ApiError("invalid_metadata")
+    try:
+        if date_only:
+            if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+                raise ValueError()
+            return date.fromisoformat(value)
+        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                            r"(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2})", value):
+            raise ValueError()
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            raise ValueError()
+        return stamp.astimezone(timezone.utc)
+    except (ValueError, OverflowError):
+        raise ApiError("invalid_metadata") from None
+
+
+def _title_details(item, episode=False):
+    if not isinstance(item, dict) or not isinstance(item.get("ids"), dict):
+        raise ApiError("invalid_metadata")
+    row = {"ids": {"trakt": metadata_id(item["ids"].get("trakt"))},
+           "title": _metadata_text(item.get("title"), nullable=episode)}
+    if episode:
+        _, season, number = episode_arguments(1, item.get("season"), item.get("number"))
+        row.update(season=season, number=number)
+    else:
+        year = item.get("year")
+        if year is not None and (type(year) is not int or not 1 <= year <= 9999):
+            raise ApiError("invalid_metadata")
+        row["year"] = year
+    return row
+
+
+def _dated_details(item, episode=False):
+    row = _title_details(item, episode)
+    field = "first_aired" if episode else "released"
+    value = item.get(field)
+    if value is not None:
+        _metadata_stamp(value, date_only=not episode)
+    row[field] = value
+    return row
 
 
 def _season_rows(items, maximum):
@@ -318,6 +391,59 @@ class Client:
 
     def paused(self):
         return self._pages("/sync/playback")
+
+    def _complete(self, path):
+        response = self._get(path)
+        if any(str(key).lower().startswith("x-pagination-") for key in response.headers):
+            raise ApiError("invalid_pagination")
+        return response.body
+
+    def movie_details(self, trakt_id):
+        ident = metadata_id(trakt_id)
+        row = _dated_details(self._complete("/movies/" + str(ident) + "?extended=full"))
+        if row["ids"]["trakt"] != ident:
+            raise ApiError("mismatched_movie")
+        return row
+
+    def episode_details(self, show_id, season, episode):
+        ident, season, episode = episode_arguments(show_id, season, episode)
+        path = "/shows/{}/seasons/{}/episodes/{}?extended=full".format(ident, season, episode)
+        row = _dated_details(self._complete(path), episode=True)
+        if row["season"] != season or row["number"] != episode:
+            raise ApiError("mismatched_episode")
+        return {"show_id": ident, "episode": row}
+
+    def calendar_shows(self, start_date, days=7):
+        start_date, days = calendar_arguments(start_date, days)
+        start = datetime.combine(date.fromisoformat(start_date), datetime.min.time(), timezone.utc)
+        end = start + timedelta(days=days)
+        body = self._complete("/calendars/my/shows/{}/{}?extended=full".format(start_date, days))
+        if not isinstance(body, list) or len(body) > self.max_items:
+            raise ApiError("invalid_metadata")
+        entries, identifiers, coordinates = [], set(), set()
+        for item in body:
+            if not isinstance(item, dict):
+                raise ApiError("invalid_metadata")
+            show = _title_details(item.get("show"))
+            episode_source = item.get("episode")
+            if (not isinstance(episode_source, dict) or episode_source.get("episodes") is not None
+                    or episode_source.get("episode_type") in ("full_season", "multiple_episodes")):
+                raise ApiError("invalid_metadata")
+            episode = _dated_details(episode_source, episode=True)
+            stamp = _metadata_stamp(item.get("first_aired"))
+            if not start <= stamp < end:
+                raise ApiError("invalid_calendar_window")
+            if (episode["first_aired"] is not None
+                    and _metadata_stamp(episode["first_aired"]) != stamp):
+                raise ApiError("conflicting_air_date")
+            ident = episode["ids"]["trakt"]
+            coordinate = (show["ids"]["trakt"], episode["season"], episode["number"])
+            if ident in identifiers or coordinate in coordinates:
+                raise ApiError("duplicate_metadata")
+            identifiers.add(ident)
+            coordinates.add(coordinate)
+            entries.append({"first_aired": item["first_aired"], "show": show, "episode": episode})
+        return {"start_date": start_date, "days": days, "entries": entries}
 
     def show_seasons(self, show_id):
         ident = metadata_id(show_id)

@@ -202,3 +202,22 @@ next-playback behavior is chosen here. All need explicit integration acceptance.
 
 The existing skin remains in use. In-app widget setup and safe repository version
 information help collect device evidence without importing backups or private data.
+
+
+## Enriched resume entries and personal calendar (0.11)
+
+Keep the original pause-only view available. A separate explicit enrichment operation
+can fill absent release metadata and reconcile watched evidence within bounded calls.
+Fail the joined result on identity conflicts, account changes or service failure; do
+not silently reinterpret an incomplete history as unwatched or retry writes. Progress
+percentages do not establish playback resume seconds.
+
+Personal calendar coverage follows the documented watched/collected/watchlisted scope.
+Optional show IDs narrow that result only. A complete arbitrary-list schedule remains
+future work; filtering cannot manufacture episodes absent from the provider calendar.
+The date window is locally bounded, without assuming a paid entitlement or service
+quota. No live route or new provider is enabled by these contracts.
+
+Release preparation produces a verified local proposal for review. It does not overwrite
+checked-in releases, prune old archives, publish or install packages. Published identity,
+path and hash records remain immutable; current-version changes require a new version.
