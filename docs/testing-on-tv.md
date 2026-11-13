@@ -33,11 +33,11 @@ scrobbling acceptance is part of this milestone.
 
 ## Current device candidate and timing record
 
-The verified baseline is **video 0.17.1 / repository 0.2.0**. Test the 0.17.2
-repair only after its merge and publication are separately verified. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
+The hosted baseline checked on 13 November 2026 is **video 0.17.2 / repository 0.2.0**.
+The index and both root/indexed ZIP copies matched the release inventory. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
 **Vertical Multi Widget Netflix**. Keep the existing skin and saved routes.
-The [release evidence](releases.md#verified-0171-publication-after-configuration-preflight) establishes hosted
-bytes only. Device acceptance remains **NOT RUN**.
+These download checks establish hosted bytes only; see the
+[installation guide](install.md) for the verified source and filenames. Device acceptance remains **NOT RUN**.
 
 This public candidate tests synthetic navigation, local demo persistence and the
 optional temporary storage probe. It does **not** call the inactive account-bound
@@ -75,7 +75,7 @@ No playback, writes, Real-Debrid or skin replacement is part of that milestone.
 
 ## 0.17.1 repair acceptance — after verified publication
 
-The 0.17.1 repair is a candidate until merged and published. Update through the
+The 0.17.1 repair is included in the published 0.17.2 candidate. Update through the
 repository, retaining saved widget routes and demo selections. While opening the
 root, a selected-list folder and a season folder, press Back/cancel during loading.
 Expected: no error modal, no continued row production after Kodi rejects submission,
@@ -104,7 +104,7 @@ profile files. Synthetic checks do not establish actual SQLite locking on Androi
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install the currently published version (0.17.2 only after its publication is verified).
+   Preview Repository → Video add-ons → HomeFX Preview to install the currently verified published version (0.17.2).
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks

@@ -7,6 +7,7 @@ import tempfile
 
 from package import ROOT, build, validate
 import repository
+import guide_page
 import verify_repository
 
 
@@ -44,6 +45,8 @@ def _page(version, archive, bootstrap, digest):
 </head><body><main><p>Kodi 21.2 · Personal home-screen widgets</p><h1>HomeFX Preview</h1>
 <p>Video add-on version {{VERSION}} — movie lists, episode browsing and home-screen widgets.</p>
 <p><strong>Experimental repository. Synthetic data only.</strong> No Trakt login, playable sources or playback. Watched changes affect local demo data only. Kodi installation, updates and TV compatibility have not yet been verified.</p>
+<p><a href="install.html" class="download">Installation and first-use guide</a></p>
+<p>New to Kodi? Follow the phone-friendly guide for Android/Google TV installation, restart, safe checks and demo widget setup.</p>
 <p>Download the repository ZIP:</p>
 <p><a href="{{BOOTSTRAP}}" class="download">{{BOOTSTRAP}}</a></p>
 <p><a href="{{BOOTSTRAP}}.sha256">Repository ZIP SHA-256 checksum</a></p>
@@ -106,6 +109,7 @@ def build_site(output=None, package_output=None, retain_manifest=None):
         shutil.copyfile(ROOT / "LICENSE", staged / "LICENSE.txt")
         digest = archive.with_suffix(".zip.sha256").read_text().split()[0]
         (staged / "index.html").write_text(_page(version, archive.name, bootstrap, digest), encoding="utf-8")
+        (staged / "install.html").write_text(guide_page.build(ROOT / "docs/install.md"), encoding="utf-8")
         if site.exists():
             if _tree_bytes(site) != _tree_bytes(staged):
                 raise ValueError("Site output differs; use a fresh output directory")

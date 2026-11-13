@@ -8,7 +8,9 @@ The root `requirements.txt` is intentionally empty apart from comments. It recor
 
 The development-only inventories are:
 
-- `tools/build-requirements.txt`: `defusedxml`, used by packaging and XML checks.
+- `tools/build-requirements.txt`: `defusedxml` for XML checks, plus `markdown-it-py`
+  and its `mdurl` dependency for the installation guide. The latter two reuse the
+  same versions/hashes already declared in the security tooling inventory.
 - `tools/quality-requirements.txt`: `ruff`.
 - `tools/security-requirements.txt`: Bandit, pip-audit, and their pinned transitive dependencies.
 

@@ -25,6 +25,7 @@ class PublishedTests(unittest.TestCase):
                 shutil.copyfile(repo / ident / (name + suffix), self.site / (name + suffix))
         (self.site / "LICENSE.txt").write_bytes((ROOT / "LICENSE").read_bytes())
         (self.site / "index.html").write_text("<!doctype html><title>HomeFX Preview</title>")
+        (self.site / "install.html").write_text("<!doctype html><title>HomeFX installation guide</title>")
         self.files, _ = published.verify_repository._snapshot(self.site)
         self.requests = []
 
@@ -52,7 +53,7 @@ class PublishedTests(unittest.TestCase):
 
     def test_corrupt_hosted_index_checksum_archive_or_notice_fails(self):
         targets = ["repository/addons.xml", "repository/addons.xml.sha256",
-                   "repository/CHANNEL.txt", "index.html"]
+                   "repository/CHANNEL.txt", "index.html", "install.html"]
         targets.extend(name for name in self.files if name.startswith("repository/") and name.endswith(".zip"))
         for target in targets:
             with self.subTest(target=target):
@@ -71,6 +72,20 @@ class PublishedTests(unittest.TestCase):
                 published.check(self.site, fetch=fetch)
             fetch.assert_not_called()
             target.unlink()
+
+    def test_missing_empty_or_oversized_guide_fails_before_network(self):
+        target = self.site / 'install.html'
+        for data in (None, b'', b'x' * (published.guide_page.MAX_PAGE_BYTES + 1)):
+            with self.subTest(mutation='missing' if data is None else len(data)):
+                if data is None:
+                    target.unlink()
+                else:
+                    target.write_bytes(data)
+                fetch = Mock()
+                with self.assertRaises(published.PublishedCheckError):
+                    published.check(self.site, fetch=fetch)
+                fetch.assert_not_called()
+                target.write_bytes(self.files['install.html'])
 
     def test_root_bootstrap_and_checksum_must_match_verified_repository(self):
         for name in self.files:

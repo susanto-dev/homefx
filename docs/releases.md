@@ -352,3 +352,17 @@ release inventory. The normal merge-triggered publication rebuilds identical vid
 0.17.2 / repository 0.2.0 packages; no new Kodi update or live activation is created.
 The runtime minimum is a project support policy, not a change to the `xbmc.python`
 API requirement. See [development policy](development.md) for exact upstream evidence.
+
+## Installation guide on the existing Pages site
+
+The documentation batch adds `install.html`, generated from `docs/install.md`, and
+a prominent landing-page link. All existing source, repository index, ZIP, checksum
+and licence URLs are retained. Only the fixed additional guide file is accepted by
+site/artifact validators; it is included in the exact published-byte comparison.
+No runtime, add-on manifest, release inventory or archive changes are required.
+
+Merging the reviewed PR runs the existing automatic Pages build/deploy/verification
+workflow with identical video 0.17.2 and repository 0.2.0 packages. The guide is a
+local candidate before merge; check its hosted response, links and layout after
+that deployment succeeds. Do not independently dispatch or force publication.
+Installation, skin-menu labels and device behavior remain unverified on the TV.

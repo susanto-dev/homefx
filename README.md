@@ -4,6 +4,14 @@ A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing. The Python target follows the
 official Kodi 21.2 Android build (Python 3.11); development checks also cover 3.12.
 
+## Install on Android or Google TV
+
+Start with the [step-by-step installation and first-use guide](docs/install.md),
+or use the [phone-friendly guide on GitHub Pages](https://susanto-dev.github.io/homefx/install.html).
+It covers repository-first installation, a full Kodi restart, safe readiness/storage
+checks and demo widget setup with your existing skin. Updates to the Pages guide are published by the normal checked deployment after
+changes merge to main.
+
 ## Current preview: 0.17.2
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**

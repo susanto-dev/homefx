@@ -55,7 +55,7 @@ def _build(root):
     bootstrap = "repository.homefx-" + verified["current"]["repository.homefx"] + ".zip"
     expected_files = {"repository/" + name for name in public_files}
     expected_files.update({archive, archive + ".sha256", bootstrap, bootstrap + ".sha256",
-                           "LICENSE.txt", "index.html"})
+                           "LICENSE.txt", "index.html", "install.html"})
     expected_dirs = {"repository"} | {"repository/" + name for name in public_dirs}
     if set(site_files) != expected_files or site_dirs != expected_dirs:
         raise ReproducibilityError("invalid preview output")
@@ -67,7 +67,8 @@ def _build(root):
                     or site_files[name + suffix] != Path(str(public_path) + suffix).read_bytes()):
                 raise ReproducibilityError("inconsistent preview output")
     if (site_files["LICENSE.txt"] != (package.ROOT / "LICENSE").read_bytes()
-            or not site_files["index.html"]):
+            or not site_files["index.html"]
+            or not 0 < len(site_files["install.html"]) <= build_site.guide_page.MAX_PAGE_BYTES):
         raise ReproducibilityError("inconsistent preview output")
     repository_files, repository_dirs = _snapshot(candidate)
     return {"site": (site_files, site_dirs),

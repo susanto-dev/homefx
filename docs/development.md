@@ -7,7 +7,7 @@ can use either. This supersedes the earlier conservative 3.8 policy. It does not
 establish device navigation, storage, TLS or performance acceptance.
 
 Build tools require defusedxml 0.7.1
-to reject unsafe XML. It is development-only; the Kodi add-on still uses no
+to reject unsafe XML, and pinned markdown-it-py/mdurl to render the installation guide. It is development-only; the Kodi add-on still uses no
 third-party Python packages. Ruff 0.17.4 provides a pinned, read-only correctness check; it is also development-only.
 
 ```sh
@@ -163,3 +163,18 @@ fixed diagnostics only. Tests use fabricated identities and redirects; no actual
 account belongs in CI. The dedicated main-only workflow selects Development by
 default and Production only by explicit manual choice. It does not change release
 bytes, add a client-secret requirement or enable provider access.
+
+## Installation guide and Pages
+
+Edit the canonical [installation guide](install.md); the site builder renders it
+as `install.html` with local CSS and no copied screenshots or remote assets. The
+landing page links to it, and the public README links to both the repository source
+and Pages route. Do not maintain a separate HTML copy of the guide text.
+
+Use a fresh site output directory after changes. Check local links/anchors and
+phone-width rendering, then run packaging, site topology, artifact-unpacking,
+published-byte and reproducibility tests. The site allowlist requires the guide;
+missing/corrupt hosted guide bytes fail publication verification. The guide is not
+included in any Kodi ZIP. Main merge publishes automatically through the existing
+Pages workflow; PR checks do not deploy. Verify the hosted guide after merge rather
+than dispatching publication separately. A browser layout test is not a Kodi/TV test.
