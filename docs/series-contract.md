@@ -78,3 +78,13 @@ counts from those episode rows. Empty seasons contribute no episode summary. The
 candidates in narrative order. It makes no player call and leaves an immediate
 candidate's unknown watched state unknown. Specials require explicit inclusion;
 these candidates do not decide automatic playback or scrobbling ownership.
+
+## Inactive widget consumer (0.17)
+
+`Library.widget_episodes(ref, item_ref, season, episode_filter="all")` adds a local
+filter to the existing account-bound read. It validates the filter before account
+work, requests the complete season, rejects wrong-season rows, then applies the
+existing `trakt_views.episode_filter`. All preserves narrative order; aired-unwatched
+uses unfinished-first ordering and excludes unknown watched/date and future rows.
+The captured account/selection guard remains attached to the result. Episode detail
+resolution continues to use the full unfiltered season. No new endpoint is called.

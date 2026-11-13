@@ -242,3 +242,13 @@ clearing, TV performance or account registration validity. Those gates remain in
 [account setup](account-setup.md) and [TV acceptance](testing-on-tv.md). The discovered cancellation regression is repaired in video 0.16.1 without
 enabling public service routes. Cancellation is preserved before closing the
 progress dialog; cleanup failures still report failure rather than success.
+
+## Episode consumer filtering (0.17)
+
+Regressions cover old unfiltered URLs/calls, strict no-I/O filter validation,
+unfinished-first filtered ordering, unknown/future exclusions, and rejection of
+wrong-season rows before filtering could hide them. Account and selection changes
+continue to invalidate the captured view. Renderer tests check fixed scoped context
+URLs, independent counts, bounded percentages and the absence of fabricated resume
+seconds or playable flags. Public activation and actual Kodi acceptance remain
+separate; these tests use synthetic metadata and private temporary profiles.

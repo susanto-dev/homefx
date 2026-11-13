@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.16.1 journey integration repair (video add-on 0.16.1, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.17.0 episode watch-progress preparation (video add-on 0.17.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -12,7 +12,7 @@ provider or release choice. The current public add-on remains synthetic.
 |---|---|---|---|
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented | Actual Android/Google TV compatibility pending |
 | B02 | Multiple selected list widgets and folder browsing | Implemented in demo; mixed-list reads and inactive account-bound widget rendering added (0.16) | Gated public dispatch, activation and widget-title click behavior need TV verification |
-| B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; complete-series/season summaries mocked (0.10) | Live episode identity/status and refresh behavior |
+| B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; inactive opaque episode filters and season/progress display added (0.17) | Live episode identity/status and refresh behavior |
 | B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
@@ -61,8 +61,8 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.16.0 publication and HTTP integrity verified | 0.16.1 repair pending review/merge/publication; TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.16.0 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.16.1 publication and HTTP integrity verified | 0.17.0 pending review/merge/publication; TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.16.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -72,21 +72,21 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current focused batch: 0.16.1 journey integration repair
+## Current focused batch: 0.17.0 episode watch-progress preparation
 
-The 0.16.0 merge, validation, publication and hosted bytes are verified. The current
-batch joins the actual service factory, transport, account dialogs/flow, list chooser
-and widget renderer using fabricated HTTPS framing and temporary private stores.
-A fresh factory and fresh UI objects exercise restart persistence independently
-of invocation-memory caches. Cancellation, account changes, refresh and disconnect
-remain part of the integration boundary.
+The 0.16.1 merge, validation, publication and hosted bytes are verified. The current
+batch connects existing episode filtering and season summaries to the inactive
+account-bound renderer. All episodes keeps narrative order; Aired unwatched
+excludes future, undated and unknown-watched rows and orders unfinished episodes
+first through the existing view helper. Complete season validation runs before
+filtering. Percent progress is metadata, not a fabricated resume timestamp.
 
-The joined tests exposed renderer cancellation being lost when the progress
-dialog closed. The repair preserves cancellation before cleanup and prevents
-a cancelled read from becoming an offline result or successful directory.
-Public preview routes and all twelve earlier release archives remain unchanged.
-This is stronger automated evidence, not live activation or a Kodi test.
-Registration and actual-device gates still apply.
+Fixed context actions retain the same list/show/season reference. Season counts
+show independent watched/date dimensions, not playable availability. An empty
+filtered folder stays empty; when entered from a season folder, Back returns to
+that folder where All episodes is available. Direct widgets may need the separate
+full-list shortcut. Existing mixed-list and unfiltered episode URLs remain compatible.
+Public routes, account activation, remote writes and playback remain unchanged.
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|

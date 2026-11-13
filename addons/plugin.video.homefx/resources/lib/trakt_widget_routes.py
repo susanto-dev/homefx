@@ -14,7 +14,15 @@ _FIELDS = {
 
 
 def _validate(route, params):
-    if type(route) is not str or route not in _FIELDS or set(params) != _FIELDS[route]:
+    if type(route) is not str or route not in _FIELDS:
+        raise ValueError('invalid_widget_route')
+    expected = _FIELDS[route]
+    if route == 'trakt_episodes' and 'filter' in params:
+        expected = expected | {'filter'}
+    if set(params) != expected:
+        raise ValueError('invalid_widget_route')
+    if 'filter' in params and (type(params['filter']) is not str or
+                               params['filter'] not in {'all', 'aired_unwatched'}):
         raise ValueError('invalid_widget_route')
     for key in ('ref', 'item'):
         if key in params and (type(params[key]) is not str or

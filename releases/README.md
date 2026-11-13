@@ -56,3 +56,6 @@ older runtimes; immutable ZIP retention does not establish profile downgrade saf
 The 0.16.1 journey integration repair preserves all twelve earlier package records
 and ZIP bytes, including published 0.16.0. Repository 0.2.0 and preference schema 3
 remain unchanged. No live account route is enabled.
+
+The 0.17.0 episode watch-progress preparation retains all thirteen previous package
+records and bytes. Repository 0.2.0 and private preference schema 3 are unchanged.
