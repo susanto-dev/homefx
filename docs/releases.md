@@ -6,6 +6,27 @@ existing GitHub Pages site. Protected main remains PR-only; the maintainer merge
 A merge publishes only after workflow checks pass. This does not establish TV
 acceptance or enable live accounts, sources or playback. No skin is redistributed.
 
+## Verified 0.17.0 publication
+
+Checked on 2026-11-13: [PR #21](https://github.com/susanto-dev/homefx/pull/21)
+merged as `6d744f54184784699ae6ce117a547b9ee66c5e62`.
+[Validation](https://github.com/susanto-dev/homefx/actions/runs/43375911008),
+[security](https://github.com/susanto-dev/homefx/actions/runs/43375910934),
+[CodeQL](https://github.com/susanto-dev/homefx/actions/runs/43375910706) and
+[publication](https://github.com/susanto-dev/homefx/actions/runs/43375910984)
+passed on that merge. Publication includes build, deploy and published-byte verification.
+
+An independent HTTPS read of `repository/addons.xml` advertised video 0.17.0 and
+repository 0.2.0. Both the root video ZIP and indexed video ZIP matched the inventory
+SHA-256 `c24b704af1812487f9a31fc1a4d3a2e1e334c8c6ec3ca973d094b88d3d738126`.
+The root repository ZIP matched
+`3b61f6e8771c1c3fa77cff09a3d4e98c2871c7181f0fe9193b2deba60abeaef9`.
+This establishes publication, not TV installation or real-account acceptance.
+
+The device-checkpoint documentation update changes no runtime, manifest, archive
+or inventory. Its merge runs the normal publication workflow with the same package
+versions and bytes; it does not introduce a Kodi update or activate live services.
+
 ## Build and verify
 
 `python tools/package.py` creates a local video ZIP and SHA-256 sidecar. Runtime
