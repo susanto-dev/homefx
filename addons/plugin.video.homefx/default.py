@@ -166,15 +166,10 @@ def main():
         if route == "collect":
             if items[key]["kind"] != "movie" or params.get("value") not in {"0", "1"}:
                 raise ValueError("Invalid demo movie-list action")
-            saved = prefs["saved_movies"]
-            if params["value"] == "1":
-                if key not in saved:
-                    saved.append(key)
-            elif key in saved:
+            if params["value"] == "0":
                 if not dialog.yesno("HomeFX Preview", "Remove this movie from your local demo movie list?"):
                     return
-                saved.remove(key)
-            state.save(profile, prefs)
+            state.update(profile, "collect", key=key, value=params["value"] == "1")
             dialog.notification("HomeFX Preview", "Local movie list updated; Trakt is not connected")
             xbmc.executebuiltin("Container.Refresh")
             return
@@ -183,20 +178,18 @@ def main():
             chosen = dialog.multiselect("Select demo widget lists", list(model.LISTS.values()),
                          preselect=[i for i, k in enumerate(keys) if k in prefs["selected"]])
             if chosen is not None:
-                prefs["selected"] = [keys[i] for i in chosen]
-                state.save(profile, prefs)
+                state.update(profile, "select", selected=[keys[i] for i in chosen])
                 xbmc.executebuiltin("Container.Refresh")
             return
         if route == "reset":
             if dialog.yesno("HomeFX Preview", "Reset local demo watch states, movie list and widget selection?"):
-                state.save(profile, {"watched": {}, "selected": list(model.LISTS), "saved_movies": []})
+                state.update(profile, "reset")
                 xbmc.executebuiltin("Container.Refresh")
             return
         if route == "watched":
             if params.get("value") not in {"0", "1"}:
                 raise ValueError("Invalid watched state")
-            prefs["watched"][key] = params["value"] == "1"
-            state.save(profile, prefs)
+            state.update(profile, "watched", key=key, value=params["value"] == "1")
             dialog.notification("HomeFX Preview", "Local demo updated; Trakt is not connected")
             xbmc.executebuiltin("Container.Refresh")
             return

@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status during 0.17.1 navigation/packaging repair (published video 0.17.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status during 0.17.2 concurrent local-edit repair (published video 0.17.1, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -22,22 +22,21 @@ provider or release choice. The current public add-on remains synthetic.
 | B10 | Skin and home layout | Existing skin retained | TV navigation/focus/widget headers; separate skin only if demonstrated necessary |
 | B11 | Upcoming personal episode calendar | Mocked/inactive (0.11) | Confirm live personal-calendar coverage and entitlement; a selected-show filter is only an intersection, not a complete selected-list schedule |
 
-### Known local demo persistence limitation
+### Concurrent local demo edits (0.17.2 preparation)
 
-Concurrent local mutations can overwrite unrelated changes: a list-selection dialog
-loads the full demo state before opening, and saving its selection after another
-invocation marks a title watched or saves a movie replaces that newer state. This
-was reproduced with fabricated adapter callbacks. A subsequent focused repair needs
-serialized, field-scoped updates against the latest state; a reload alone is not a
-complete concurrency fix. Until then, finish one local edit before starting another.
-This concerns demo JSON only, not the private account SQLite stores. The 0.17.1
-cancellation/packaging repair does not claim to resolve it.
+The reproduced stale-dialog lost-update bug is repaired with serialized, field-scoped
+mutations. A selection save retains unrelated watched and movie-list changes made
+while its dialog was open. Cancellation performs no edit, and reset deliberately
+clears all demo fields. Backend contention and unsafe-path checks plus adapter
+interleaving tests cover fabricated data. Actual TV behavior remains pending.
+The JSON format is unchanged; all writing invocations must use the updated runtime.
+This repair does not alter private account stores or enable live services.
 
 ## Trakt and account data
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner reports registration and environment-scoped public IDs/shared redirect configured; offline workflow preflight prepared, actual registration/login/refresh and TV storage/TLS verification pending |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner reports registration and environment-scoped public IDs/shared redirect configured; Development offline configuration preflight passed after PR #24; actual registration/login/refresh and TV storage/TLS verification pending |
 | T02 | Account connect/cancel/switch/disconnect UI | Controller and injected dialog adapter inactive (0.12); setup guidance implemented | Wire UI only after activation gates; verify revocation/privacy wording and recovery on TV |
 | T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
@@ -72,8 +71,8 @@ cancellation/packaging repair does not claim to resolve it.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.0 publication and HTTP integrity verified | TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.0 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.1 publication and HTTP integrity verified | TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -83,17 +82,18 @@ cancellation/packaging repair does not claim to resolve it.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current repair: navigation cancellation and immutable local packaging
+## Current repair: retain concurrent local edits
 
-0.17.1 prepares a correction for ignored Kodi directory-submission failures and
-standalone package overwrites. Focused regression tests cover interruption and
-preservation of existing package outputs. These are correctness repairs, not new
-demo features or performance claims. Review, merge, publication and TV acceptance
-remain separate. All real-account gates and existing capabilities are preserved.
+0.17.2 prepares the known demo-state lost-update correction across the backend,
+Kodi actions and acceptance checks. PR #24 merged as
+`32afae7023430492c3b787ca7acae420d4fc2e40`; validation, security, CodeQL,
+publication and the Development configuration preflight passed. Hosted video
+0.17.1 root/indexed ZIPs match the inventory. Public configuration syntax acceptance
+does not prove registered identity, actual login/refresh or device readiness.
 
 ## Next checkpoint: the published candidate on TV
 
-PR #21 is merged and 0.17.0 is published; see [publication evidence](releases.md#verified-0170-publication).
+PR #24 is merged and 0.17.1 publication is verified; see [publication evidence](releases.md#verified-0171-publication-after-configuration-preflight).
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
 progress/next/upcoming views, remote navigation and repository-first installation.
 Do not add options or integrations for feature parity, or claim a smaller scope
@@ -104,7 +104,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 |---|---|---|
 | 1 | R01–R03, Q04, B10 | Published candidate ready; owner checks install/update, readiness/storage, navigation and restart on TV |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Development/Production configuration preflight prepared; registered identity/redirect verification and bounded device authorization still required before live wiring |
+| 3 | T01–T03, T05 | Development configuration preflight passed; Production not run; registered identity/redirect verification and bounded device authorization still required before live wiring |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
 | Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
 | Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |

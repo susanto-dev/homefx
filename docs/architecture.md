@@ -1,7 +1,7 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx 0.17.1 supplies the synthetic preview. repository.homefx 0.2.0
+plugin.video.homefx 0.17.2 supplies the synthetic preview. repository.homefx 0.2.0
 provides the experimental repository-first installation contract. The 0.9 publication and hosted-byte verification passed. Each later release must
 pass its own publication checks; TV installation/update behavior remains a separate
 acceptance gate. A separate skin component is deferred
@@ -10,8 +10,10 @@ until a demonstrated limitation requires one.
 The preview boundary is: Kodi adapter → pure route/catalogue logic → invented data.
 Demo selected lists, saved movie IDs and watched overrides live in the add-on
 profile as demo.json. The saved collection starts empty and accepts future movies.
-Atomic replacement avoids partial writes; this is not a concurrent credential store.
-The demo does not open a database or start a background service.
+Atomic replacement avoids partial writes. Local mutations use a separate SQLite
+lock to serialize field-scoped changes against the latest JSON state. Browsing remains
+read-only and does not open that lock database. No background service or credential
+store is introduced; see [storage boundaries](storage-boundaries.md).
 
 Later boundaries must remain explicit: Trakt supplies metadata/lists/watch state;
 a playback adapter locates an authorized source and resolves media; Kodi plays it.

@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This navigation and packaging repair prepares `plugin.video.homefx` 0.17.1 alongside
+This concurrent local-edit repair prepares `plugin.video.homefx` 0.17.2 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -26,6 +26,21 @@ This establishes publication, not TV installation or real-account acceptance.
 The device-checkpoint documentation update changes no runtime, manifest, archive
 or inventory. Its merge runs the normal publication workflow with the same package
 versions and bytes; it does not introduce a Kodi update or activate live services.
+
+## Verified 0.17.1 publication after configuration preflight
+
+PR #24 merged as `32afae7023430492c3b787ca7acae420d4fc2e40`.
+[Validation](https://github.com/susanto-dev/homefx/actions/runs/43387046582),
+[security](https://github.com/susanto-dev/homefx/actions/runs/43387046612),
+[CodeQL](https://github.com/susanto-dev/homefx/actions/runs/43387045415),
+[publication](https://github.com/susanto-dev/homefx/actions/runs/43387046581) and
+[Development configuration preflight](https://github.com/susanto-dev/homefx/actions/runs/43387046615)
+passed. Publication's build, deploy and published-byte verification all completed.
+Direct HTTPS checks confirmed video 0.17.1 / repository 0.2.0 in the hosted index;
+both video ZIP paths matched SHA-256
+`704224f23c5225c956a553bb84d896513222aca4dcf8e41c5c7cbbd13dc2455a`.
+Configuration success establishes syntax only. Production was not dispatched;
+registration, TV installation and live-account acceptance remain unverified.
 
 ## Build and verify
 
@@ -301,3 +316,24 @@ bytes, the inventory or Pages inputs. Merging this tooling change runs the ordin
 publication path with identical packages and starts a separate Development
 configuration check. Production requires a manual main-branch selection. A green
 configuration check establishes syntax only; live activation gates remain unchanged.
+
+## Concurrent local-edit repair (0.17.2)
+
+Video 0.17.2 prepares serialized, field-scoped demo mutations. Finishing list
+selection after another invocation changes a watched flag or saves a movie retains
+those unrelated changes. Movie removal confirms the explicit remove action even
+when the initial snapshot did not contain the movie, so a concurrent addition is
+not removed without confirmation. Cancelling a dialog performs no mutation; reset
+remains an explicit all-field operation. Locks are acquired only after dialogs close.
+
+The existing demo.json format and widget routes remain unchanged. A separate local
+SQLite lock coordinates cooperating updated invocations; browsing remains JSON-only.
+Bounded lock contention fails without reporting a successful edit. No private Trakt
+or Real-Debrid store or account operation is changed. SQLite/filesystem behavior,
+remote navigation and restart persistence remain TV acceptance items.
+
+After review and merge, the normal publication workflow would index video 0.17.2,
+keep repository 0.2.0 unchanged, and retain all older archives. Never replace the
+already published 0.17.1 ZIP. Restart Kodi after upgrading so old invocations that
+do not participate in the lock cannot write concurrently. A downgrade to older
+code does not preserve this concurrency guarantee.
