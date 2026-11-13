@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.14 storage batch (video add-on 0.14.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.14.1 publication repair (video add-on 0.14.1, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -61,7 +61,7 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.13 publication and HTTP integrity verified | 0.14 publication follows merge; cloud checks do not prove TV installation |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.13 publication and HTTP integrity verified | 0.14 publication failed before deploy; 0.14.1 repair pending merge and successful publication |
 | R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.13 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
@@ -72,21 +72,20 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current combined batch: 0.14 storage boundaries
+## Current focused batch: 0.14.1 publication repair
 
-Parallel scope: harden Real-Debrid refresh and credential persistence, shared request
-limit persistence, and add service-level regressions. Claims cannot outlive their
-deadline while waiting for a database write lock. Later operations cannot silently
-recreate deleted stores, and incompatible schemas fail before changing valid state.
-Valid legacy stores retain the same schema and semantics. See
-[storage boundaries](storage-boundaries.md).
+Both post-merge Python 3.12 validation and preview build failed in the concurrent
+preferences test at `e33edc02e72dbc52df058a7ac76bc0948baa2a5f`. The preference
+filesystem guard rejected normal SQLite journal unlink/recreation between path
+inspection and descriptor validation. The repair distinguishes transient sidecars
+from the mandatory database while preserving private-file, link, size and schema
+checks. Deterministic regressions and the existing multi-process test cover this.
 
-The previous batch deployed video 0.13.0 and repository 0.2.0 from merge commit
-`a7fb4fbe1639a32de4f56f3dbc57b77e552ca234`;
-[publication run](https://github.com/susanto-dev/homefx/actions/runs/43356354268)
-passed build, deployment and hosted-byte verification. This batch prepares video
-0.14.0 and preserves all seven prior archive records and bytes. Live accounts,
-playback and scrobbling are inactive; TV acceptance remains pending.
+The failed preview run did not deploy 0.14.0. Direct HTTP inspection still found
+video 0.13.0/repository 0.2.0 hosted. The repaired current video version is 0.14.1;
+all eight prior archive records, including superseded 0.14.0, remain unchanged.
+See [publication evidence and consequences](releases.md). No feature work or live
+account, playback, write or scrobbling activation is included.
 
 ## External inputs and decisions
 

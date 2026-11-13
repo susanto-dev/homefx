@@ -150,20 +150,21 @@ class AccountPreferences:
         return result
 
     @staticmethod
-    def _file_info(info, private):
-        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+    def _file_info(info, private, allow_unlinked=False):
+        if (not stat.S_ISREG(info.st_mode)
+                or info.st_nlink not in ((0, 1) if allow_unlinked else (1,))
                 or info.st_size > _MAX_FILE_BYTES
                 or (private and stat.S_IMODE(info.st_mode) & 0o077)):
             raise OSError()
 
-    def _safe_file(self, path, private, missing):
+    def _safe_file(self, path, private, missing, transient=False):
         try:
             before = path.lstat()
         except FileNotFoundError:
             if missing:
                 return
             raise
-        self._file_info(before, private)
+        self._file_info(before, private, allow_unlinked=transient)
         try:
             descriptor = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK | getattr(os, 'O_NOFOLLOW', 0))
         except FileNotFoundError:
@@ -172,8 +173,13 @@ class AccountPreferences:
             raise
         try:
             info = os.fstat(descriptor)
-            self._file_info(info, private)
-            if (before.st_dev, before.st_ino) != (info.st_dev, info.st_ino):
+            # SQLite can unlink an open sidecar or recreate its path on commit.
+            # Validate the opened file itself; only the mandatory database needs
+            # a stable inode and exactly one link across this inspection.
+            self._file_info(info, private, allow_unlinked=transient)
+            # Without no-follow support, retain the conservative identity guard.
+            stable_identity = not transient or not getattr(os, 'O_NOFOLLOW', 0)
+            if stable_identity and (before.st_dev, before.st_ino) != (info.st_dev, info.st_ino):
                 raise OSError()
         finally:
             os.close(descriptor)
@@ -190,7 +196,7 @@ class AccountPreferences:
                 raise OSError()
         self._safe_file(self._path, private, missing)
         for suffix in ('-journal', '-wal', '-shm'):
-            self._safe_file(Path(str(self._path) + suffix), private=True, missing=True)
+            self._safe_file(Path(str(self._path) + suffix), private=True, missing=True, transient=True)
 
     def _connect(self):
         self._safe_paths()

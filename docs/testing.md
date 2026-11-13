@@ -176,3 +176,9 @@ creation classification. Service-level tests verify rejection before provider
 requests and compatibility of valid stored credentials and shared limits. All
 credentials, clocks and responses remain fabricated; real authorization and Kodi
 playback are outside automated acceptance.
+
+The 0.14.1 repair reproduces normal journal unlink with a real SQLite commit at
+the path/descriptor boundaries, and checks recreated sidecars against unsafe
+symlink, hardlink, FIFO, permission and size replacements. Mandatory database
+identity and missing-file rejection remain asserted. Existing concurrent account
+retention tests remain unchanged; repeated runs supplement deterministic cases.

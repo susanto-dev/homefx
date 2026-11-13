@@ -36,3 +36,7 @@ fixtures are synthetic and are not included in the video package.
 Video 0.14.0 extends credential and request-limit storage guards. Its release
 proposal preserves all seven previous records and ZIP bytes; repository 0.2.0
 remains unchanged. No account data or test fixtures are included.
+
+Video 0.14.1 repairs concurrent preference sidecar inspection. It preserves all
+eight prior records and archive bytes, including 0.14.0 whose post-merge publication
+failed before deployment. Only 0.14.1 is the repaired current video update target.

@@ -44,6 +44,12 @@
       "version": "0.14.0"
     },
     {
+      "id": "plugin.video.homefx",
+      "path": "archives/plugin.video.homefx-0.14.1.zip",
+      "sha256": "24deadbcfd6fae2d5c6a0c77ee21dce13c4e634e84ff0041e5391284d8280f9e",
+      "version": "0.14.1"
+    },
+    {
       "id": "repository.homefx",
       "version": "0.2.0",
       "path": "archives/repository.homefx-0.2.0.zip",
