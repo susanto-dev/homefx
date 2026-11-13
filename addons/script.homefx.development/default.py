@@ -6,16 +6,18 @@ import xbmcvfs
 
 
 def main():
+    """Return whether UI delivery was available, without leaking callback errors."""
     try:
         from resources.lib.development_test import run
-        run(xbmcaddon.Addon(), xbmcgui.Dialog(), xbmcgui.DialogProgress,
+        return run(xbmcaddon.Addon(), xbmcgui.Dialog(), xbmcgui.DialogProgress,
             xbmc.Monitor(), xbmcvfs.translatePath)
     except Exception:
         # Never expose configuration, private paths or callback exception text.
         try:
             xbmcgui.Dialog().textviewer("HomeFX Development Test", "Test unavailable. No success is established.")
         except Exception:
-            pass
+            return False
+        return True
 
 
 if __name__ == '__main__':

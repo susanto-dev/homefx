@@ -17,11 +17,16 @@ ADDON_ID = "script.homefx.development"
 MAX_CONFIG_BYTES = 4096
 TITLE = "HomeFX Development Test"
 FAILURE = "Test unavailable or failed. No success is established. No private details are shown."
+CLEANUP_FAILURE = "UI cleanup unconfirmed. No success is established. A refresh may require login again."
 ACTIONS = ("Test this add-on's private storage", "Local connection status (no network)",
            "Connect Development Trakt", "Test one refresh rotation", "Disconnect this test locally")
 STATES = {"disconnected": "disconnected", "ready": "credentials stored",
           "refresh_required": "refresh required", "refreshing": "refresh in progress",
           "reauth": "login required"}
+
+
+class _Cancelled(Exception):
+    """Local control flow after UI creation; cleanup must still finish."""
 
 
 class DevelopmentError(ValueError):
@@ -135,15 +140,20 @@ def _local_runtime(profile, config, *, clock=time.time):
 def run(addon, dialog, progress_factory, monitor, translate_path, *,
         factory=assemble, local_factory=_local_runtime, probe=storage_probe.report,
         clock=time.monotonic):
-    """One explicit action per launch; cancel/denial never reads config or profile."""
+    """Run one action; return False only when fixed outcome delivery is unavailable.
+
+    Cancel/denial never reads config or profile. Cleanup failure replaces any
+    success result; callback exception details are never displayed.
+    """
     progress = None
     ui = None
+    outcome = None
     try:
         action = dialog.select(TITLE + " — no public live routes", list(ACTIONS))
         if type(action) is not int or action not in range(len(ACTIONS)) or monitor.abortRequested():
-            return
+            return True
         if dialog.yesno(TITLE, _consent(action)) is not True or monitor.abortRequested():
-            return
+            return True
         if addon.getAddonInfo("id") != ADDON_ID:
             raise DevelopmentError("unexpected_test_addon")
         config = load_config(Path(addon.getAddonInfo("path")) / "resources" / "development.json")
@@ -152,9 +162,9 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
             report = probe(profile)
             if action == 0 or "Overall: passed" not in report.splitlines():
                 dialog.textviewer(TITLE + " — private storage", report)
-                return
+                return True
         if monitor.abortRequested():
-            return
+            return True
         ui = TestUI("trakt", dialog, progress_factory, monitor)
         if action == 3:
             progress = progress_factory()
@@ -162,13 +172,13 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
             def cancelled():
                 return monitor.abortRequested() or progress.iscanceled()
             if cancelled():
-                return
+                raise _Cancelled()
             runtime = factory(profile, config, cancelled)
             status = runtime.session.status()
             if status["state"] not in ("ready", "refresh_required"):
                 outcome = "Refresh not run: local connection is not ready. Login may be required."
             elif cancelled():
-                return
+                raise _Cancelled()
             else:
                 tokens = trakt_auth.refresh_tokens(runtime.store, runtime.oauth,
                     config["client_id"], config["redirect_uri"], status["generation"])
@@ -185,8 +195,6 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
                             and after["state"] == "refresh_required"):
                         runtime.session.disconnect(expected_generation=expected)
                     outcome = "Refresh not completed: session changed, busy or login required."
-            progress.close()
-            progress = None
         else:
             runtime = (factory(profile, config, ui.cancelled) if action == 2
                        else local_factory(profile, config))
@@ -202,6 +210,8 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
                     outcome += " Local deletion is not remote revocation or backup erasure."
                 else:
                     outcome += " Authorization does not validate refresh, lists or public preview activation."
+    except _Cancelled:
+        outcome = None
     except Exception:
         outcome = FAILURE + " A failed refresh may require login again."
     finally:
@@ -210,9 +220,12 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
                 try:
                     item.close()
                 except Exception:
-                    pass
+                    outcome = CLEANUP_FAILURE
 
+    if outcome is None:
+        return True
     try:
         dialog.textviewer(TITLE, outcome)
     except Exception:
-        pass
+        return False
+    return True

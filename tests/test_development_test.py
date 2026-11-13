@@ -84,7 +84,7 @@ class DevelopmentTestTests(unittest.TestCase):
 
     def run_action(self, action, **kwargs):
         self.screen.action = action
-        development.run(self.addon, self.screen, lambda: self.screen, self.screen,
+        return development.run(self.addon, self.screen, lambda: self.screen, self.screen,
                         lambda path: path, factory=self.factory, local_factory=self.local_factory,
                         clock=lambda: self.service.elapsed,
                         **kwargs)
@@ -260,6 +260,44 @@ class DevelopmentTestTests(unittest.TestCase):
         self.factory = actual_factory
         self.run_action(1)
         self.assertIn('Local status: credentials stored', self.screen.messages[-1])
+
+    def test_refresh_cleanup_failure_replaces_success_with_fixed_outcome(self):
+        self.run_action(2)
+        with patch.object(self.screen, 'close', side_effect=RuntimeError('private-token-path')):
+            self.assertTrue(self.run_action(3))
+        self.assertEqual(self.screen.messages[-1], development.CLEANUP_FAILURE)
+        self.assertNotIn('passed', self.screen.messages[-1])
+        self.assertNotIn('private-token-path', self.screen.messages[-1])
+
+    def test_ui_cleanup_failure_replaces_local_status(self):
+        with patch.object(development.TestUI, 'close', side_effect=RuntimeError('private-token-path')):
+            self.assertTrue(self.run_action(1))
+        self.assertEqual(self.screen.messages[-1], development.CLEANUP_FAILURE)
+
+    def test_cancelled_refresh_cleanup_failure_is_not_silent(self):
+        self.screen.cancel = True
+        with patch.object(self.screen, 'close', side_effect=RuntimeError('private-token-path')):
+            self.assertTrue(self.run_action(3))
+        self.assertEqual(self.screen.messages[-1], development.CLEANUP_FAILURE)
+        self.assertEqual(self.service.requests, [])
+
+    def test_result_viewer_failure_returns_false_without_private_exception(self):
+        with patch.object(self.screen, 'textviewer', side_effect=RuntimeError('private-token-path')):
+            self.assertFalse(self.run_action(1))
+            self.assertFalse(self.run_action(0))
+
+    def test_entry_fallback_delivery_status_and_redaction(self):
+        def unavailable(): raise RuntimeError('private-token-path')
+        modules = {name: types.SimpleNamespace(**members) for name, members in {
+            'xbmc': {'Monitor': unavailable}, 'xbmcaddon': {'Addon': unavailable},
+            'xbmcgui': {'Dialog': lambda: self.screen, 'DialogProgress': unavailable},
+            'xbmcvfs': {'translatePath': unavailable}}.items()}
+        with patch.dict(sys.modules, modules):
+            entry = runpy.run_path(str(SOURCE / 'default.py'), run_name='development_entry_fixture')
+            self.assertTrue(entry['main']())
+            self.assertEqual(self.screen.messages[-1], 'Test unavailable. No success is established.')
+            with patch.object(self.screen, 'textviewer', side_effect=RuntimeError('private-token-path')):
+                self.assertFalse(entry['main']())
 
     def test_entry_import_does_not_open_ui_or_touch_addon(self):
         def forbidden(*args, **kwargs): self.fail('Import must not invoke Kodi')
