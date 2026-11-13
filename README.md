@@ -20,10 +20,10 @@ For the separately installed test add-on and its HomeFX source installation step
 [bounded Development device test](docs/development-device-test.md). It does not
 activate live routes in HomeFX Preview or join the public repository channel.
 
-## Published preview: 0.17.4
+## Published preview: 0.17.5
 
-HomeFX Preview 0.17.4 and repository 0.2.0 are published; post-merge checks and
-hosted package bytes were verified. The owner reported the synthetic private
+HomeFX Preview 0.17.5 and repository 0.2.0 are published; PR #33 post-merge
+validation, security and publication checks passed. The owner reported the synthetic private
 storage check passing on the TV, including permissions, directory check, SQLite
 commit/rollback and temporary cleanup. This does not verify real account-store
 persistence, TLS, login, refresh or playback. Live preview accounts remain inactive.
@@ -32,15 +32,16 @@ The owner also confirmed that the registered Development public client ID and
 redirect match the configured variables. This is not service-side verification.
 The separate Development test was published and installed directly from the HomeFX
 source on the TV. Its own synthetic storage check passed, and local status correctly
-reported disconnected. Connecting failed before any authorization code appeared;
-login, TLS and refresh acceptance remain incomplete.
+reported disconnected. The latest connection attempt returned response status 403
+before any authorization code appeared; successful login, refresh and persistence
+remain unverified.
 
-The **0.17.5 candidate** accepts Trakt's current exact activation address as well as
-the legacy address, and adds fixed failure diagnostics to the separate test. The
-compatibility bug is reproduced with fabricated responses; it is a plausible cause
-of the TV failure, not proof of that response. Version 0.17.4 remains the verified
-published preview until the candidate merges and publication checks pass. See the
-[bounded retry](docs/development-device-test.md#retry-after-the-0175-candidate-is-published).
+The **0.17.6 candidate** adds the documented OAuth request headers: HomeFX's own
+public client ID, API version 2 and an identifying HomeFX user agent. Missing
+headers are a confirmed contract mismatch; they are not yet a proven cause of the
+TV's 403. Version 0.17.5 remains published until this candidate merges and its
+publication checks pass. See the
+[bounded retry](docs/development-device-test.md#retry-after-the-0176-candidate-is-published).
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

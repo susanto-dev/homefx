@@ -63,7 +63,12 @@ class FramedService:
         return Connection(host, **kwargs)
 
     def respond(self, host, method, path, body, headers):
+        self.test.assertEqual(headers['User-Agent'], 'HomeFX (+https://github.com/susanto-dev/homefx)')
+        self.test.assertEqual(headers['trakt-api-version'], '2')
+        self.test.assertEqual(headers['Content-Type'], 'application/json')
         if host == 'auth.trakt.tv':
+            self.test.assertEqual(headers['trakt-api-key'], body['client_id'])
+            self.test.assertNotIn('Authorization', headers)
             self.test.assertEqual(method, 'POST')
             self.test.assertNotIn('client_secret', body)
             if path == '/oauth/device/code':

@@ -19,6 +19,9 @@ from .trakt_client import ApiError, Response, calendar_arguments
 from .trakt_actions import validate_request
 
 
+USER_AGENT = "HomeFX (+https://github.com/susanto-dev/homefx)"
+
+
 class TransportError(Exception):
     """Fixed non-sensitive failure codes; request details must never be included."""
 
@@ -177,7 +180,9 @@ class Transport:
             raise TransportError("invalid_request")
         payload = json.dumps(body, ensure_ascii=True, separators=(",", ":")).encode("ascii")
         return self._request("auth.trakt.tv", method, path,
-                             {"Content-Type": "application/json", "Accept": "application/json"}, payload)
+                             {"Content-Type": "application/json", "Accept": "application/json",
+                              "User-Agent": USER_AGENT, "trakt-api-version": "2",
+                              "trakt-api-key": body["client_id"]}, payload)
 
     def api_request(self, method, path, headers, body=None):
         self._api_path(path)
@@ -202,6 +207,7 @@ class Transport:
         # Authorization intentionally contains one space; its token must not.
         outbound = dict(headers)
         outbound["Accept"] = "application/json"
+        outbound["User-Agent"] = USER_AGENT
         return outbound
 
     def mutation_request(self, method, path, headers, body=None):

@@ -2,7 +2,8 @@
 
 Rechecked 2026-11-13. Status: supported by current documented contracts; no live
 login, token refresh or account access has succeeded. The target TV passed the
-Development test storage check, but connection failed before a code appeared.
+Development test storage check; the latest connection attempt received HTTP status
+403 before a code appeared. Successful authorization remains unverified.
 
 ## Proposed path
 
@@ -37,10 +38,10 @@ The official device-code documentation at
 names `https://auth.trakt.tv/activate` as the hosted activation page. The earlier
 HomeFX parser and dialog accepted only the legacy host/address. An actual parser
 call with a fabricated successful response using the current address failed before
-code display. This is a reproduced compatibility bug and a plausible explanation
-for the reported TV failure, not evidence of the TV's actual response.
+code display. This is a reproduced compatibility bug. The later TV report shows a separate
+403 request rejection before an activation URL could be validated.
 
-The 0.17.5 candidate shares an exact allowlist between response validation and the
+Published 0.17.5 shares an exact allowlist between response validation and the
 code dialog: `https://auth.trakt.tv/activate` and `https://trakt.tv/activate`. It
 preserves the accepted URL and rejects lookalikes, arbitrary paths, query strings,
 fragments, user information and explicit ports. No redirect following, TLS bypass
@@ -49,9 +50,36 @@ implementation is copied.
 
 The separate Development test adds invocation-only fixed failure stages/categories
 and a bounded response-status value. It does not display response bodies, exception
-text or credentials. A status may come from a local rate-limit response, and a
-request failure can involve network, TLS or a local request guard; neither establishes
-a provider-specific cause. See the [bounded retry](development-device-test.md#retry-after-the-0175-candidate-is-published).
+text or credentials. The local limiter can generate 429 only; the observed 403 came from the HTTP
+response path. A generic request failure can still involve network, TLS or a local
+request guard and does not identify a specific cause.
+
+## Required request headers and the 403 follow-up
+
+The current [required-header guidance](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/developer/src/lib/guides/required-headers.md)
+and [authentication guidance](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/developer/src/lib/guides/authentication-oauth.md)
+require JSON Content-Type, a User-Agent, `trakt-api-key` containing the app's public
+client ID, and `trakt-api-version: 2`. Earlier HomeFX OAuth requests sent only
+Content-Type and Accept. The 0.17.6 candidate adds the missing headers across device
+issuance, token polling and refresh. Existing API requests also gain the fixed,
+honest user agent `HomeFX (+https://github.com/susanto-dev/homefx)`.
+
+The public ID in the OAuth header matches that request's `client_id` body field.
+No client secret or bearer token is added to device-code issuance. The fixed OAuth
+host remains `auth.trakt.tv`; Standard data requests remain on `api.trakt.tv`.
+Existing request bounds, TLS verification, redirect rejection and no-retry behavior
+are unchanged. Tests inspect fabricated HTTP bytes, not live account traffic.
+
+The [status-code guide](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/developer/src/lib/guides/status-codes.md)
+associates 403 with an invalid API key or unapproved app. Missing headers are a
+confirmed contract mismatch and plausible explanation, not proof of the TV cause.
+If a single explicit retry still returns 403, the owner must inspect app status,
+public identity and allowed-user access privately. An upstream gateway may also
+reject requests. Do not infer that a paid plan, Production registration, alternate
+endpoint or foreign application identity is required. Current
+[registration guidance](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/developer/src/lib/guides/create-an-app.md)
+permits the owner and up to 16 invited users in Development; personal/small-group
+use can remain there. Follow the [bounded retry](development-device-test.md#retry-after-the-0176-candidate-is-published).
 
 ## Implemented mocked foundations
 
