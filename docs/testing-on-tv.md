@@ -31,6 +31,48 @@ device codes, private title/list contents, history, profile paths, screenshots w
 private information, unredacted logs or a Kodi backup. No playback, Real-Debrid or
 scrobbling acceptance is part of this milestone.
 
+## Current device candidate and timing record
+
+Use the already published **video 0.17.0 / repository 0.2.0**; no new package is
+needed for this checkpoint. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
+**Vertical Multi Widget Netflix**. Keep the existing skin and saved routes.
+The [release evidence](releases.md#verified-0170-publication) establishes hosted
+bytes only. Device acceptance remains **NOT RUN**.
+
+This public candidate tests synthetic navigation, local demo persistence and the
+optional temporary storage probe. It does **not** call the inactive account-bound
+renderer added in 0.16/0.17. A successful demo cannot validate real season/progress
+rendering, account isolation, login/refresh, TLS or stale-row removal in Kodi.
+
+After steps 1–3 above, use the same skin presentation and record three trials for
+one demo row, then two selected-list rows plus Continue watching, Next aired and
+Upcoming. For each trial restart Kodi, time from opening the home screen until
+all configured HomeFX rows visibly finish loading, then leave and immediately
+reopen the home screen and time again. Label these **first open after restart**
+and **immediate reopen**; they are observable timings, not proof of cache misses
+or hits. Record loading failure/timeout rather than silently dropping a trial.
+Also note whether focus responds while rows load, Back returns promptly, and the
+previous selection is retained. No target latency or improvement is claimed yet.
+
+| Layout | Trial | First open (seconds) | Immediate reopen (seconds) | Focus / Back / return position |
+|---|---|---|---|---|
+| One demo row | 1–3, one record each | Not measured | Not measured | Not observed |
+| Five rows as above | 1–3, one record each | Not measured | Not measured | Not observed |
+
+Synthetic rows make no Trakt requests. These timings cannot characterize provider
+latency, request counts, rate limits or private metadata caching. The inactive
+service cache is invocation-local, not a persistent warm cache across Kodi plugin
+invocations. After authorized live activation, repeat the same measurements and
+separately verify bounded network requests, rate-limit/offline behavior and cache
+invalidation without exporting private data. Optimize only observed bottlenecks.
+
+Return the versions, fixed readiness/storage results (including cleanup), navigation
+outcomes and timing records. Keep actual list/title names, paths and account data
+private. After those results, the next bounded milestone is registered-client
+verification and an explicitly authorized development-device read-only connection;
+see [required owner input](account-setup.md#owner-input-for-the-read-only-milestone).
+No playback, writes, Real-Debrid or skin replacement is part of that milestone.
+
 ## Detailed preview checks
 
 1. After the reviewed Pages deployment and HTTP check, use Kodi Settings → File

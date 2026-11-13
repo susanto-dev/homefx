@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.17.0 episode watch-progress preparation (video add-on 0.17.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status after verified 0.17.0 publication (video add-on 0.17.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -61,8 +61,8 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.16.1 publication and HTTP integrity verified | 0.17.0 pending review/merge/publication; TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.16.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.0 publication and HTTP integrity verified | TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.0 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -72,31 +72,24 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current focused batch: 0.17.0 episode watch-progress preparation
+## Next checkpoint: the published candidate on TV
 
-The 0.16.1 merge, validation, publication and hosted bytes are verified. The current
-batch connects existing episode filtering and season summaries to the inactive
-account-bound renderer. All episodes keeps narrative order; Aired unwatched
-excludes future, undated and unknown-watched rows and orders unfinished episodes
-first through the existing view helper. Complete season validation runs before
-filtering. Percent progress is metadata, not a fabricated resume timestamp.
-
-Fixed context actions retain the same list/show/season reference. Season counts
-show independent watched/date dimensions, not playable availability. An empty
-filtered folder stays empty; when entered from a season folder, Back returns to
-that folder where All episodes is available. Direct widgets may need the separate
-full-list shortcut. Existing mixed-list and unfiltered episode URLs remain compatible.
-Public routes, account activation, remote writes and playback remain unchanged.
+PR #21 is merged and 0.17.0 is published; see [publication evidence](releases.md#verified-0170-publication).
+Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
+progress/next/upcoming views, remote navigation and repository-first installation.
+Do not add options or integrations for feature parity, or claim a smaller scope
+improves performance without measurements. No additional demo feature is needed
+before the [bounded TV checklist](testing-on-tv.md).
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|
-| 1 | B02, T03: account-bound list widgets | Inactive implementation and automated tests; restart, isolation, clear and deselection checks |
-| 2 | B03, T05: read-only list/season rendering | Inactive implementation; gated public dispatch and actual Kodi acceptance remain |
-| 3 | R01–R03, Q01–Q02: release and quality | Automated on each PR; verify post-merge hosted bytes separately |
-| 4 | Q04, B10: TV readiness and existing skin | Owner device evidence pending; use the short staged checklist |
-| 5 | T01–T02, T05: real Trakt connection/read journey | Blocked on registered public identity/redirect and authorized device/TLS/login/refresh checks |
-| Later | Q03: complete official add-on checker | Secure/offline input and schema compatibility work remains |
-| Deferred | T06, D01–D06, P01–P06 | Remote writes, Real-Debrid and playback stay outside this batch |
+| 1 | R01–R03, Q04, B10 | Published candidate ready; owner checks install/update, readiness/storage, navigation and restart on TV |
+| 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
+| 3 | T01–T03, T05 | Registration public ID/redirect/mode and bounded device authorization required before live wiring; verify login/refresh/TLS and account isolation |
+| 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
+| Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
+| Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |
+| Deferred | T06, D01–D06, P01–P06 | Remote writes, Real-Debrid and playback; no expansion in this checkpoint |
 
 Device and registration gates cannot be satisfied by cloud tests. Protected main
 remains maintainer-merged after independent review and successful checks.
@@ -107,7 +100,7 @@ The next useful device evidence is the readiness report and existing widget/navi
 checklist, followed by service-registration details (public IDs only). Real lists/views,
 movie release region/type, first playback path, source-provider choice, scrobbling
 ownership, final original-code licence and TV acceptance of repository updates/rollback remain open.
-These inputs block live activation; completed independent work does not satisfy them. Never send secrets,
+Registration and device evidence block read-only activation. Playback, movie-region and licence decisions do not require another demo-feature batch; completed independent work does not satisfy the activation gates. Never send secrets,
 account exports, watch history or a full Kodi backup.
 
 NBA, a separate Android app and an always-on server are outside scope. A new skin is
