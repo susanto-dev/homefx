@@ -78,3 +78,24 @@ Deterministic regressions commit real SQLite writes during initial path inspecti
 and after journal open but before descriptor inspection. Additional cases test safe recreation,
 unsafe replacement descriptors and mandatory-database unlink/replacement. These
 reproduce the guard failure without relying on scheduler timing.
+
+## Shared sidecar lifecycle (0.14.2)
+
+Trakt tokens, Real-Debrid credentials and request limits also distinguish transient
+SQLite sidecars from the mandatory database. A sidecar may have zero links in a
+stat result when SQLite commits during path lookup. It must still be a regular
+file, and multiple hardlinks remain rejected. The mandatory database still requires
+exactly one link; deleted databases are not recreated by later operations. Existing
+path, schema, refresh-generation and quota/isolation checks remain unchanged.
+
+Real SQLite commit regressions cover reads and constructor reopen for all three
+stores, including preserved committed generation/cooldown values. Negative cases
+cover unlinked mandatory databases and symlink, hardlink, FIFO and directory
+sidecars. This is a correction to the same journal-lifecycle class as 0.14.1, not
+a general relaxation of database path checks or an account activation.
+
+The service-factory preflight uses a single non-following stat inspection instead
+of separate existence and stat calls. It applies the same sidecar-only zero-link
+rule, including preference journals, before constructing components. Real-commit
+factory tests preserve stored generations, epochs and cooldowns without provider
+traffic; unlinked mandatory databases remain rejected before construction.

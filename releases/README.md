@@ -40,3 +40,7 @@ remains unchanged. No account data or test fixtures are included.
 Video 0.14.1 repairs concurrent preference sidecar inspection. It preserves all
 eight prior records and archive bytes, including 0.14.0 whose post-merge publication
 failed before deployment. Only 0.14.1 is the repaired current video update target.
+
+Video 0.14.2 completes the transient-sidecar correction across credential and quota
+stores. All nine prior records and bytes remain unchanged, including the verified
+published 0.14.1 repair. Repository 0.2.0 is reused unchanged.

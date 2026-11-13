@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This repair prepares `plugin.video.homefx` 0.14.1 alongside
+This follow-up prepares `plugin.video.homefx` 0.14.2 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -160,3 +160,18 @@ unchanged, including the superseded 0.14.0 archive. The repository will retain t
 archive at its versioned path, but will not advertise it as the current version.
 No merged or published version is rebuilt with different bytes. Publication occurs only after
 the maintainer merges and the ordinary preview workflow succeeds.
+
+## Confirmed repair publication and follow-up
+
+The 0.14.1 repair merged at `1ad8df1f50111cc0d8a2c155b3cae030f9bbb83a`.
+[Validation 43363067295](https://github.com/susanto-dev/homefx/actions/runs/43363067295)
+passed on Python 3.8 and 3.12.
+[Publication 43363067248](https://github.com/susanto-dev/homefx/actions/runs/43363067248)
+passed build, deployment and hosted-byte verification. Direct HTTPS checks also
+confirmed the current 0.14.1 index and matching root/repository video ZIP SHA-256
+`24deadbcfd6fae2d5c6a0c77ee21dce13c4e634e84ff0041e5391284d8280f9e`.
+
+The 0.14.2 follow-up applies the same transient-journal distinction to credential
+and request-limit stores. It preserves all nine prior records and ZIP bytes. Only
+a successful ordinary post-merge publication will advertise 0.14.2 as current;
+repository 0.2.0 is unchanged. TV acceptance is still separate.

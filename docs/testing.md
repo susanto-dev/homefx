@@ -182,3 +182,15 @@ the path/descriptor boundaries, and checks recreated sidecars against unsafe
 symlink, hardlink, FIFO, permission and size replacements. Mandatory database
 identity and missing-file rejection remain asserted. Existing concurrent account
 retention tests remain unchanged; repeated runs supplement deterministic cases.
+
+The 0.14.2 shared-sidecar tests reproduce a real commit during path inspection for
+all three credential/quota stores, both on existing instances and reopen. The six
+positive cases fail against the previous runtime; mandatory-database and unsafe
+sidecar cases continue to reject. Full suites and repeated focused runs validate
+the correction without sleeps, retries or live service requests.
+
+The service-factory preflight uses a single non-following stat inspection instead
+of separate existence and stat calls. It applies the same sidecar-only zero-link
+rule, including preference journals, before constructing components. Real-commit
+factory tests preserve stored generations, epochs and cooldowns without provider
+traffic; unlinked mandatory databases remain rejected before construction.
