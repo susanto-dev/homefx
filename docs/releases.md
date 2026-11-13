@@ -366,3 +366,21 @@ workflow with identical video 0.17.2 and repository 0.2.0 packages. The guide is
 local candidate before merge; check its hosted response, links and layout after
 that deployment succeeds. Do not independently dispatch or force publication.
 Installation, skin-menu labels and device behavior remain unverified on the TV.
+
+## Verified installation guide publication after PR 27
+
+PR #27 merged as `d3d8658b3e1869de9bad62eb18d4c18ce47636d5` on 13 November
+2026. Its [Publish preview run](https://github.com/susanto-dev/homefx/actions/runs/43404543315)
+completed successfully, including deployment and published-byte verification.
+Post-merge validation, security and the Development configuration preflight also
+passed. The preflight establishes public configuration syntax, not registered
+identity or live-account acceptance.
+
+A separate hosted-byte check against the exact reviewed build matched **44 public
+files, 1,547,638 bytes**, including the new
+[installation guide](https://susanto-dev.github.io/homefx/install.html), landing
+page, repository index, checksums and retained packages. Video **0.17.2** and
+repository **0.2.0**, including root and indexed ZIP copies, retain the same bytes;
+this publication creates no new Kodi add-on version. Existing release/archive URLs
+remain available. These checks establish publication integrity, not successful
+installation, widget behavior, private storage, TLS or live Trakt on the TV.

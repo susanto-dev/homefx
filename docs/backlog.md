@@ -1,7 +1,9 @@
 # Complete project backlog
 
-Status during 0.17.2 concurrent local-edit repair (published video 0.17.1, repository add-on 0.2.0). **Implemented** means source and automated
-checks exist; it never means tested on the TV or against a real account.
+Status checked on 13 November 2026: published **video 0.17.2 / repository 0.2.0**.
+The installation guide is merged in PR #27; its post-merge publication workflow
+passed. **Implemented** means source and automated checks exist; **published** means
+release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
 provider or release choice. The current public add-on remains synthetic.
@@ -22,7 +24,7 @@ provider or release choice. The current public add-on remains synthetic.
 | B10 | Skin and home layout | Existing skin retained | TV navigation/focus/widget headers; separate skin only if demonstrated necessary |
 | B11 | Upcoming personal episode calendar | Mocked/inactive (0.11) | Confirm live personal-calendar coverage and entitlement; a selected-show filter is only an intersection, not a complete selected-list schedule |
 
-### Concurrent local demo edits (0.17.2 preparation)
+### Concurrent local demo edits (published in 0.17.2)
 
 The reproduced stale-dialog lost-update bug is repaired with serialized, field-scoped
 mutations. A selection save retains unrelated watched and movie-list changes made
@@ -36,7 +38,7 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner reports registration and environment-scoped public IDs/shared redirect configured; Development offline configuration preflight passed after PR #24; actual registration/login/refresh and TV storage/TLS verification pending |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner reports registration and environment-scoped public IDs/shared redirect configured; Development offline configuration preflight passed again after PR #27; actual registration/login/refresh and TV storage/TLS verification pending |
 | T02 | Account connect/cancel/switch/disconnect UI | Controller and injected dialog adapter inactive (0.12); setup guidance implemented | Wire UI only after activation gates; verify revocation/privacy wording and recovery on TV |
 | T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
@@ -71,8 +73,8 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.1 publication and HTTP integrity verified | TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.2 publication and HTTP integrity verified | TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.2 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -82,26 +84,36 @@ This repair does not alter private account stores or enable live services.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current batch: align Python support with Kodi 21.2
+## Completed: Python target and installation guide
 
-The owner accepted the official Kodi 21.2 Android Python 3.11 dependency as the
-runtime target. Replace conservative Python 3.8 CI coverage with 3.11, keep 3.12 as
-the newer-runtime/tooling check, and align source syntax/lint policy. Retained
-archives keep their historical syntax contract. Runtime files and package bytes
-remain unchanged; live account/device gates are separate.
+Python 3.11 is the source/runtime target following the official Kodi 21.2 Android
+build; CI also checks 3.12. Retained archives keep their historical syntax contract.
+The Python-target change did not change runtime files or package bytes.
 
-## Previous repair: retain concurrent local edits
+PR #27 merged as `d3d8658b3e1869de9bad62eb18d4c18ce47636d5` and adds the
+[installation guide](install.md), linked from the README and Pages landing page.
+The [post-merge publication workflow](https://github.com/susanto-dev/homefx/actions/runs/43404543315)
+passed, including deployed-byte verification. A separate hosted check matched all
+44 public files; see [publication evidence](releases.md#verified-installation-guide-publication-after-pr-27).
+Video 0.17.2, repository 0.2.0 and
+retained archives are unchanged. Security and the Development configuration
+preflight also passed. The guide explicitly marks installation and skin steps as
+unverified on TV; publication does not establish device acceptance.
 
-0.17.2 prepares the known demo-state lost-update correction across the backend,
-Kodi actions and acceptance checks. PR #24 merged as
-`32afae7023430492c3b787ca7acae420d4fc2e40`; validation, security, CodeQL,
-publication and the Development configuration preflight passed. Hosted video
-0.17.1 root/indexed ZIPs match the inventory. Public configuration syntax acceptance
-does not prove registered identity, actual login/refresh or device readiness.
+## Historical milestone: configuration preflight and local-edit repair
+
+PR #24 merged as `32afae7023430492c3b787ca7acae420d4fc2e40`; its validation,
+security, CodeQL, publication and Development configuration preflight passed.
+At that checkpoint, hosted video 0.17.1 root/indexed ZIPs matched the inventory.
+The subsequent 0.17.2 release contains the concurrent demo-state lost-update
+correction described above. Public configuration syntax acceptance does not prove
+registered identity, actual login/refresh or device readiness.
 
 ## Next checkpoint: the published candidate on TV
 
-PR #24 is merged and 0.17.1 publication is verified; see [publication evidence](releases.md#verified-0171-publication-after-configuration-preflight).
+Video 0.17.2 and repository 0.2.0 are the published candidate. Start with the
+[activation handoff checklist](activation-checklist.md), which separates demo TV
+evidence from the later, explicitly authorized Development account test.
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
 progress/next/upcoming views, remote navigation and repository-first installation.
 Do not add options or integrations for feature parity, or claim a smaller scope
