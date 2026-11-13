@@ -232,11 +232,9 @@ an identifying HomeFX user agent; existing API helpers gain the same user agent.
 No secret, foreign identity, endpoint change, retry or TLS relaxation is introduced.
 The confirmed contract mismatch is not yet a proven diagnosis of the TV's 403.
 
-The proposal prepared video 0.17.6 and preserve all 19 prior records/archives, including 0.17.5;
-repository 0.2.0 remains unchanged. Reinstall the new Development ZIP after normal
-publication and perform one [bounded retry](development-device-test.md#retry-after-the-0176-candidate-is-published).
-Persistent 403 requires private app/status/allowed-user inspection and review, not
-repeated retries or automatic Production activation. No list/playback scope is added.
+The release preserved all 19 prior records/archives, including 0.17.5, and kept
+repository 0.2.0 unchanged. Its original retry checklist is superseded by the
+post-login checks below. No list/playback scope was added.
 
 ## Current checkpoint: Development authorization and refresh passed
 
