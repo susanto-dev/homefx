@@ -91,6 +91,8 @@ jobs:
           python -m pip install --require-hashes --only-binary=:all: -r tools/security-requirements.txt
       - name: Test Action pin guard
         run: python -m unittest discover -s tests -p test_action_audit.py -v
+      - name: Test Trakt workflow boundaries
+        run: python -m unittest discover -s tests -p test_trakt_config_workflow.py -v
       - name: Check local pins
         run: python tools/action_audit.py
       - name: Inspect nested pins and available releases

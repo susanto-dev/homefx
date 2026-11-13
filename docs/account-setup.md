@@ -7,9 +7,9 @@ no live connection route is enabled. Do not paste tokens into plugin URLs or sou
 
 ## Owner input for the read-only milestone
 
-Live access remains blocked until the owner supplies the registered **public client
-ID**, **exact registered redirect URI**, and Development/Production status, then
-authorizes a bounded device test after the gates below. These public configuration
+Live access remains blocked until the registered **public client ID** and **exact
+registered redirect URI** are verified for the selected application environment,
+then the owner authorizes a bounded device test after the gates below. These public configuration
 values do not prove registration validity by themselves. No real-account test belongs
 in CI. Do not send a client secret, token, device code, private list/history export,
 profile path, or application screenshot containing secret fields.
@@ -19,6 +19,47 @@ private storage** results from the [staged TV checklist](testing-on-tv.md). The 
 can select personal or liked lists privately on the device after activation; list
 names or contents are not needed in chat or a public issue.
 
+## GitHub configuration environments
+
+The owner maintains GitHub environments named **Development** and **Production**.
+Set `TRAKT_CLIENT_ID` as an environment variable in each. Set
+`TRAKT_REDIRECT_URI` as a repository variable shared by both. No `TRAKT_APP_MODE`
+variable or client secret is used. The registered redirect must actually match both
+applications for a shared value to be valid; the preflight cannot verify that fact.
+Avoid duplicate redirect variables at environment scope or a fallback client ID at
+repository/organization scope, which can obscure the intended source of a value.
+
+The **Trakt configuration preflight** workflow automatically checks **Development**
+after pushes to main. A maintainer can manually select Development or Production
+on **main**; non-main runs are skipped. Production is never selected automatically.
+GitHub environment protection rules still apply. The job chooses its environment
+before reading `vars.TRAKT_CLIENT_ID` in the validation step and reads the shared
+`vars.TRAKT_REDIRECT_URI`. It requires no secret, service account or provider token.
+
+The check validates presence and syntax offline, using the runtime's existing
+public-client/redirect constraints. The Python validator prints only fixed result
+categories and emits no configuration artifact. GitHub may display step environment
+values in Actions logs: these variables must contain only the public client ID and
+public registered redirect, never a secret or private account data. They are not
+secret storage. It does not contact
+Trakt, construct account storage, log in, refresh tokens, or validate an application's
+registration or entitlement. A green check means **syntax accepted**, not activation.
+GitHub's resolved `vars` context cannot prove which scope supplied a value; confirm
+the variable placement in repository settings when diagnosing configuration.
+
+This separate workflow does not inject environment values into ZIPs or the Pages
+build. PR tests use fabricated values and never bind to these environments. Public
+packages remain deterministic and live routes stay inactive. A failed configuration
+check is actionable but does not alter or bypass package/publication checks; missing
+variables fail without falling back to another environment or inventing a redirect.
+
+After merge, inspect the Development run's fixed result. Run Production manually
+only when its configuration is ready for inspection. No workflow dispatch or login
+is performed as part of preparing this change. Repository API access may prevent
+external tooling from reading environment variables; the Actions job can still
+resolve them with GitHub's normal environment rules. Do not work around that by
+granting access to secrets.
+
 ## Application registration
 
 Read the current [Trakt registration guide](https://developer.trakt.tv/docs/create-an-app)
@@ -26,7 +67,8 @@ and [OAuth guide](https://developer.trakt.tv/docs/authentication-oauth), then re
 a development application in your own account when ready. Record its **public client
 ID** and the **redirect URI actually registered**. HomeFX does not need a client
 secret, and there is no configuration field for one. Do not publish application
-screenshots containing secret values. No application is registered by this project.
+screenshots containing secret values. Application registration is owner-managed; an environment name alone does not
+establish registration validity or Production approval.
 
 The current device-token contract permits a public client; the refresh contract
 requires a matching redirect URI. A device-issued refresh must be verified with

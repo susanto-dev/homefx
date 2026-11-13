@@ -1,0 +1,40 @@
+name: Trakt configuration preflight
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment containing the public Trakt client ID
+        required: true
+        default: Development
+        type: choice
+        options:
+          - Development
+          - Production
+
+permissions:
+  contents: read
+
+jobs:
+  configuration:
+    name: Check public Trakt configuration
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'Development' }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Validate public configuration without contacting Trakt
+        env:
+          HOMEFX_TRAKT_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'Development' }}
+          TRAKT_CLIENT_ID: ${{ vars.TRAKT_CLIENT_ID }}
+          TRAKT_REDIRECT_URI: ${{ vars.TRAKT_REDIRECT_URI }}
+        run: python tools/check_trakt_config.py
