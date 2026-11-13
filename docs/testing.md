@@ -206,3 +206,17 @@ inspection and save must fail the ordered-choice comparison inside the transacti
 Names with control characters are rejected before display. Empty, authorization,
 connection and service failures remain distinct; widget mode opens no dialogs.
 No real account, Kodi device, service login, mutation or player is exercised.
+
+## Account-bound widget preparation regressions (0.16)
+
+Identity tests use real private stores for transactional legacy migration,
+concurrent first migration, malformed key/schema rejection without regeneration,
+restart/refresh stability, cross-account/profile isolation and clear/deselection
+invalidation. Captured guards also detect key, selection and account changes after
+a read. Renderer tests use the actual Session/Library plus fabricated GET responses
+and Kodi-shaped objects for sources, lists, seasons, episode metadata and explicit
+details. They cover strict route parsing, display sanitization, nonplayable actions,
+quiet widget refresh, disabled disk caching and failure during staging/submission.
+Repeated migration/concurrency checks supplement deterministic cases. No actual
+Kodi GUI, private account or service traffic is exercised; failed Kodi completion
+is not evidence of atomic removal from a real skin's display.

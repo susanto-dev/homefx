@@ -62,3 +62,9 @@ as separate views. A date does not establish a playable source. Trakt's personal
 calendar covers watched/watchlisted shows and individually watchlisted episodes,
 excluding hidden shows; it does not cover every show in arbitrary selected lists.
 See [calendar contracts](calendar-contract.md) and the [staged TV checklist](testing-on-tv.md).
+
+The [opaque route/renderer preparation](widget-routing.md) is inactive. Once its
+public integration and device gates are satisfied, use a separate full-list shortcut
+or the fixed Open full list action where the skin heading cannot be clicked.
+Account changes or deselection must never redirect an old row to another account's
+list. This describes pending live acceptance, not a menu currently enabled.
