@@ -8,13 +8,20 @@ into TV evidence. No real account belongs in CI.
 ## 1. Try the published demo on TV
 
 Follow the [installation guide](install.md) on Kodi 21.2 with the existing skin.
-The published candidate is HomeFX Preview 0.17.2 and repository 0.2.0.
+The published candidate is HomeFX Preview 0.17.2 and repository 0.2.0. The owner’s
+TV reports those versions with Kodi 21.2 / Python 3.11.7, but its private-storage
+check did not pass: permissions failed, SQLite was not run and cleanup passed.
+The exact cause is unknown. The **0.17.3 diagnostic candidate is not yet published
+or tested on TV**; use the [diagnostic rerun](testing-on-tv.md#observed-device-diagnostics-and-0173-rerun)
+only after merge and verified publication. It adds scrollable reports and a fixed
+failure-stage label without relaxing the storage gate.
 
 - Fully restart Kodi after installation/update. Open **Device readiness** and record
   the displayed versions and fixed capability results, including unavailable results.
 - Open **Test private storage**. Cancel once, then run it if you choose. Record
   **Private file permissions**, **SQLite commit/rollback**, **Temporary cleanup**
-  and **Overall** exactly as shown. Report cancellation as not run; report failed
+  and **Overall** exactly as shown, plus **Failure stage** on 0.17.3. Scroll to read
+  the whole report. Report cancellation as not run; report failed
   cleanup explicitly. Do not delete unfamiliar files to make a result pass.
 - Select two demo lists in HomeFX, then assign their rows separately in the skin.
   Check focus, Back, return position, title/season browsing and full-list access.
@@ -24,8 +31,8 @@ The published candidate is HomeFX Preview 0.17.2 and repository 0.2.0.
   responsiveness; these synthetic results do not measure live network/cache behavior.
 
 **Return only:** versions, fixed result/error categories, cleanup status,
-success/failure/not-run observations and timings. These checks remain **not run on
-TV** until actual observations are supplied. A storage/readiness pass does not prove
+success/failure/not-run observations and timings. The observed 0.17.2 storage
+failure is **not a pass**; navigation/timing and the 0.17.3 rerun remain untested. A storage/readiness pass does not prove
 TLS, Trakt authorization, refresh or playback works.
 
 ## 2. Verify registration before planning login

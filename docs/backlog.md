@@ -12,7 +12,7 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented | Actual Android/Google TV compatibility pending |
+| B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | Broader device acceptance pending; private-storage check failed on 0.17.2 |
 | B02 | Multiple selected list widgets and folder browsing | Implemented in demo; mixed-list reads and inactive account-bound widget rendering added (0.16) | Gated public dispatch, activation and widget-title click behavior need TV verification |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; inactive opaque episode filters and season/progress display added (0.17) | Live episode identity/status and refresh behavior |
 | B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
@@ -79,7 +79,7 @@ This repair does not alter private account stores or enable live services.
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
-| Q04 | Device readiness and sanitized test checklist | Implemented; optional synthetic private-storage check added (0.12); TV results pending | Provide safe version fields and observations; no full backup or secrets needed |
+| Q04 | Device readiness and sanitized test checklist | Implemented; partial TV evidence received on 0.17.2 | Permissions failed, SQLite not run, cleanup passed; 0.17.3 diagnostic candidate adds scrollable reports and fixed failure stages without relaxing checks |
 | G01 | Original-code licence | Decision | Existing MIT remains; final owner preference still unconfirmed |
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
@@ -109,7 +109,22 @@ The subsequent 0.17.2 release contains the concurrent demo-state lost-update
 correction described above. Public configuration syntax acceptance does not prove
 registered identity, actual login/refresh or device readiness.
 
-## Next checkpoint: the published candidate on TV
+## Current diagnostic candidate: 0.17.3
+
+The TV reports HomeFX 0.17.2, repository 0.2.0, Kodi 21.2 and Python 3.11.7.
+Private file permissions failed, SQLite commit/rollback did not run, temporary
+cleanup passed and the overall result did not pass. Only version fields were
+visible in the supplied readiness result, so SQLite/TLS capability evidence is
+still missing. The precise storage failure cause remains unknown.
+
+The 0.17.3 candidate adds scrollable diagnostics and a fixed **Failure stage**
+label. It preserves the permission requirements and inactive account boundary.
+It is not published or tested on TV yet; follow the
+[bounded diagnostic rerun](testing-on-tv.md#observed-device-diagnostics-and-0173-rerun)
+after merge and verified publication. No installation-path or widget acceptance
+is inferred from these diagnostic observations.
+
+## Next checkpoint: diagnose the TV storage blocker
 
 Video 0.17.2 and repository 0.2.0 are the published candidate. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
@@ -122,7 +137,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|
-| 1 | R01–R03, Q04, B10 | Published candidate ready; owner checks install/update, readiness/storage, navigation and restart on TV |
+| 1 | R01–R03, Q04, B10 | Storage failed on 0.17.2; after 0.17.3 publication, collect full readiness and failure-stage/cleanup results; installation path, navigation and restart acceptance remain open |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
 | 3 | T01–T03, T05 | Development configuration preflight passed; Production not run; registered identity/redirect verification and bounded device authorization still required before live wiring |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |

@@ -1,6 +1,8 @@
 # TV acceptance — next preview
 
-Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
+Status: **PARTIAL — storage check did not pass on 0.17.2**. Target: Kodi 21.2
+with the user’s existing home-screen layout. Navigation and live-service acceptance
+remain untested.
 Record device, embedded Python, skin and widget-configuration component versions,
 package SHA-256, steps, expected/observed behavior and elapsed load times.
 
@@ -40,7 +42,7 @@ The hosted baseline checked on 13 November 2026 is **video 0.17.2 / repository 0
 The index and both root/indexed ZIP copies matched the release inventory. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
 **Vertical Multi Widget Netflix**. Keep the existing skin and saved routes.
 These download checks establish hosted bytes only; see the
-[installation guide](install.md) for the verified source and filenames. Device acceptance remains **NOT RUN**.
+[installation guide](install.md) for the verified source and filenames. Device acceptance remains incomplete; the observed diagnostics are recorded below.
 
 This public candidate tests synthetic navigation, local demo persistence and the
 optional temporary storage probe. It does **not** call the inactive account-bound
@@ -75,6 +77,45 @@ private. After those results, the next bounded milestone is registered-client
 verification and an explicitly authorized development-device read-only connection;
 see [required owner input](account-setup.md#owner-input-for-the-read-only-milestone).
 No playback, writes, Real-Debrid or skin replacement is part of that milestone.
+
+## Observed device diagnostics and 0.17.3 rerun
+
+The owner supplied diagnostic results from the TV: **HomeFX 0.17.2**, **HomeFX
+repository 0.2.0**, **Kodi 21.2** and **Python 3.11.7**. This confirms the embedded
+Python version on that device. The visible readiness report contained only those
+version fields; SQLite and TLS capability results were not visible and cannot be
+inferred. The storage check reported:
+
+| Result | Observed on 0.17.2 |
+|---|---|
+| Private file permissions | failed |
+| SQLite commit/rollback | not run |
+| Temporary cleanup | passed |
+| Overall | not passed |
+
+SQLite was not reached; this is not evidence of a SQLite transaction failure.
+The exact permission failure stage and underlying filesystem cause remain unknown.
+These observations establish neither a clean repository-first installation path
+nor widget navigation, persistence, timing, TLS or live-account acceptance.
+
+**0.17.3 is a diagnostic candidate until its merge and publication are verified.**
+It uses a scrollable report for readiness/storage and adds a fixed **Failure stage**
+label to the storage result. It does not relax permissions or repair profile data.
+After verified publication:
+
+1. Update to 0.17.3, fully restart Kodi, then open **Device readiness**. Check that
+   the remote can scroll through the complete report and Back returns to HomeFX.
+   Record versions and fixed capability fields, including unavailable results.
+2. Open **Test private storage** and cancel once; no test should run. Reopen and
+   confirm the synthetic test, then scroll through the result.
+3. Return **Private file permissions**, **SQLite commit/rollback**, **Temporary
+   cleanup**, **Overall** and **Failure stage** exactly as displayed. A failed
+   result remains a blocker, even when cleanup passes. Do not infer a root cause
+   from the stage label alone.
+
+Do not change permissions, clear Kodi data, delete unfamiliar files or send paths,
+logs, tokens or backups. No new screenshot is required. Live Trakt, Real-Debrid,
+writes, playback and scrobbling remain inactive while this blocker is investigated.
 
 ## 0.17.1 repair acceptance — after verified publication
 

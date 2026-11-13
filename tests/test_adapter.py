@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / 'addons/plugin.video.homefx'
 sys.path.insert(0, str(ADDON))
-from resources.lib import routes, state, storage_probe
+from resources.lib import readiness, routes, state, storage_probe
 
 
 class Tag:
@@ -47,6 +47,7 @@ class AdapterTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.rows, self.ends, self.messages, self.commands = [], [], [], []
         self.content, self.categories = [], []
+        self.viewers, self.ok_messages = [], []
         self.selection = [0, 2]
         self.answer = 'Lantern'
         self.last_default = None
@@ -59,7 +60,12 @@ class AdapterTests(unittest.TestCase):
                 return {'profile': owner.temp.name, 'path': str(ADDON)}[key]
 
         class Dialog:
-            def ok(self, title, text): owner.messages.append(text)
+            def ok(self, title, text):
+                owner.ok_messages.append(text)
+                owner.messages.append(text)
+            def textviewer(self, title, text):
+                owner.viewers.append((title, text))
+                owner.messages.append(text)
             def notification(self, title, text): owner.messages.append(text)
             def yesno(self, title, text): return owner.confirm
             def multiselect(self, title, labels, preselect): return owner.selection
@@ -133,6 +139,7 @@ class AdapterTests(unittest.TestCase):
                 patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')):
             self.run_route('storage_check')
         self.assertEqual((self.rows, self.ends, self.commands, self.messages), ([], [], [], []))
+        self.assertEqual(self.viewers, [])
         self.assertEqual(list(Path(self.temp.name).iterdir()), [])
 
     def test_storage_check_is_explicit_synthetic_and_before_profile_loading(self):
@@ -141,7 +148,40 @@ class AdapterTests(unittest.TestCase):
                 patch('socket.create_connection', side_effect=AssertionError('Network forbidden')):
             self.run_route('storage_check')
         self.assertIn('Overall: passed', self.messages[-1])
+        self.assertEqual(self.viewers, [('HomeFX — Private storage result', self.messages[-1])])
+        self.assertEqual(self.ok_messages, [])
         self.assertNotIn(self.temp.name, self.messages[-1])
+        self.assertEqual((self.rows, self.ends, self.commands), ([], [], []))
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_diagnostic_viewers_receive_complete_reports_and_close_without_navigation(self):
+        for route, source, title in (
+                ('readiness', readiness, 'HomeFX — Device readiness'),
+                ('storage_check', storage_probe, 'HomeFX — Private storage result')):
+            with self.subTest(route=route):
+                self.viewers.clear()
+                # Enough lines to exceed an ordinary short OK dialog, including the end.
+                report = '\n'.join('Fixed capability %d: unavailable' % n for n in range(20))
+                report += '\nNo network, login or playback tests were run.'
+                with patch.object(source, 'report', return_value=report), \
+                        patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')), \
+                        patch('socket.create_connection', side_effect=AssertionError('Network forbidden')):
+                    self.run_route(route)
+                self.assertEqual(self.viewers, [(title, report)])
+                self.assertEqual(self.ok_messages, [])
+                self.assertEqual((self.rows, self.ends, self.commands), ([], [], []))
+                self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_storage_setup_failure_shows_only_fixed_message_in_viewer(self):
+        def unavailable(value):
+            raise OSError('private profile path and token')
+        self.modules['xbmcvfs'].translatePath = unavailable
+        with patch.object(storage_probe, 'report', side_effect=AssertionError('Probe forbidden')), \
+                patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')):
+            self.run_route('storage_check')
+        self.assertEqual(self.viewers, [('HomeFX — Private storage result',
+            'Private storage self-check could not run. No success is established.')])
+        self.assertEqual(self.ok_messages, [])
         self.assertEqual((self.rows, self.ends, self.commands), ([], [], []))
         self.assertEqual(list(Path(self.temp.name).iterdir()), [])
 
