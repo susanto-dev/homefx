@@ -57,15 +57,20 @@ registration or entitlement. A green check means **syntax accepted**, not activa
 GitHub's resolved `vars` context cannot prove which scope supplied a value; confirm
 the variable placement in repository settings when diagnosing configuration.
 
-This separate workflow does not inject environment values into ZIPs or the Pages
-build. The separately named **Build Development device test** workflow is a manual,
-main-only exception for its isolated test artifact: it embeds only Development
-public configuration after explicit readiness confirmation. It cannot select
-Production or deploy Pages. See its [build and privacy instructions](development-device-test.md).
-PR tests use fabricated values and never bind to these environments. Public
-packages remain deterministic and live routes stay inactive. A failed configuration
-check is actionable but does not alter or bypass package/publication checks; missing
-variables fail without falling back to another environment or inventing a redirect.
+The preflight does not inject configuration into packages. For the separately
+installed Development test, the main-only **Publish preview** build uses the
+**Development** environment and embeds only the public ID/redirect in the script
+ZIP listed at the existing HomeFX source. Those values are intentionally downloadable;
+never use these variables for secrets. The video/repository ZIPs remain unconfigured,
+and public preview live routes stay inactive. Production is not selected.
+
+The separately named **Build Development device test** workflow remains an optional
+manual, main-only artifact fallback with an explicit readiness confirmation. It
+cannot deploy Pages. See the [installation and privacy instructions](development-device-test.md).
+PR tests use fabricated values and never bind to these environments. Missing or
+invalid Development configuration fails the configured publication build without
+falling back to another environment or inventing a redirect. No provider request
+runs in either build path.
 
 After merge, inspect the Development run's fixed result. Run Production manually
 only when its configuration is ready for inspection. No workflow dispatch or login

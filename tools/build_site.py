@@ -1,4 +1,5 @@
 """Stage a static experimental Kodi repository and credential-free preview page."""
+import argparse
 import html
 import os
 from pathlib import Path
@@ -9,6 +10,8 @@ from package import ROOT, build, validate
 import repository
 import guide_page
 import verify_repository
+import build_development_test
+import development_download
 
 
 def _tree_bytes(root):
@@ -37,11 +40,11 @@ def _tree_bytes(root):
     return files, directories
 
 
-def _page(version, archive, bootstrap, digest):
+def _page(version, archive, bootstrap, digest, development_archive=None):
     page = '''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HomeFX — Kodi preview repository</title>
-<style>body{font:18px/1.6 system-ui,sans-serif;background:#18263a;color:#eef5fa;max-width:48rem;margin:4rem auto;padding:0 1.5rem}a{color:#9ce3ef}h1{font-size:3rem;line-height:1.1}code{overflow-wrap:anywhere}li{margin:.5rem 0}.download{display:inline-block;background:#9ce3ef;color:#18263a;padding:.8rem 1.2rem;border-radius:.4rem;font-weight:700}a:focus-visible{outline:3px solid white;outline-offset:5px}</style>
+<style>body{font:18px/1.6 system-ui,sans-serif;background:#18263a;color:#eef5fa;max-width:48rem;margin:4rem auto;padding:0 1.5rem}a{color:#9ce3ef;overflow-wrap:anywhere}h1{font-size:3rem;line-height:1.1}code{overflow-wrap:anywhere}li{margin:.5rem 0}.download{display:inline-block;background:#9ce3ef;color:#18263a;padding:.8rem 1.2rem;border-radius:.4rem;font-weight:700}a:focus-visible{outline:3px solid white;outline-offset:5px}</style>
 </head><body><main><p>Kodi 21.2 · Personal home-screen widgets</p><h1>HomeFX Preview</h1>
 <p>Video add-on version {{VERSION}} — movie lists, episode browsing and home-screen widgets.</p>
 <p><strong>Experimental repository. Synthetic data only.</strong> No Trakt login, playable sources or playback. Watched changes affect local demo data only. Kodi installation, updates and TV compatibility have not yet been verified.</p>
@@ -58,21 +61,40 @@ def _page(version, archive, bootstrap, digest):
 <p>The repository supplies HomeFX preview installation and updates. Keep your existing skin installed separately: this repository does not include or redistribute a skin. Availability of this website is not a successful Kodi installation or upgrade test.</p>
 <h2>Manual video add-on download</h2>
 <p><a href="{{ARCHIVE}}">{{ARCHIVE}}</a> · <a href="{{ARCHIVE}}.sha256">Video ZIP SHA-256 checksum</a></p><p><code>{{DIGEST}}</code></p>
+{{DEVELOPMENT}}
 <p><a href="https://github.com/susanto-dev/homefx/blob/main/docs/testing-on-tv.md">TV test checklist</a> · <a href="https://github.com/susanto-dev/homefx">Source and documentation</a></p>
 <p>Original code and geometric placeholder artwork. <a href="LICENSE.txt">MIT licence</a>. No paid plugin, analytics, external fonts or account credentials are used by this download page.</p>
 </main></body></html>'''
+    development = ""
+    if development_archive is not None:
+        name = html.escape(development_archive)
+        development = ("<h2>Development account test — deliberate installation only</h2>"
+            "<p>Separate experimental program add-on for the registered Development app owner "
+            "and invited testers. This can contact Trakt only after you confirm an action on the TV. "
+            "It does not enable live accounts in HomeFX Preview, list widgets or playback.</p>"
+            '<p><a href="{{NAME}}">{{NAME}}</a> · <a href="{{NAME}}.sha256">ZIP SHA-256 checksum</a></p>'
+            "<p>In Kodi choose Add-ons → Install from zip file → HomeFX and select the "
+            "script.homefx.development ZIP above. Then open Program add-ons → HomeFX Development Test "
+            "and run Test this add-on’s private storage first. No file transfer is needed.</p>"
+            '<p><a href="https://github.com/susanto-dev/homefx/blob/main/docs/development-device-test.md">Development test instructions and privacy limits</a></p>'
+            "<p>Current experimental candidate only; no repository auto-updates. Older candidate URLs "
+            "may disappear after a later build. A checksum-named URL never receives different bytes. "
+            "Direct installation from this source still requires TV acceptance.</p>")
+        development = development.replace("{{NAME}}", name)
+    page = page.replace("{{DEVELOPMENT}}", development)
     for token, value in (("VERSION", version), ("ARCHIVE", archive),
                          ("BOOTSTRAP", bootstrap), ("DIGEST", digest)):
         page = page.replace("{{" + token + "}}", html.escape(value))
     return page
 
 
-def build_site(output=None, package_output=None, retain_manifest=None):
+def build_site(output=None, package_output=None, retain_manifest=None, development_environment=None):
     """Build a fresh or identical complete site; never mutate an existing release.
 
     No network/publication occurs. Package scratch output is temporary unless the
     caller explicitly supplies package_output; it must be outside the site tree.
     A checked-in inventory, when present, is the default retention input.
+    Development configuration is opt-in; None never reads process configuration.
     """
     site = Path(output) if output is not None else ROOT / "dist/site"
     site = site.absolute()
@@ -108,7 +130,16 @@ def build_site(output=None, package_output=None, retain_manifest=None):
             shutil.copyfile(source.with_suffix(".zip.sha256"), staged / (source.name + ".sha256"))
         shutil.copyfile(ROOT / "LICENSE", staged / "LICENSE.txt")
         digest = archive.with_suffix(".zip.sha256").read_text().split()[0]
-        (staged / "index.html").write_text(_page(version, archive.name, bootstrap, digest), encoding="utf-8")
+        development_archive = None
+        if development_environment is not None:
+            test_archive = build_development_test.build(temporary / "development", development_environment)
+            for source in (test_archive, test_archive.with_suffix(".zip.sha256")):
+                shutil.copyfile(source, staged / source.name)
+            development_archive = development_download.verify({
+                source.name: source.read_bytes() for source in
+                (test_archive, test_archive.with_suffix(".zip.sha256"))})
+        (staged / "index.html").write_text(
+            _page(version, archive.name, bootstrap, digest, development_archive), encoding="utf-8")
         (staged / "install.html").write_text(guide_page.build(ROOT / "docs/install.md"), encoding="utf-8")
         if site.exists():
             if _tree_bytes(site) != _tree_bytes(staged):
@@ -118,5 +149,14 @@ def build_site(output=None, package_output=None, retain_manifest=None):
     return site
 
 
+def main(argv=None, environment=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--development", action="store_true",
+                        help="Include the explicitly configured Development test download")
+    args = parser.parse_args(argv)
+    configured = (os.environ if environment is None else environment) if args.development else None
+    print(build_site(development_environment=configured))
+
+
 if __name__ == "__main__":
-    print(build_site())
+    main()

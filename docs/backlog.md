@@ -137,7 +137,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 |---|---|---|
 | 1 | R01–R03, Q04, B10 | 0.17.4 synthetic storage passed; installation/update path, navigation and restart acceptance remain open |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Owner confirms Development identity/redirect match; separate manually built device test prepared; real TLS, grant, restart persistence and refresh still unverified; Production not run |
+| 3 | T01–T03, T05 | Owner confirms Development identity/redirect match; separate device test built; direct source installation prepared; real TLS, grant, restart persistence and refresh still unverified; Production not run |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
 | Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
 | Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |
@@ -182,8 +182,9 @@ cleanup, with failure stage none. This does not establish live account acceptanc
 The owner confirmed the registered Development ID and redirect match GitHub variables.
 A separate **HomeFX Development Test** program add-on is prepared for explicit
 storage, local status, device authorization, one refresh rotation and disconnect
-checks. Its manually requested main-only workflow embeds public configuration in a
-content-addressed artifact; it does not publish a Kodi repository package or activate
+checks. Its main-only Pages build will list a content-addressed test ZIP in the existing
+HomeFX File manager source; the manual artifact workflow remains a fallback. It does
+not add a Kodi repository index entry or activate
 HomeFX Preview. See the [bounded test instructions](development-device-test.md).
 
 The test uses its own profile, scoped by public app identity. Tokens never enter CI,
@@ -192,3 +193,13 @@ writes, playback, Real-Debrid or scrobbling are enabled. A reviewed implementati
 and fabricated tests are not real login, TLS, refresh or TV evidence. After those
 results, plan the smallest real read-only list/widget integration; do not add more
 demo-only features to substitute for that acceptance.
+
+## Prepared: install the Development test from HomeFX
+
+PR #31 merged and its post-merge validation/publication passed. The manual Development
+build also succeeded. The next source-install change puts the test ZIP directly in
+**Install from zip file → HomeFX**, removing the required download/transfer step.
+Its hosted bytes and TV installation remain unverified until normal post-merge
+publication and device acceptance. Preview 0.17.4, repository 0.2.0 and all 18 recorded
+archives remain unchanged. The current test ZIP is outside the retained inventory;
+older test URLs may disappear after later merges. No login is initiated by publication.

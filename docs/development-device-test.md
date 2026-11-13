@@ -12,56 +12,77 @@ failure stage was none. These observations do not establish real TLS, token-stor
 persistence, login, refresh rotation or account entitlement. Those remain device
 tests, not cloud results.
 
-The implementation and workflow are candidates until merged and reviewed checks
-pass. Preparing this change does not dispatch the workflow or initiate login.
+## Install directly from the HomeFX source
 
-## Build the test artifact after merge
+The source-install change is a candidate until its PR is merged and the normal
+Pages publication and hosted-byte checks pass. The existing manual build succeeded,
+but the Development ZIP has not yet been verified in the hosted source or installed
+on the TV. Do not treat its absence before publication as a Kodi failure.
 
-A maintainer should:
+After that publication is verified:
 
-1. Open the repository's **Actions → Build Development device test → Run workflow**.
-2. Select **main**. Confirm the readiness input only if the registered Development
-   public ID/redirect still match and the synthetic TV storage check has passed.
-3. Run the workflow. It uses only the **Development** environment, runs fabricated
-   tests, requires the selected revision still to be current main, and then builds
-   the test ZIP. It does not contact Trakt, obtain credentials or deploy Pages.
-4. Wait for a successful run. Download its artifact named
-   `homefx-development-device-test-<source SHA>-<run ID>`. Artifacts expire after
-   three days; record the run link/source SHA before downloading.
+1. Keep the existing File manager source `https://susanto-dev.github.io/homefx/`,
+   named **HomeFX**. No new source, computer download or file transfer is needed.
+2. Open **Add-ons → Install from zip file → HomeFX**. Review the Unknown sources
+   warning if prompted; proceed only if you trust the project and have checked the
+   source address. Do not bypass certificate or package-validation errors.
+3. Select **`script.homefx.development-0.1.0-<SHA-256>.zip`** from the same source
+   listing. The actual filename ends with its 64-character checksum; choose the
+   script ZIP, not the `.sha256` sidecar, repository ZIP or video ZIP. The
+   [download page](https://susanto-dev.github.io/homefx/) labels it as the
+   **Development test** and shows the exact current filename.
+4. Wait for the installation notification. Open **HomeFX Development Test** under
+   **Program add-ons**, then run **Test this add-on's private storage** first.
+   Skin labels may vary; this source-install/menu path remains unverified on TV.
+5. Keep HomeFX Preview, HomeFX Preview Repository and the current skin installed.
+   The test does not replace their files, routes or profiles. Installation does not
+   initiate login; each action requires its own consent.
 
-The build embeds the **public** Development client ID and registered redirect from
-`TRAKT_CLIENT_ID` and `TRAKT_REDIRECT_URI`. These are not secrets. The artifact and
-its public configuration may be accessible through the public repository; GitHub
-may also display step environment values. Never put a client secret, token, device
-code, private list/history or private configuration in these variables. No secret
-is needed or accepted by the test configuration schema. Production is not an
-option in this workflow.
+A File manager source is a download listing. It is separate from Kodi's repository
+index: this test add-on is deliberately absent from **Install from repository** and
+has no repository-driven auto-update path. Installing it from the HomeFX source is
+still a direct ZIP installation.
 
-The existing configuration preflight remains a syntax-only check. This separate,
-manually requested build is the only workflow that embeds public configuration in
-the test ZIP. Ordinary PR tests use fabricated values; public preview ZIPs and Pages
-never receive these app variables. No real-account test belongs in CI.
+## What publication includes
 
-## Install alongside the preview
+After a reviewed main merge, the existing **Publish preview** workflow builds the
+separate script ZIP using the **Development** environment and adds it to the same
+Pages source. It does not contact Trakt, obtain credentials or start login. No
+additional manual workflow is needed for this installation path. The public video
+ZIP, repository ZIP and all recorded release archives remain unchanged.
 
-1. Extract the downloaded Actions artifact wrapper on a computer or phone. Inside
-   are a Kodi ZIP named `script.homefx.development-0.1.0-<SHA-256>.zip` and its
-   `.sha256` sidecar. The digest identifies the exact built bytes; it is not a
-   signature or proof that an account integration works.
-2. Transfer the **inner Kodi ZIP** using a method you trust. In Kodi choose
-   **Add-ons → Install from zip file**, review the Unknown sources warning and
-   select that file. Do not install the outer Actions artifact wrapper.
-3. Open **HomeFX Development Test** under **Program add-ons**. Skin labels may vary;
-   this installation/menu path has not yet been validated on the TV.
-4. Keep HomeFX Preview, HomeFX Preview Repository and the current skin installed.
-   The test does not replace their files, routes or profiles.
+The script ZIP embeds the **public** Development client ID and registered redirect
+from `TRAKT_CLIENT_ID` and `TRAKT_REDIRECT_URI`. Anyone can download these public
+values from the hosted test ZIP; GitHub may also show them in build-step logs. Never
+put a client secret, token, device code, private list/history or private configuration
+in these variables. No secret is needed or accepted by the test schema. Production
+is not selected. The configuration preflight remains syntax-only; ordinary PR tests
+use fabricated values, and no real-account test belongs in CI.
 
-This test add-on is not in the Kodi repository index and has no repository-driven
-auto-update path. Use only a deliberately reviewed replacement test artifact.
-Version 0.1.0 identifies the test harness; the source SHA, run ID and ZIP digest
-identify its exact code/configuration. Do not confuse it with a published HomeFX
-video add-on version. Building the same inputs reproduces the same ZIP; different
-public configuration has a different content-addressed filename.
+Version 0.1.0 identifies the test harness. Its content-addressed filename and checksum
+identify the exact built bytes, not a signature or proof of working account access.
+The same inputs reproduce the same ZIP; changed code or public configuration has a
+different filename. This is a **current experimental candidate**, outside the
+retained release inventory: a later merge may remove an older test ZIP URL. A digest
+filename must never serve different bytes. Keep a copy of the matching artifact if
+needed for later scope-specific local disconnect. All recorded preview/repository
+release URLs retain their existing preservation guarantees.
+
+## Optional Actions download fallback
+
+The **Build Development device test** workflow remains available for a maintainer
+who wants an Actions artifact. It does not update the HomeFX source or deploy Pages.
+On **main**, check its readiness confirmation only when the registered Development
+public ID/redirect still match and the synthetic TV storage check has passed.
+The workflow runs fabricated tests and requires the selected revision still to be
+current main before building.
+
+Its three-day artifact is named
+`homefx-development-device-test-<source SHA>-<run ID>`. Download and extract the outer
+artifact only when using this fallback; transfer the inner script ZIP to the TV,
+then choose **Install from zip file**. Do not install the outer artifact wrapper.
+Record the run link/source SHA and checksum. This fallback is not required when the
+ZIP is available in the HomeFX source.
 
 ## Run one action at a time
 
@@ -125,7 +146,7 @@ forensic data erasure. Do not edit databases or guess profile paths to recover a
 
 Return only:
 
-- The workflow run link/source SHA, test harness version and ZIP checksum.
+- The publication or manual-build run link/source SHA, test harness version and ZIP checksum.
 - Fixed storage results, including cleanup and overall status.
 - Fixed connect/cancel, restart-status, refresh and disconnect outcomes.
 - Approximate wait times, responsiveness and any unexercised cases marked not run.

@@ -36,11 +36,13 @@ The official **HomeFX project source** is:
 
 [https://susanto-dev.github.io/homefx/](https://susanto-dev.github.io/homefx/)
 
-Download snapshot checked on **13 November 2026**:
+Download snapshot checked on **13 November 2026**, after PR #31 merged. All 48
+hosted files matched the verified publication artifact; this is download integrity,
+not TV acceptance:
 
 - Repository installer: [repository.homefx-0.2.0.zip](https://susanto-dev.github.io/homefx/repository.homefx-0.2.0.zip).
-- Video add-on: **HomeFX Preview 0.17.3**. Its separate manual download is
-  [plugin.video.homefx-0.17.3.zip](https://susanto-dev.github.io/homefx/repository/plugin.video.homefx/plugin.video.homefx-0.17.3.zip).
+- Video add-on: **HomeFX Preview 0.17.4**. Its separate manual download is
+  [plugin.video.homefx-0.17.4.zip](https://susanto-dev.github.io/homefx/repository/plugin.video.homefx/plugin.video.homefx-0.17.4.zip).
 
 Start with the **repository ZIP**, not the video ZIP. The repository is Kodi's
 installation and update source for HomeFX. Later releases may advertise a newer
@@ -92,6 +94,23 @@ TV using a method you trust. In **Install from zip file**, browse to the transfe
 file. This is a fallback for the file listing, not a reason to install a different
 ZIP or bypass a validation error. Checksums are available on the download page;
 see [release and integrity details](https://github.com/susanto-dev/homefx/blob/main/docs/releases.md).
+
+## Optional Development account test
+
+HomeFX Preview remains synthetic. The separate **HomeFX Development Test** is only
+for the bounded account test after its readiness gates are met; it is not needed to
+install the preview or use demo widgets. The source-install change is awaiting its
+normal checked publication; this test ZIP has not yet been verified in the hosted
+source or installed on TV.
+
+After publication is verified, choose **Add-ons → Install from zip file → HomeFX →
+script.homefx.development-0.1.0-<SHA-256>.zip**, then open **Program add-ons → HomeFX
+Development Test**. No download to a phone or transfer to the TV is required. Start
+with **Test this add-on's private storage**. Follow the
+[Development test guide](https://github.com/susanto-dev/homefx/blob/main/docs/development-device-test.md)
+for the exact current filename, privacy limits and remaining steps. This direct ZIP
+is separate from the repository index and does not receive repository auto-updates.
+Installing it does not start login or enable live features in HomeFX Preview.
 
 ## 4. Restart Kodi fully
 

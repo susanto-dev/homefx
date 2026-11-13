@@ -45,7 +45,7 @@ class TraktConfigurationWorkflowTests(unittest.TestCase):
         self.assertEqual(actions[0]['with']['persist-credentials'], 'false')
         self.assertTrue(actions[1]['uses'].startswith('actions/setup-python@'))
         # Real variables must not affect immutable packages or ordinary PR tests.
-        for name in ('pages.yml', 'validation.yml', 'security.yml'):
+        for name in ('validation.yml', 'security.yml'):
             content = (root / '.github/workflows' / name).read_text()
             self.assertNotIn('vars.TRAKT_', content)
             self.assertNotIn('check_trakt_config.py', content)
