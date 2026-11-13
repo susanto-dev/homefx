@@ -198,6 +198,88 @@ class Library:
             self.clear()
             raise
 
+    def capture_view_guard(self):
+        """Pin the loaded view before UI callbacks can re-enter this library."""
+        generation, revision = self._generation, self._revision
+        if generation is None or revision is None:
+            raise AuthError("session_changed")
+
+        def check():
+            try:
+                self._assert_view(generation, revision)
+            except (AuthError, ApiError):
+                self.clear()
+                raise
+
+        check()
+        return check
+
+    def assert_current_view(self):
+        """Recheck the currently loaded view, not a previously returned payload."""
+        self.capture_view_guard()()
+
+    def choose_lists(self, chooser):
+        """Confirm local choices against the account shown when the dialog opened.
+
+        The callback receives immutable list references and selected keys. None
+        cancels without writing. No remote list/history mutation is performed.
+        """
+        if not callable(chooser):
+            raise ApiError("invalid_selection")
+        try:
+            refs = tuple(self.lists())
+            generation, revision = self._generation, self._revision
+            account, epoch = self._account, self._preferences_epoch
+            selected = self._selected
+            if self._preferences is not None:
+                current_epoch, current_keys = self._preferences.snapshot(account)
+                if current_epoch != epoch:
+                    raise PreferencesError("preferences_changed")
+                selected = tuple(current_keys)
+            self._assert_view(generation, revision)
+            chosen = chooser(refs, selected)
+            if chosen is None:
+                return None
+            self._assert_view(generation, revision)
+            if (self._generation, self._revision, self._account) != (generation, revision, account):
+                raise AuthError("session_changed")
+            available = {ref.key: ref for ref in refs}
+            if (not isinstance(chosen, (list, tuple)) or len(chosen) > 100 or any(
+                    not isinstance(key, str) or len(key) > 128 for key in chosen)):
+                raise ApiError("invalid_selection")
+            if len(set(chosen)) != len(chosen) or any(key not in available for key in chosen):
+                raise ApiError("unavailable_selection")
+            if self._preferences is not None:
+                current_epoch, current_keys = self._preferences.snapshot(account)
+                if current_epoch != epoch or tuple(current_keys) != selected:
+                    raise PreferencesError("preferences_changed")
+                if not self._preferences.save(account, chosen, expected_epoch=epoch, expected_keys=selected):
+                    raise PreferencesError("preferences_changed")
+                self._assert_view(generation, revision)
+            self._selected = tuple(chosen)
+            return [available[key] for key in self._selected]
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def browse_list(self, key, now=None):
+        """Read ordered movie/show metadata, reporting unsupported item counts.
+
+        This is the full-list metadata path, separate from filtered watch joins.
+        Unsupported list entry types are never silently presented as an empty or
+        complete list. No playable availability or watched evidence is inferred.
+        """
+        now = trakt_views._now(now)
+        try:
+            source = self.list_items(key)
+            generation, revision = self._generation, self._revision
+            result = trakt_views.browse_list(source, now)
+            self._assert_view(generation, revision)
+            return result
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
     def selected_lists(self):
         available = {ref.key: ref for ref in self.lists()}
         if any(key not in available for key in self._selected):

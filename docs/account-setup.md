@@ -1,9 +1,23 @@
 # Preparing a Trakt development connection
 
-The 0.14.2 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.15.0 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
+
+## Owner input for the read-only milestone
+
+Live access remains blocked until the owner supplies the registered **public client
+ID**, **exact registered redirect URI**, and Development/Production status, then
+authorizes a bounded device test after the gates below. These public configuration
+values do not prove registration validity by themselves. No real-account test belongs
+in CI. Do not send a client secret, token, device code, private list/history export,
+profile path, or application screenshot containing secret fields.
+
+First return only HomeFX/Kodi versions and the fixed **Device readiness** / **Test
+private storage** results from the [staged TV checklist](testing-on-tv.md). The owner
+can select personal or liked lists privately on the device after activation; list
+names or contents are not needed in chat or a public issue.
 
 ## Application registration
 
@@ -20,9 +34,16 @@ your registration before live mode can be called supported. Do not assume an
 invented URI or an omitted URI works. This does not require running a callback
 server, always-on service or Android application.
 
-Development registration currently permits the owner and up to 16 invited users.
-Broader distribution requires separate Production approval, including privacy and
-nonendorsement requirements. Recheck the current service terms before activation.
+Rechecked against the official guide on 2026-11-13: creating an application requires
+a verified GitHub account. Development permits the owner and up to 16 invited users;
+apps for personal or small-group use can stay in Development. The guide allows any
+redirect URI for Development testing, but HomeFX still needs the actual configured
+value rather than a guessed default.
+
+Broader distribution requires separate Production access and a separate client ID,
+including privacy and nonendorsement requirements. The guide's production HTTPS
+redirect restriction is stated for PKCE applications; do not infer device-flow
+production approval from a Development test. Recheck the current service terms before activation.
 No paid plan or service is provisioned in this batch; basic proposed use is not
 documented as requiring Premium. Changed terms or a paid option need separate review.
 

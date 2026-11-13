@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This follow-up prepares `plugin.video.homefx` 0.14.2 alongside
+This read-only preparation batch prepares `plugin.video.homefx` 0.15.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -175,3 +175,20 @@ The 0.14.2 follow-up applies the same transient-journal distinction to credentia
 and request-limit stores. It preserves all nine prior records and ZIP bytes. Only
 a successful ordinary post-merge publication will advertise 0.14.2 as current;
 repository 0.2.0 is unchanged. TV acceptance is still separate.
+
+
+## Read-only list journey preparation (0.15.0)
+
+The 0.14.2 follow-up merged at `c5a54e4655d19f6ba729e7fcd89ebe64edad407b`.
+[Validation 43366073716](https://github.com/susanto-dev/homefx/actions/runs/43366073716)
+and [publication 43366073709](https://github.com/susanto-dev/homefx/actions/runs/43366073709)
+passed, including deployed-byte verification. Direct HTTPS checks confirmed the
+0.14.2 index and both root/repository video ZIPs with SHA-256
+`ff6f12515fc1ab7751629f8d9f80fa94791ebbc92c023ca59a34d99fa7065932`.
+
+This batch prepares video 0.15.0 and retains all ten previous archive records and
+bytes. Repository 0.2.0 is unchanged. The usual successful post-merge Pages workflow
+would advertise 0.15.0; no independent deployment is required. Public browsing
+remains synthetic: the packaged list interaction is inactive until registration,
+account-bound route design and device acceptance gates are completed. No paid
+service, dependency, account registration or new hosting is provisioned.

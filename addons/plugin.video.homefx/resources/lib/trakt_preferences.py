@@ -246,16 +246,20 @@ class AccountPreferences:
     def load(self, uuid):
         return self.snapshot(uuid)[1]
 
-    def save(self, uuid, keys, expected_epoch=None):
-        """Return False without writing if a clear invalidated the caller's epoch."""
+    def save(self, uuid, keys, expected_epoch=None, expected_keys=None):
+        """Atomically reject a stale clear epoch or ordered selection snapshot."""
         if expected_epoch is not None and not _integer(expected_epoch):
             raise PreferencesError('invalid_preference_epoch')
         account = _account_key(uuid)
         selected = json.dumps(_selection(keys), separators=(',', ':'))
+        expected = None if expected_keys is None else _selection(expected_keys)
         def write(conn):
             if expected_epoch is not None and self._epoch(conn) != expected_epoch:
                 return False
-            revision = max((row[1] for row in self._rows(conn).values()), default=0)
+            rows = self._rows(conn)
+            if expected is not None and rows.get(account, ([], 0))[0] != expected:
+                return False
+            revision = max((row[1] for row in rows.values()), default=0)
             if revision == _MAX_INTEGER:
                 raise PreferencesError('preferences_revision_exhausted')
             revision += 1
