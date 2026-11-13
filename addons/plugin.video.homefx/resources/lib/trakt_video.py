@@ -22,9 +22,11 @@ class TraktVideo:
     This boundary is not an activation gate or an application configuration loader.
     """
     def __init__(self, factory, dialog, progress_factory, monitor, plugin,
-                 list_item_factory, *, clock=time.monotonic, art_root=None):
+                 list_item_factory, *, clock=time.monotonic, art_root=None, addon_id='plugin.video.homefx'):
         if not all(callable(item) for item in (factory, progress_factory, list_item_factory, clock)):
             raise ValueError('invalid_video_configuration')
+        trakt_widget_routes.url('trakt_sources', addon_id=addon_id)
+        self._addon_id = addon_id
         self._factory, self._dialog, self._progress = factory, dialog, progress_factory
         self._monitor, self._plugin, self._item = monitor, plugin, list_item_factory
         self._clock, self._art = clock, art_root
@@ -60,7 +62,7 @@ class TraktVideo:
         try:
             if action == 'browse':
                 ui = WidgetDirectoryUI(self._plugin, self._item, self._progress,
-                    self._monitor, dialog=self._dialog, art_root=self._art)
+                    self._monitor, dialog=self._dialog, art_root=self._art, addon_id=self._addon_id)
             elif action == 'choose':
                 ui = TraktListUI(self._dialog, self._progress, self._monitor)
             else:

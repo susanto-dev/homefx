@@ -1,6 +1,6 @@
 # Joining the read-only video journey
 
-The 0.17.7 candidate adds a single injectable `TraktVideo` dispatcher in the video
+The published 0.17.7 release adds a single injectable `TraktVideo` dispatcher in the video
 add-on's shared runtime. The public `default.py` does not call it and no public
 configuration is added to the video ZIP. This is implementation preparation, not
 an activated live preview or another installed add-on.
@@ -41,14 +41,14 @@ Watching, Next aired and Upcoming retain their separate meanings; a future air d
 never guarantees a source, and the personal calendar is not a schedule of every
 show in arbitrary selected lists.
 
-## Activation and delivery still to implement
+## Delivery and activation status
 
-1. Review how the video package receives its public Development identity/redirect.
-   Today GitHub variables configure only the separate script ZIP. Do not change
+1. The next candidate packages the public Development identity/redirect into a
+   separately identified Development video ZIP, using the existing GitHub variables. Do not change
    an existing archive's bytes, silently import script configuration or use Production
    merely because owner Development login worked. No credentials belong in builds.
-2. Wire the reviewed entry point explicitly, preserving existing demo/widget URLs
-   and using the video's own storage/login. Keep remote writes and playback disabled.
+2. The candidate wires the reviewed entry point explicitly while preserving existing
+   Preview/demo/widget URLs and using its own storage/login. Keep remote writes and playback disabled.
 3. On an intentional device candidate, accept one real personal or liked list,
    separate skin-row setup, title/season details and restart retention. Check empty,
    offline and authorization-needed states and account isolation. Measure cold/warm
@@ -60,3 +60,11 @@ those as a prerequisite for unrelated implementation. Synthetic denial/expiry an
 process-interruption regressions are separate evidence, not invented live results.
 See [account requirements](account-setup.md#evidence-required-without-destructive-account-tests)
 and [testing evidence](testing.md#refresh-process-interruption).
+
+## Development delivery candidate
+
+The next candidate uses a distinct video ID with its own profile and widget URLs,
+reusing this dispatcher. It is built from reviewed source with public Development
+configuration and delivered as a checksum-named ZIP on the existing Pages source.
+It leaves the public Preview entry point inactive and requires deliberate installation,
+fresh on-device login and list-read consent. See [delivery and TV checklist](development-video.md).

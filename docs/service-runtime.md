@@ -1,8 +1,9 @@
 # Explicit service assembly
 
 The `service_runtime` module assembles existing components for later account
-integration. Nothing imports it from the Kodi entry point, invokes it on startup,
-adds a connection menu, or supplies live application configuration. Import performs
+integration. The public Preview entry point does not import it or supply live configuration.
+The deliberate Development video candidate calls it after explicit actions with
+its own profile and public Development configuration; startup does not authorize. Import performs
 no storage or network I/O. Device registration, permissions/TLS checks and live
 acceptance remain required before activation.
 

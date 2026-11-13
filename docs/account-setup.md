@@ -1,6 +1,6 @@
 # Preparing a Trakt development connection
 
-The 0.17.6 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.17.7 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
@@ -60,8 +60,9 @@ the variable placement in repository settings when diagnosing configuration.
 The preflight does not inject configuration into packages. For the separately
 installed Development test, the main-only **Publish preview** build uses the
 **Development** environment and embeds only the public ID/redirect in the script
-ZIP listed at the existing HomeFX source. Those values are intentionally downloadable;
-never use these variables for secrets. The video/repository ZIPs remain unconfigured,
+ZIP listed at the existing HomeFX source. The next candidate also builds a separate
+Development video ZIP there; see [its explicit install/consent boundary](development-video.md). Those values are intentionally downloadable;
+never use these variables for secrets. The public Preview video/repository ZIPs remain unconfigured,
 and public preview live routes stay inactive. Production is not selected.
 
 The separately named **Build Development device test** workflow remains an optional
@@ -141,7 +142,8 @@ observed live provider responses. Do not deliberately kill a real refresh or edi
 real token files to manufacture those failures. A newly observed service mismatch
 requires review; it must not be silently accepted because a fixture passed.
 
-Public activation still requires reviewed video configuration delivery, explicit
+Public activation still requires reviewed video configuration delivery (now prepared as a separate Development
+video candidate), explicit
 own-profile account actions, and actual read-only list/widget acceptance. The new
 joined video adapter remains uncalled by the public entry point. No program tokens
 are migrated. The final list/widget acceptance requires a deliberate candidate;

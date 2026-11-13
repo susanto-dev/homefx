@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.homefx.development" name="HomeFX Development Video" version="0.1.0" provider-name="susanto-dev">
+  <requires><import addon="xbmc.python" version="3.0.1"/></requires>
+  <extension point="xbmc.python.pluginsource" library="default.py"><provides>video</provides></extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Owner-authorized Development Trakt lists and widgets</summary>
+    <description lang="en_GB">Deliberately installed read-only Development candidate. Separate profile and fresh login. No playback or remote history/list writes. Not general public Trakt access.</description>
+    <platform>all</platform><license>MIT</license>
+    <source>https://github.com/susanto-dev/homefx</source>
+    <assets><icon>resources/art/icon.png</icon></assets>
+  </extension>
+</addon>

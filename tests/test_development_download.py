@@ -63,7 +63,10 @@ class DevelopmentDownloadTests(unittest.TestCase):
         plain_files, plain_dirs = build_site._tree_bytes(self.plain)
         files, directories = build_site._tree_bytes(self.site)
         self.assertEqual(directories, plain_dirs)
-        self.assertEqual(set(files) - set(plain_files), set(self.pair))
+        video_name = download.verify(files, video=True)
+        self.assertIsNotNone(video_name)
+        self.assertEqual(set(files) - set(plain_files), set(self.pair) | {video_name, video_name + '.sha256'})
+        self.assertNotIn(b'plugin.video.homefx.development', files['repository/addons.xml'])
         for name, data in plain_files.items():
             if name != 'index.html':
                 self.assertEqual(files[name], data)
@@ -94,6 +97,7 @@ class DevelopmentDownloadTests(unittest.TestCase):
         links = Links()
         links.feed(files['index.html'].decode('utf-8'))
         self.assertIn(self.name, links.found)
+        self.assertIn(video_name, links.found)
         self.assertIn('Development account test', files['index.html'].decode('utf-8'))
         self.assertIn('No file transfer is needed', files['index.html'].decode('utf-8'))
         self.assertNotIn(CONFIG['TRAKT_CLIENT_ID'], files['index.html'].decode('utf-8'))

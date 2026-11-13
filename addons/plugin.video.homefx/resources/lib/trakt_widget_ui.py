@@ -43,8 +43,8 @@ def _season_plot(row):
     return '. '.join(values) + '. Counts overlap; dates do not establish playable availability.'
 
 
-def _episode_actions(params, season):
-    return [(label, 'Container.Update(' + routes.url('trakt_episodes', ref=params['ref'],
+def _episode_actions(params, season, addon_id):
+    return [(label, 'Container.Update(' + routes.url('trakt_episodes', addon_id=addon_id, ref=params['ref'],
              item=params['item'], season=season, filter=selection) + ')')
             for label, selection in [('All episodes in this season', 'all'),
                                      ('Aired unwatched episodes in this season', 'aired_unwatched')]]
@@ -58,10 +58,12 @@ class WidgetDirectoryUI:
     Kodi submission/finalization is not a transaction: final guard failures end the
     directory unsuccessfully, but actual skin retention/clearing needs device tests.
     """
-    def __init__(self, plugin, list_item_factory, progress_factory, monitor, dialog=None, art_root=None):
+    def __init__(self, plugin, list_item_factory, progress_factory, monitor, dialog=None, art_root=None, addon_id='plugin.video.homefx'):
         self._plugin, self._item = plugin, list_item_factory
         self._progress_factory, self._monitor = progress_factory, monitor
         self._progress = None
+        routes.url('trakt_sources', addon_id=addon_id)
+        self._addon_id = addon_id
         self._dialog = dialog
         # The caller supplies the installed add-on's local original-art directory.
         if art_root is not None and (type(art_root) is not str or not art_root.startswith('/')
@@ -71,6 +73,9 @@ class WidgetDirectoryUI:
         self._art = {} if art_root is None else {
             'thumb': art_root + 'poster.png', 'poster': art_root + 'poster.png',
             'icon': art_root + 'icon.png', 'fanart': art_root + 'fanart.png'}
+
+    def _url(self, route, **params):
+        return routes.url(route, addon_id=self._addon_id, **params)
 
     def __repr__(self):
         return 'WidgetDirectoryUI(<private interaction>)'
@@ -114,19 +119,19 @@ class WidgetDirectoryUI:
             target, folder = '', False
             if route == 'trakt_sources':
                 label = _text(row['name'])
-                target, folder = routes.url('trakt_list', ref=row['ref']), True
+                target, folder = self._url('trakt_list', ref=row['ref']), True
             elif route == 'trakt_seasons':
                 label = 'Season ' + str(row['season'])
-                target = routes.url('trakt_episodes', ref=params['ref'], item=params['item'], season=row['season'])
+                target = self._url('trakt_episodes', ref=params['ref'], item=params['item'], season=row['season'])
                 folder = True
             else:
                 label = _text(row['title'])
                 if route == 'trakt_list':
                     destination = 'trakt_seasons' if row['kind'] == 'show' else 'trakt_details'
-                    target = routes.url(destination, ref=params['ref'], item=row['item_ref'])
+                    target = self._url(destination, ref=params['ref'], item=row['item_ref'])
                     folder = row['kind'] == 'show'
                 elif route == 'trakt_episodes':
-                    target = routes.url('trakt_episode_details', ref=params['ref'], item=params['item'],
+                    target = self._url('trakt_episode_details', ref=params['ref'], item=params['item'],
                                         season=params['season'], episode=row['episode'])
             item = self._item(label=label)
             if self._art:
@@ -137,7 +142,7 @@ class WidgetDirectoryUI:
                 tag.setMediaType('season')
                 tag.setSeason(row['season'])
                 tag.setPlot(_season_plot(row))
-                item.addContextMenuItems(_episode_actions(params, row['season']))
+                item.addContextMenuItems(_episode_actions(params, row['season'], self._addon_id))
             if route not in {'trakt_sources', 'trakt_seasons'}:
                 tag = item.getVideoInfoTag()
                 tag.setTitle(label)
@@ -157,9 +162,9 @@ class WidgetDirectoryUI:
                 if row['kind'] == 'episode':
                     tag.setSeason(row['season'])
                     tag.setEpisode(row['episode'])
-                    item.addContextMenuItems(_episode_actions(params, params['season']))
+                    item.addContextMenuItems(_episode_actions(params, params['season'], self._addon_id))
             if 'ref' in params:
-                full_list = routes.url('trakt_list', ref=params['ref'])
+                full_list = self._url('trakt_list', ref=params['ref'])
                 item.addContextMenuItems([('Open full list', 'Container.Update(' + full_list + ')')])
             # No IsPlayable flag, player call, arbitrary service URL or mutation action.
             staged.append((target, item, folder))

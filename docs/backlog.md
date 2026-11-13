@@ -1,7 +1,7 @@
 # Complete project backlog
 
-Status checked on 13 November 2026: published **video 0.17.6 / repository 0.2.0**.
-PR #35 is merged; its post-merge validation and publication passed. **Implemented** means source and automated checks exist; **published** means
+Status checked on 13 November 2026: published **video 0.17.7 / repository 0.2.0**.
+PR #36 is merged; its post-merge validation and publication passed. **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -273,3 +273,25 @@ archive records preserved. The next integration decision is how to deliver revie
 public Development configuration to the video package without changing a published
 version's bytes. Existing GitHub variables configure only the separate program ZIP.
 A general public connection must not presume Production approval from owner tests.
+
+## Current candidate: one real list in Development Video
+
+The dispatcher and synthetic abrupt-process recovery regression from PR #36 are
+complete, merged and independently reviewed. They are reused without duplication.
+The 0.17.8 proposal adds a distinct, deliberately installed Development video ID,
+shared public-configuration validation, candidate-specific widget links and checked
+content-addressed delivery on the existing source. The program is not a dependency;
+the candidate has a fresh own-profile login. Public Preview and Production stay inactive.
+
+| Item | State |
+|---|---|
+| Development auth/refresh/restart/disconnect/cancel/offline responsiveness | Owner-confirmed; do not repeat |
+| Shared dispatcher and synthetic process interruption | Complete in PR #36 |
+| Development video configuration and package delivery | Implemented candidate; publication pending merge |
+| One real personal/liked list, seasons, saved selection after restart | Synthetic end-to-end tests; pending owner video-candidate acceptance |
+| Existing-skin row, focus/Back, cold/warm and multiple-row loading | Pending actual-device measurements |
+| Public/Production connection, writes, playback, Real-Debrid, scrobbling | Inactive; outside milestone |
+
+The [short candidate checklist](development-video.md) needs only deliberate install,
+new profile storage check, fresh owner login and private selection of one list. No
+keys, secrets, list names, raw logs or profile files should be supplied in chat.

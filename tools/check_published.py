@@ -48,14 +48,16 @@ def _expected(site):
     result = verify_repository.verify(Path(site) / "repository", channel="preview")
     files, directories = verify_repository._snapshot(site)
     roots = {"index.html", "install.html", "LICENSE.txt"}
-    development_archive = development_download.verify(files)
-    if development_archive is not None:
-        roots.update({development_archive, development_archive + ".sha256"})
-        link = ('<a href="' + development_archive + '">' + development_archive + '</a>').encode("ascii")
-        _require(link in files.get("index.html", b""), "local Development download link")
-    else:
-        _require(('href="' + development_download.PREFIX).encode("ascii")
-                 not in files.get("index.html", b""), "missing local Development download")
+    for video, prefix in ((False, development_download.PREFIX),
+                          (True, development_download.builder.VIDEO_ID + "-")):
+        development_archive = development_download.verify(files, video=video)
+        if development_archive is not None:
+            roots.update({development_archive, development_archive + ".sha256"})
+            link = ('<a href="' + development_archive + '">' + development_archive + '</a>').encode("ascii")
+            _require(link in files.get("index.html", b""), "local Development download link")
+        else:
+            _require(('href="' + prefix).encode("ascii") not in files.get("index.html", b""),
+                     "missing local Development download")
     for ident, version in result["current"].items():
         name = ident + "-" + version + ".zip"
         for suffix in ("", ".sha256"):

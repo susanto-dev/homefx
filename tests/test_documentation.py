@@ -49,7 +49,8 @@ class DocumentationTests(unittest.TestCase):
     def test_installation_journey_links_resolve_in_checkout(self):
         for relative in ('README.md', 'docs/install.md', 'docs/activation-checklist.md',
                          'docs/account-setup.md', 'docs/testing-on-tv.md', 'docs/widget-setup.md',
-                         'docs/backlog.md', 'docs/releases.md', 'docs/development-device-test.md'):
+                         'docs/backlog.md', 'docs/releases.md', 'docs/development-device-test.md',
+                         'docs/development-video.md'):
             source = ROOT / relative
             for href in markdown_links(source.read_text(encoding='utf-8')):
                 with self.subTest(source=relative, href=href):
