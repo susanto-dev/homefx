@@ -22,7 +22,9 @@ and makes no request. No client-secret argument or account configuration URL is 
 
 `dispatch` supports explicit `connect`, `disconnect`, `choose` and `browse` actions.
 Management actions request consent before constructing the runtime; declined consent
-and cancellation leave storage unopened. AccountFlow owns code display and cleanup.
+and cancellation before runtime construction leave storage unopened. Cancellation
+after login begins can change local credential state, including removing a prior
+session during a replacement login. AccountFlow owns code display and cleanup.
 Disconnect uses the complete bundle's callback, clearing local saved list choices as
 well as credentials without claiming remote revocation or backup erasure.
 
