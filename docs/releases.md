@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This journey integration repair prepares `plugin.video.homefx` 0.16.1 alongside
+This episode-browsing batch prepares `plugin.video.homefx` 0.17.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -230,3 +230,19 @@ remains unchanged. All twelve earlier archive records and bytes are retained,
 with repository 0.2.0 unchanged. Only the ordinary successful post-merge Pages
 workflow would advertise 0.16.1. This validation is not real-account, network/TLS
 or TV acceptance.
+
+## Episode watch-progress preparation (0.17.0)
+
+The 0.16.1 repair merged at `ffc6b572166634ffdfcc1f5c3bac3e6d22f82f65`.
+[Validation 43373871821](https://github.com/susanto-dev/homefx/actions/runs/43373871821)
+and [publication 43373871771](https://github.com/susanto-dev/homefx/actions/runs/43373871771)
+passed. Direct HTTPS checks confirmed video 0.16.1/repository 0.2.0 in the index
+and both video ZIP paths with SHA-256
+`458f3f6618fed4f153fb5d3cef44cfcd05d3496011332c96d9f5485b7394874b`.
+
+Video 0.17.0 adds an inactive episode-view filter and watch-progress presentation.
+All thirteen earlier archive records and ZIP bytes remain unchanged; repository
+0.2.0 and preference schema 3 are unchanged. Only the ordinary successful post-merge
+Pages workflow would advertise the new version. Public preview routes remain
+synthetic, and existing saved URLs retain their default All-episodes behavior.
+No paid service, new dependency, remote write or playback action is added.

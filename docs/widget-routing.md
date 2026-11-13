@@ -74,3 +74,27 @@ checklist](testing-on-tv.md) remain authoritative. Cloud tests cannot establish
 TLS, login/refresh, actual skin focus/Back, restart persistence or cold/warm timings.
 Continue Watching, Next aired and Upcoming remain separate views; dates and the
 personal calendar are not playable availability or complete selected-list schedules.
+
+## Episode views and watch-progress metadata (0.17)
+
+The episode route accepts an optional `filter=all` or `filter=aired_unwatched`.
+Omitting it preserves the original URL and All-episodes narrative order. The other
+route kinds reject this field, and malformed/unknown values fail before account
+reads. Fixed context actions on season folders and episode rows preserve the bound
+list/show reference and season. Episode detail actions do not carry filter state;
+Open full list still opens the original mixed list.
+
+The filtered view validates the complete season before excluding any rows. It then
+includes only known-unwatched episodes with an aired date, orders unfinished items
+first, and uses the existing date/order rules. Unknown watched evidence is not
+unwatched even when a pause is present. If no rows qualify, the view remains empty;
+when entered from a season folder, use Back and that folder's All episodes action
+to restore the full view. A directly configured widget may have a different parent;
+use its separate full-list shortcut to reach the series and season folder.
+No settings/navigation row is inserted into widget content.
+
+Season plots show total, watched, aired-unwatched, upcoming and unknown watched/date
+counts. These overlap as independent dimensions and must not be added as exclusive
+availability buckets. Unfinished progress is shown only as a bounded percentage;
+no duration, resume seconds, playable flag or playback action is invented. Dates
+and counts remain metadata. Actual skin display and navigation remain TV gates.

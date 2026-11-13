@@ -381,14 +381,18 @@ class Library:
             self.clear()
             raise
 
-    def widget_episodes(self, ref, item_ref, season):
-        # Validate the local number before authenticated work.
+    def widget_episodes(self, ref, item_ref, season, episode_filter="all"):
+        # Validate local choices before authenticated work.
+        if not isinstance(episode_filter, str) or episode_filter not in {"all", "aired_unwatched"}:
+            raise ApiError("invalid_filter")
         season_arguments(1, season)
         try:
             show_id, guard = self._widget_show(ref, item_ref)
             rows = self.episode_view(show_id, season)
             if any(row['season'] != season for row in rows):
                 raise ApiError('mismatched_season')
+            # Validate the complete season before excluding or reordering rows.
+            rows = trakt_views.episode_filter(rows, episode_filter)
             guard()
             return {'items': rows, 'unsupported_count': 0, 'guard': guard}
         except (AuthError, ApiError):

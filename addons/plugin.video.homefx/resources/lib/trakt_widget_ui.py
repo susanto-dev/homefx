@@ -1,4 +1,5 @@
 """Inactive Kodi-shaped read directory renderer with no imports or activation of Kodi."""
+import math
 import unicodedata
 
 from .trakt_auth import AuthError
@@ -12,6 +13,41 @@ def _text(value):
         raise ValueError('invalid_display_text')
     return ''.join(' ' if unicodedata.category(char).startswith('C') else
                    '(' if char == '[' else ')' if char == ']' else char for char in value)
+
+
+def _progress_text(row):
+    if row.get('kind') != 'episode' or row.get('watched') is True:
+        return ''
+    value = row.get('progress', 0)
+    if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value < 100:
+        raise ValueError('invalid_progress')
+    if value == 0:
+        return ''
+    # Percentage is not a resume timestamp. Avoid rounding an unfinished value to 100.
+    text = str(value)
+    if text.endswith('.0'):
+        text = text[:-2]
+    return 'Unfinished progress: ' + text + '%.'
+
+
+def _season_plot(row):
+    fields = [('total', 'Total episodes'), ('watched', 'Watched'),
+              ('aired_unwatched', 'Aired unwatched'), ('upcoming', 'Upcoming dates'),
+              ('unknown_watched', 'Unknown watched status'), ('unknown_date', 'Unknown dates')]
+    values = []
+    for key, label in fields:
+        count = row[key]
+        if type(count) is not int or not 0 <= count <= 5000:
+            raise ValueError('invalid_season_count')
+        values.append(label + ': ' + str(count))
+    return '. '.join(values) + '. Counts overlap; dates do not establish playable availability.'
+
+
+def _episode_actions(params, season):
+    return [(label, 'Container.Update(' + routes.url('trakt_episodes', ref=params['ref'],
+             item=params['item'], season=season, filter=selection) + ')')
+            for label, selection in [('All episodes in this season', 'all'),
+                                     ('Aired unwatched episodes in this season', 'aired_unwatched')]]
 
 
 class WidgetDirectoryUI:
@@ -66,7 +102,8 @@ class WidgetDirectoryUI:
         if route == 'trakt_seasons':
             return library.widget_seasons(params['ref'], params['item'])
         if route == 'trakt_episodes':
-            return library.widget_episodes(params['ref'], params['item'], params['season'])
+            return library.widget_episodes(params['ref'], params['item'], params['season'],
+                                           episode_filter=params.get('filter', 'all'))
         if route == 'trakt_episode_details':
             return library.widget_episode_details(params['ref'], params['item'], params['season'], params['episode'])
         return library.widget_details(params['ref'], params['item'])
@@ -94,6 +131,13 @@ class WidgetDirectoryUI:
             item = self._item(label=label)
             if self._art:
                 item.setArt(dict(self._art))
+            if route == 'trakt_seasons':
+                tag = item.getVideoInfoTag()
+                tag.setTitle(label)
+                tag.setMediaType('season')
+                tag.setSeason(row['season'])
+                tag.setPlot(_season_plot(row))
+                item.addContextMenuItems(_episode_actions(params, row['season']))
             if route not in {'trakt_sources', 'trakt_seasons'}:
                 tag = item.getVideoInfoTag()
                 tag.setTitle(label)
@@ -108,10 +152,12 @@ class WidgetDirectoryUI:
                 release = row.get('release_at')
                 date_text = release.isoformat() if release is not None else 'unknown'
                 tag.setPlot('Watch status: ' + status + '. Release/air date: ' + _text(date_text)
-                            + '. Date metadata does not establish a playable source.')
+                            + '. ' + _progress_text(row)
+                            + ' Date metadata does not establish a playable source.')
                 if row['kind'] == 'episode':
                     tag.setSeason(row['season'])
                     tag.setEpisode(row['episode'])
+                    item.addContextMenuItems(_episode_actions(params, params['season']))
             if 'ref' in params:
                 full_list = routes.url('trakt_list', ref=params['ref'])
                 item.addContextMenuItems([('Open full list', 'Container.Update(' + full_list + ')')])
@@ -185,6 +231,9 @@ class WidgetDirectoryUI:
                     release = row.get('release_at')
                     date_text = release.isoformat() if release is not None else 'unknown'
                     body = 'Watch status: ' + status + '\nRelease/air date: ' + _text(date_text)
+                    progress = _progress_text(row)
+                    if progress:
+                        body += '\n' + progress
                     body += '\nMetadata only. No playable source or playback action.'
                     guard()
                     self._dialog.textviewer(title, body)
