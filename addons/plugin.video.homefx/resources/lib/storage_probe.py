@@ -38,35 +38,48 @@ def report(profile):
     permissions, transaction, cleanup = "not run", "not run", "not needed"
     directory = connection = None
     failed = False
+    stage, failure_stage = "platform prerequisites", "none"
     try:
         if os.name != "posix" or not hasattr(os, "fchmod"):
             permissions = "unsupported"
             raise ValueError()
+        stage = "SQLite import"
         try:
             sqlite = importlib.import_module("sqlite3")
         except ImportError:
             transaction = "unavailable"
             raise ValueError()
+        stage = "profile validation"
         profile = _safe_profile(profile)
+        stage = "profile creation"
         profile.mkdir(mode=0o700, parents=True, exist_ok=True)
+        stage = "profile revalidation"
         _safe_profile(profile)
+        stage = "temporary directory creation"
         directory = Path(tempfile.mkdtemp(prefix=".homefx-storage-check-", dir=str(profile)))
         cleanup = "pending"
         permissions = "failed"
+        stage = "directory permissions"
         if not _private(directory, 0o700, directory=True):
             raise ValueError()
         database = directory / "synthetic.sqlite3"
+        stage = "database creation"
         descriptor = os.open(str(database), os.O_CREAT | os.O_EXCL | os.O_RDWR
                              | getattr(os, "O_NOFOLLOW", 0), 0o600)
         try:
+            stage = "file permission change"
             os.fchmod(descriptor, 0o600)
+            stage = "database descriptor close"
         finally:
             os.close(descriptor)
+        stage = "database permissions"
         if not _private(database, 0o600):
             raise ValueError()
         permissions = "passed"
         transaction = "failed"
+        stage = "SQLite connection"
         connection = sqlite.connect(str(database), timeout=2)
+        stage = "SQLite transaction"
         connection.execute("PRAGMA journal_mode=DELETE")
         connection.execute("CREATE TABLE probe (value INTEGER NOT NULL)")
         connection.execute("INSERT INTO probe VALUES (1)")
@@ -75,32 +88,40 @@ def report(profile):
         connection.rollback()
         if connection.execute("SELECT value FROM probe").fetchall() != [(1,)]:
             raise ValueError()
+        stage = "SQLite close"
         connection.close()
         connection = None
+        stage = "final permissions"
         if not _private(directory, 0o700, directory=True) or not _private(database, 0o600):
             permissions = "failed"
             raise ValueError()
         transaction = "passed"
     except Exception:
         failed = True  # Only fixed result labels leave this boundary.
+        failure_stage = stage
     finally:
         if connection is not None:
             try:
                 connection.close()
             except Exception:
                 transaction = "failed"
+                if failure_stage == "none":
+                    failure_stage = "SQLite close"
         if directory is not None:
             try:
                 shutil.rmtree(str(directory))
                 cleanup = "failed" if directory.exists() or directory.is_symlink() else "passed"
             except Exception:
                 cleanup = "failed"
+            if cleanup == "failed" and failure_stage == "none":
+                failure_stage = "temporary cleanup"
     passed = not failed and permissions == transaction == cleanup == "passed"
     return "\n".join([
         "Private storage self-check (synthetic data only)",
         "Private file permissions: " + permissions,
         "SQLite commit/rollback: " + transaction,
         "Temporary cleanup: " + cleanup,
+        "Failure stage: " + failure_stage,
         "Overall: " + ("passed" if passed else "not passed"),
         "No account files were read. No network or login was attempted.",
         "This does not verify token recovery, service access or playback.",

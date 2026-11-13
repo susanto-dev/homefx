@@ -384,3 +384,20 @@ repository **0.2.0**, including root and indexed ZIP copies, retain the same byt
 this publication creates no new Kodi add-on version. Existing release/archive URLs
 remain available. These checks establish publication integrity, not successful
 installation, widget behavior, private storage, TLS or live Trakt on the TV.
+
+## 0.17.3 diagnostic candidate
+
+The 0.17.2 TV report showed private permissions failed, SQLite not run and cleanup
+passed. Its readiness dialog showed versions only. This candidate uses Kodi's
+[native text viewer](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/xbmc/interfaces/legacy/Dialog.h)
+for complete readiness/storage reports and adds a fixed storage failure-stage label.
+The exact Android filesystem cause and actual TV scrolling remain unverified.
+Permission requirements, cleanup and account activation gates are unchanged.
+
+Because runtime bytes change, this proposal adds video **0.17.3** instead of replacing
+0.17.2. Repository **0.2.0** and every existing archive/inventory record remain
+byte-identical. The normal checked Pages deployment after merge will advertise
+0.17.3, update the manual video download and installation guide, and retain older
+indexed archives. Nothing is published independently; check post-merge publication
+before updating the TV. This is a diagnostic release, not a storage compatibility
+fix or live-account activation. Follow the [bounded rerun](testing-on-tv.md#observed-device-diagnostics-and-0173-rerun).

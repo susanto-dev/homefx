@@ -25,6 +25,7 @@ class StorageProbeTests(unittest.TestCase):
             before = stat.S_IMODE(profile.stat().st_mode)
             result = probe.report(profile)
             self.assertIn("Overall: passed", result)
+            self.assertIn("Failure stage: none", result)
             self.assertIn("Temporary cleanup: passed", result)
             self.assertEqual(list(profile.iterdir()), [sentinel])
             self.assertEqual(sentinel.read_bytes(), b"must never be opened or changed")
@@ -64,6 +65,7 @@ class StorageProbeTests(unittest.TestCase):
                 isolated = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(isolated)
                 result = isolated.report(profile)
+            self.assertIn("Failure stage: SQLite import", result)
             self.assertIn("SQLite commit/rollback: unavailable", result)
             self.assertIn("Overall: not passed", result)
             self.assertFalse(profile.exists())
@@ -73,6 +75,7 @@ class StorageProbeTests(unittest.TestCase):
             profile = Path(temporary) / "new"
             with patch.object(probe.os, "name", "unsupported"):
                 result = probe.report(profile)
+            self.assertIn("Failure stage: platform prerequisites", result)
             self.assertIn("Private file permissions: unsupported", result)
             self.assertFalse(profile.exists())
 
@@ -81,6 +84,7 @@ class StorageProbeTests(unittest.TestCase):
             profile = Path(temporary)
             with patch.object(sqlite3, "connect", side_effect=sqlite3.OperationalError("secret private path")):
                 result = probe.report(profile)
+            self.assertIn("Failure stage: SQLite connection", result)
             self.assertIn("SQLite commit/rollback: failed", result)
             self.assertIn("Temporary cleanup: passed", result)
             self.assertIn("Overall: not passed", result)
@@ -109,6 +113,8 @@ class StorageProbeTests(unittest.TestCase):
             profile = Path(temporary)
             with patch.object(probe.os, "fchmod", side_effect=OSError("private secret")):
                 result = probe.report(profile)
+            self.assertIn("Failure stage: file permission change", result)
+            self.assertIn("SQLite commit/rollback: not run", result)
             self.assertIn("Private file permissions: failed", result)
             self.assertIn("Temporary cleanup: passed", result)
             self.assertNotIn("private secret", result)
@@ -120,6 +126,7 @@ class StorageProbeTests(unittest.TestCase):
             with patch.object(probe.shutil, "rmtree", side_effect=OSError("secret cleanup path")):
                 result = probe.report(profile)
             self.assertIn("SQLite commit/rollback: passed", result)
+            self.assertIn("Failure stage: temporary cleanup", result)
             self.assertIn("Temporary cleanup: failed", result)
             self.assertIn("Overall: not passed", result)
             self.assertNotIn("secret", result)
@@ -134,4 +141,43 @@ class StorageProbeTests(unittest.TestCase):
             self.assertIn("No account files were read", result)
             self.assertIn("No network or login was attempted", result)
             self.assertIn("does not verify token recovery", result)
+            self.assertLess(len(result), 800)
+
+    def test_directory_mode_failure_is_distinct_and_never_opens_sqlite(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(probe, "_private", return_value=False), \
+                    patch.object(sqlite3, "connect") as connect:
+                result = probe.report(temporary)
+            connect.assert_not_called()
+            self.assertIn("Failure stage: directory permissions", result)
+            self.assertIn("Private file permissions: failed", result)
+            self.assertIn("SQLite commit/rollback: not run", result)
+            self.assertIn("Temporary cleanup: passed", result)
+            self.assertIn("Overall: not passed", result)
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
+    def test_file_mode_failure_is_distinct_and_never_opens_sqlite(self):
+        original = probe._private
+        def directory_only(path, mode, directory=False):
+            return original(path, mode, directory=True) if directory else False
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(probe, "_private", side_effect=directory_only), \
+                    patch.object(sqlite3, "connect") as connect:
+                result = probe.report(temporary)
+            connect.assert_not_called()
+            self.assertIn("Failure stage: database permissions", result)
+            self.assertIn("Overall: not passed", result)
+            self.assertIn("Temporary cleanup: passed", result)
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
+    def test_inspection_exception_is_redacted_and_cleanup_does_not_hide_first_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(probe, "_private", side_effect=OSError("/private/token")), \
+                    patch.object(probe.shutil, "rmtree", side_effect=OSError("/private/cleanup")):
+                result = probe.report(temporary)
+            self.assertIn("Failure stage: directory permissions", result)
+            self.assertIn("Temporary cleanup: failed", result)
+            self.assertIn("Overall: not passed", result)
+            self.assertNotIn("/private", result)
+            self.assertNotIn(temporary, result)
             self.assertLess(len(result), 800)

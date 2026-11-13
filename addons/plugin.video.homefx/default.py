@@ -103,7 +103,7 @@ def main():
         route, params = routes.parse(sys.argv[2] if len(sys.argv) > 2 else "")
         current_route = route
         if route == "readiness":
-            dialog.ok("HomeFX — Device readiness", readiness.report(
+            dialog.textviewer("HomeFX — Device readiness", readiness.report(
                 lambda: addon.getAddonInfo("version"),
                 lambda: xbmc.getInfoLabel("System.BuildVersion"),
                 lambda: xbmcaddon.Addon("plugin.video.umbrella").getAddonInfo("version"),
@@ -119,7 +119,7 @@ def main():
                     result = storage_probe.report(location)
                 except Exception:
                     result = "Private storage self-check could not run. No success is established."
-                dialog.ok("HomeFX — Private storage result", result)
+                dialog.textviewer("HomeFX — Private storage result", result)
             return
         if route == "widget_setup":
             dialog.ok("HomeFX — Widget setup",

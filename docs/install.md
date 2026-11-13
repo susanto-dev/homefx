@@ -111,6 +111,13 @@ those actions can remove Kodi configuration and other add-ons' data.
 
 Open **Add-ons → Video add-ons → HomeFX Preview**. Its root menu contains both checks.
 
+On 0.17.2, the TV reported a private-permission failure with cleanup passed and
+SQLite not run. The exact cause is still unknown. **0.17.3 is a diagnostic candidate,
+not yet a verified download**: after its merge and verified publication, the reports
+will be scrollable and include a fixed **Failure stage** label. Until then, keep the
+verified download snapshot above. A screen showing only some fields is incomplete
+evidence; do not guess the hidden results.
+
 1. Choose **Device readiness**. Record the displayed HomeFX/repository versions and
    the fixed capability results. **Unavailable** or **not installed** is useful
    evidence; do not replace it with a guessed result. This screen makes no network
@@ -120,17 +127,20 @@ Open **Add-ons → Video add-ons → HomeFX Preview**. Its root menu contains bo
    HomeFX profile, checks them and attempts cleanup. It does not read account files
    or log in. You can cancel the prompt; cancellation means the test was **not run**.
 4. If you run it, record every fixed result, especially **Temporary cleanup**.
+   On 0.17.3, scroll through the report and include **Failure stage**.
    The expected result is **passed** for private file permissions, SQLite
    commit/rollback and temporary cleanup, with **Overall: passed**.
 5. If any result is unavailable, failed, unsupported or not run, report it as shown.
    If cleanup failed, report that explicitly; do not delete unfamiliar profile files
-   or assume a partly successful test passed.
+   or assume a partly successful test passed. Do not change permissions or clear
+   Kodi data to try to make a result pass.
 
 Safe observations to return:
 
 - The displayed versions and fixed Device readiness capability labels/results.
 - **Private file permissions**, **SQLite commit/rollback**, **Temporary cleanup**
-  and **Overall**, or that you cancelled and did not run the test.
+  and **Overall**, plus **Failure stage** where available, or that you cancelled
+  and did not run the test.
 - Whether installation/update, opening HomeFX, Back and restart worked.
 - Approximate first-open and immediate-reopen times, if measured.
 
@@ -244,9 +254,9 @@ cloud tests and download checks are not device acceptance.
 
 ## 9. Screenshots and further reading
 
-Screenshots are a future improvement. No safe, original on-device installation
-screenshots are available for this guide, and no third-party walkthrough images
-or text have been copied.
+Installation screenshots are a future improvement. No original installation
+screenshots have been prepared for publication in this guide; private diagnostic
+images are not embedded. No third-party walkthrough images or text have been copied.
 
 - [HomeFX download page](https://susanto-dev.github.io/homefx/)
 - [Source repository](https://github.com/susanto-dev/homefx)
