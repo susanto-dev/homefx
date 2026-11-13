@@ -169,3 +169,10 @@ mutations check that dependencies, extension points and metadata match the curre
 preview contract before packaging. Unchanged packages must still reproduce exactly
 and preserve the published inventory. These are project-specific gates; the full
 official Kodi checker remains pending.
+
+The 0.14 storage regressions exercise refresh claims expiring during SQLite lock
+waits, missing databases after assembly, incompatible table constraints and safe
+creation classification. Service-level tests verify rejection before provider
+requests and compatibility of valid stored credentials and shared limits. All
+credentials, clocks and responses remain fabricated; real authorization and Kodi
+playback are outside automated acceptance.

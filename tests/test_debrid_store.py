@@ -7,16 +7,21 @@ import sqlite3
 import stat
 import sys
 import tempfile
-from threading import Barrier
+from threading import Barrier, Event, Thread
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'addons/plugin.video.homefx'))
 from resources.lib.debrid_auth import AuthError, Credentials, Tokens
-from resources.lib.debrid_store import CredentialStore
+from resources.lib.debrid_store import CredentialStore, RefreshClaim
 
 CREDENTIALS = Credentials('synthetic-client', 'synthetic-secret')
 TOKENS = Tokens('synthetic-access', 'synthetic-refresh', 5000)
 ROTATED = Tokens('synthetic-next-access', 'synthetic-next-refresh', 9000)
+LEGACY_SCHEMA = ("CREATE TABLE credential (id INTEGER PRIMARY KEY CHECK(id=1), "
+                 "generation INTEGER NOT NULL, state TEXT NOT NULL, owner TEXT, "
+                 "deadline REAL, client_id TEXT, client_secret TEXT, access TEXT, "
+                 "refresh TEXT, expires REAL)")
 
 
 class CredentialStoreTests(unittest.TestCase):
@@ -30,6 +35,156 @@ class CredentialStoreTests(unittest.TestCase):
 
     def reopen(self):
         return CredentialStore(self.profile, clock=lambda: self.clock[0], claim_ttl=30)
+
+    @staticmethod
+    def operations(store):
+        claim = RefreshClaim('a' * 32, 0, CREDENTIALS, TOKENS)
+        return (store.snapshot, lambda: store.install(CREDENTIALS, TOKENS), store.disconnect,
+                lambda: store.claim_refresh(0), lambda: store.complete_refresh(claim, ROTATED),
+                lambda: store.fail_refresh(claim))
+
+    def test_legacy_schema_preserves_credentials_and_expired_access_can_refresh(self):
+        self.path.unlink()
+        expired = Tokens('synthetic-access', 'synthetic-refresh', 1)
+        with sqlite3.connect(str(self.path)) as conn:
+            conn.execute(LEGACY_SCHEMA)
+            conn.execute("INSERT INTO credential VALUES(1,7,'ready',NULL,NULL,?,?,?,?,?)",
+                         (CREDENTIALS.client_id, CREDENTIALS.client_secret, expired.access_token,
+                          expired.refresh_token, expired.expires_at))
+        before = self.path.read_bytes()
+        store = self.reopen()
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual((store.snapshot().credentials, store.snapshot().tokens), (CREDENTIALS, expired))
+        claim = store.claim_refresh(7)
+        self.assertEqual((claim.credentials, claim.tokens), (CREDENTIALS, expired))
+        self.assertTrue(store.complete_refresh(claim, ROTATED))
+        self.assertEqual((store.snapshot().generation, store.snapshot().tokens), (8, ROTATED))
+
+    def test_incompatible_schemas_are_rejected_on_reopen_and_every_operation(self):
+        for schema in (LEGACY_SCHEMA.replace('PRIMARY KEY CHECK(id=1)', ''),
+                       LEGACY_SCHEMA.replace('generation INTEGER NOT NULL', 'generation INTEGER'),
+                       LEGACY_SCHEMA.replace('state TEXT NOT NULL', 'state TEXT'),
+                       LEGACY_SCHEMA.replace('expires REAL)', 'expires REAL, extra TEXT)')):
+            with self.subTest(schema=schema):
+                with sqlite3.connect(str(self.path)) as conn:
+                    conn.execute('DROP TABLE credential')
+                    conn.execute(schema)
+                    conn.execute("INSERT INTO credential(id,generation,state) VALUES(1,0,'disconnected')")
+                before = self.path.read_bytes()
+                for operation in (self.reopen,) + self.operations(self.store):
+                    with self.assertRaisesRegex(AuthError, '^credential_store_invalid$'):
+                        operation()
+                    self.assertEqual(self.path.read_bytes(), before)
+
+    def test_a_competing_creator_is_not_initialized(self):
+        self.path.unlink()
+        real_open = os.open
+        competed = []
+        def open_after_competitor(path, flags, *args, **kwargs):
+            if path == str(self.path) and flags & os.O_CREAT and not competed:
+                competed.append(True)
+                descriptor = real_open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+                os.close(descriptor)
+            return real_open(path, flags, *args, **kwargs)
+        with patch('resources.lib.debrid_store.os.open', side_effect=open_after_competitor):
+            with self.assertRaisesRegex(AuthError, '^credential_store_invalid$'):
+                self.reopen()
+        self.assertEqual(competed, [True])
+        self.assertEqual(self.path.read_bytes(), b'')
+
+    def test_rejecting_existing_wal_records_preserves_bytes_and_journal_mode(self):
+        for damage in ('schema', 'row'):
+            with self.subTest(damage=damage):
+                profile = self.profile / damage
+                store = CredentialStore(profile, clock=lambda: 1000)
+                path = profile / 'realdebrid' / 'credentials.sqlite3'
+                conn = sqlite3.connect(str(path))
+                try:
+                    self.assertEqual(conn.execute('PRAGMA journal_mode=WAL').fetchone(), ('wal',))
+                    conn.execute('ALTER TABLE credential ADD COLUMN extra TEXT' if damage == 'schema'
+                                 else "UPDATE credential SET state='ready'")
+                    conn.commit()
+                finally:
+                    conn.close()
+                before = path.read_bytes()
+                for operation in (store.snapshot, lambda: CredentialStore(profile, clock=lambda: 1000)):
+                    with self.assertRaisesRegex(AuthError, '^credential_store_invalid$'):
+                        operation()
+                    self.assertEqual(path.read_bytes(), before)
+                    conn = sqlite3.connect(str(path))
+                    try:
+                        self.assertEqual(conn.execute('PRAGMA journal_mode').fetchone(), ('wal',))
+                    finally:
+                        conn.close()
+
+    def test_missing_database_is_not_recreated_by_any_operation(self):
+        self.path.unlink()
+        for operation in self.operations(self.store):
+            with self.assertRaisesRegex(AuthError, '^credential_store_unavailable$'):
+                operation()
+            self.assertFalse(self.path.exists())
+
+    def test_database_removed_after_path_check_is_not_recreated(self):
+        check = self.store._safe_paths
+        def remove_after_check(*args, **kwargs):
+            check(*args, **kwargs)
+            self.path.unlink()
+        with patch.object(self.store, '_safe_paths', side_effect=remove_after_check):
+            with self.assertRaisesRegex(AuthError, '^credential_store_unavailable$'):
+                self.store.snapshot()
+        self.assertFalse(self.path.exists())
+
+    def test_profile_paths_with_uri_delimiters_roundtrip(self):
+        profile = self.profile / 'profile ?#'
+        store = CredentialStore(profile, clock=lambda: 1000)
+        self.assertTrue(store.install(CREDENTIALS, TOKENS))
+        self.assertEqual(CredentialStore(profile, clock=lambda: 1000).snapshot().tokens, TOKENS)
+
+    def test_invalid_profile_paths_have_fixed_errors(self):
+        for profile in (None, False, 42):
+            with self.subTest(profile=profile):
+                with self.assertRaisesRegex(AuthError, '^credential_store_unavailable$'):
+                    CredentialStore(profile, clock=lambda: 1000)
+
+    def test_claim_expiring_while_waiting_for_write_lock_cannot_complete(self):
+        self.store.install(CREDENTIALS, TOKENS)
+        claim = self.store.claim_refresh(1)
+        clock_called = Event()
+        results = []
+        def clock():
+            value = self.clock[0]
+            clock_called.set()
+            return value
+        def complete():
+            try:
+                results.append(self.store.complete_refresh(claim, ROTATED))
+            except Exception as error:
+                results.append(error)
+        self.store._clock = clock
+        conn = sqlite3.connect(str(self.path))
+        worker = Thread(target=complete, daemon=True)
+        try:
+            conn.execute('BEGIN IMMEDIATE')
+            worker.start()
+            self.assertTrue(clock_called.wait(2))
+            self.clock[0] = 1030
+        finally:
+            conn.close()
+        worker.join(5)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(results, [False])
+        self.assertEqual(self.store.snapshot().state, 'reauth')
+        self.assertEqual(self.store.snapshot().tokens, None)
+
+    def test_invalid_post_lock_clock_rolls_back_without_consuming_credentials(self):
+        self.store.install(CREDENTIALS, TOKENS)
+        before = self.path.read_bytes()
+        times = iter((1000, math.nan))
+        self.store._clock = lambda: next(times)
+        with self.assertRaisesRegex(AuthError, '^invalid_store_clock$'):
+            self.store.claim_refresh(1)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(self.reopen().snapshot().tokens, TOKENS)
 
     def test_roundtrip_permissions_and_provider_isolation(self):
         sentinel = self.profile / 'trakt' / 'tokens.sqlite3'

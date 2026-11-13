@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the dependency and manifest validation batch after 0.13 (video add-on 0.13.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.14 storage batch (video add-on 0.14.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -32,7 +32,7 @@ provider or release choice. The current public add-on remains synthetic.
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
 | T05 | Live Trakt read views | Pending | Enable after registration, transport and device checks |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
-| T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache implemented; shared request limits implemented/inactive (0.9); persistent cache decision pending | Validate shared limits on TV; decide retention/invalidation and measure TV load times before live wiring |
+| T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache implemented; shared request limits implemented/inactive (0.9), persistence guards hardened (0.14); persistent cache decision pending | Validate shared limits on TV; decide retention/invalidation and measure TV load times before live wiring |
 | T08 | Wider public Trakt application access | Pending external approval | Service registration/Production requirements and current terms review |
 
 ## Real-Debrid
@@ -41,7 +41,7 @@ provider or release choice. The current public add-on remains synthetic.
 |---|---|---|---|
 | D01 | Open-source device authorization and refresh contracts | Mocked/inactive | Register application; verify exact pending-authorization response on device; no bundled shared secret |
 | D02 | Account/download/link-resolution contracts | Mocked/inactive | Validate service responses/entitlement with own account on TV; no title catalogue or discovery claim |
-| D03 | Separate private credential store and durable refresh claims | Mocked/inactive (0.8) | Private SQLite and account-generation tests; actual Android permissions and recovery pending |
+| D03 | Separate private credential store and durable refresh claims | Mocked/inactive; lock deadlines and persistence guards hardened (0.14) | Private SQLite and account-generation tests; actual Android permissions and recovery pending |
 | D04 | Fixed-host bounded HTTPS/form transport | Mocked/inactive (0.8) | Injected connection tests; actual TLS/DNS/cancellation behavior pending |
 | D05 | Session/login/refresh/read/resolve coordination | Mocked/inactive (0.8) | Joined store/transport tests and stale-response rejection; live activation pending |
 | D06 | Real account UI and activation | Assembly, flow and dialog adapter inactive (0.12); live menu pending | Wire only after D01–D05 validation; cross-device quota coordination and disconnect/revocation UX remain |
@@ -61,7 +61,7 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.13 publication and HTTP integrity verified | No package change in this batch; cloud checks do not prove TV installation |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.13 publication and HTTP integrity verified | 0.14 publication follows merge; cloud checks do not prove TV installation |
 | R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.13 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
@@ -72,27 +72,21 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current combined batch: dependencies and manifest validation
+## Current combined batch: 0.14 storage boundaries
 
-Parallel scope: verify GitHub dependency-graph detection, validate declared Python
-inventory pins/hashes before CI installation, and tighten the source video manifest
-contract. The existing requirements files and workflow manifests are already
-recognized by GitHub; no dependency-graph configuration file or automatic-update
-PR configuration is needed. See [dependency inventory](dependencies.md).
+Parallel scope: harden Real-Debrid refresh and credential persistence, shared request
+limit persistence, and add service-level regressions. Claims cannot outlive their
+deadline while waiting for a database write lock. Later operations cannot silently
+recreate deleted stores, and incompatible schemas fail before changing valid state.
+Valid legacy stores retain the same schema and semantics. See
+[storage boundaries](storage-boundaries.md).
 
-The offline guard checks declarations and consistency, not transitive dependency
-resolution, package provenance or advisory status. Existing security scans and
-Action-update discovery remain separate. The official Kodi checker remains blocked
-on secure/offline input and repository schema compatibility; stronger project checks
-must not be described as a full checker pass.
-
-No runtime, archive or version changes are included. Video 0.13.0 and repository
-0.2.0 remain current. The previous batch deployed from merge commit
-`50047325a8ee3ec02d705770bb83948f66609649`;
-[publication run](https://github.com/susanto-dev/homefx/actions/runs/43354769976)
-passed build, deployment and hosted-byte verification. All seven prior records and
-archive bytes remain unchanged. Live accounts, playback and scrobbling are inactive;
-TV installation and update acceptance remain pending.
+The previous batch deployed video 0.13.0 and repository 0.2.0 from merge commit
+`a7fb4fbe1639a32de4f56f3dbc57b77e552ca234`;
+[publication run](https://github.com/susanto-dev/homefx/actions/runs/43356354268)
+passed build, deployment and hosted-byte verification. This batch prepares video
+0.14.0 and preserves all seven prior archive records and bytes. Live accounts,
+playback and scrobbling are inactive; TV acceptance remains pending.
 
 ## External inputs and decisions
 
