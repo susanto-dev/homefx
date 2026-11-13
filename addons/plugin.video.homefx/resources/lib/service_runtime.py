@@ -84,12 +84,13 @@ def _profile(profile, provider):
     for database in files:
         for suffix in ("", "-journal", "-wal", "-shm"):
             target = Path(str(database) + suffix)
-            if target.is_symlink():
+            try:
+                info = target.lstat()
+            except FileNotFoundError:
+                continue  # Initial database creation and transient sidecar removal.
+            links = (0, 1) if suffix else (1,)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink not in links:
                 raise SetupError("invalid_runtime_profile")
-            if target.exists():
-                info = target.stat()
-                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                    raise SetupError("invalid_runtime_profile")
     return path
 
 

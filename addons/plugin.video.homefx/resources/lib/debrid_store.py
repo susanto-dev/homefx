@@ -140,7 +140,10 @@ class CredentialStore:
                 if require_file and path == self._path:
                     raise
                 continue
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            # A normal SQLite commit can unlink a sidecar during stat lookup.
+            # The mandatory database must still exist with exactly one link.
+            links = (1,) if path == self._path else (0, 1)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink not in links:
                 raise OSError()
 
     def _connect(self):

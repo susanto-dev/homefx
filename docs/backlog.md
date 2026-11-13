@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.14.1 publication repair (video add-on 0.14.1, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.14.2 sidecar follow-up (video add-on 0.14.2, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -61,8 +61,8 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.13 publication and HTTP integrity verified | 0.14 publication failed before deploy; 0.14.1 repair pending merge and successful publication |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.13 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.14.1 publication and HTTP integrity verified | 0.14.1 repair deployed successfully; 0.14.2 pending review/merge/publication |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.14.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -72,20 +72,20 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current focused batch: 0.14.1 publication repair
+## Current focused batch: 0.14.2 shared sidecar lifecycle
 
-Both post-merge Python 3.12 validation and preview build failed in the concurrent
-preferences test at `e33edc02e72dbc52df058a7ac76bc0948baa2a5f`. The preference
-filesystem guard rejected normal SQLite journal unlink/recreation between path
-inspection and descriptor validation. The repair distinguishes transient sidecars
-from the mandatory database while preserving private-file, link, size and schema
-checks. Deterministic regressions and the existing multi-process test cover this.
+The 0.14.1 repair is published: post-merge Python validation, deployment and hosted
+verification passed at `1ad8df1f50111cc0d8a2c155b3cae030f9bbb83a`. Direct HTTP
+checks confirm the current index and matching root/repository ZIP hashes. See
+[publication evidence](releases.md).
 
-The failed preview run did not deploy 0.14.0. Direct HTTP inspection still found
-video 0.13.0/repository 0.2.0 hosted. The repaired current video version is 0.14.1;
-all eight prior archive records, including superseded 0.14.0, remain unchanged.
-See [publication evidence and consequences](releases.md). No feature work or live
-account, playback, write or scrobbling activation is included.
+The follow-up corrects the same transient-journal stat assumption in Trakt tokens,
+Real-Debrid credentials, shared request limits and their factory preflight. Real SQLite commit regressions
+cover existing-instance reads and constructor reopen, while mandatory databases
+and unsafe sidecars remain rejected. No live services or features are activated.
+Video 0.14.2 preserves all nine prior archive records and bytes; publication remains
+conditional on review, merge and the ordinary successful workflow. TV acceptance
+and the existing account/service gates remain open.
 
 ## External inputs and decisions
 
