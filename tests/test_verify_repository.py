@@ -42,7 +42,8 @@ class VerificationTests(unittest.TestCase):
 
     def rewrite_zip(self, change):
         inventory = self.inventory()
-        item = next(i for i in inventory["packages"] if i["id"] == "plugin.video.homefx")
+        item = next(i for i in inventory["packages"] if i["id"] == "plugin.video.homefx"
+                    and i["version"] == package.validate())
         target = self.candidate / item["path"]
         with ZipFile(target) as archive:
             contents = {entry.filename: archive.read(entry) for entry in archive.infolist()}
@@ -65,6 +66,48 @@ class VerificationTests(unittest.TestCase):
         self.assertEqual(result["retained"], 0)
         self.assertEqual(result["current"]["plugin.video.homefx"], package.validate())
         self.assertEqual(before, snapshot())
+
+    def test_preview_channel_is_explicit_and_read_only(self):
+        preview = repository.build(self.root / "preview", channel="preview")
+        before = repository._tree_bytes(preview)
+        self.assertEqual(verifier.verify(preview, channel="preview")["packages"], 2)
+        self.assertEqual(before, repository._tree_bytes(preview))
+        with self.assertRaises(verifier.VerificationError):
+            verifier.verify(preview)
+        with self.assertRaises(verifier.VerificationError):
+            verifier.verify(self.candidate, channel="preview")
+        for value in (None, [], True, "live"):
+            with self.subTest(channel=value), self.assertRaises(verifier.VerificationError):
+                verifier.verify(preview, channel=value)
+
+    def test_preview_notice_extra_candidate_notice_and_corruption_are_rejected(self):
+        for mutation in ("notice", "extra", "index", "package"):
+            with self.subTest(mutation=mutation):
+                preview = repository.build(self.root / mutation, channel="preview")
+                if mutation == "notice":
+                    (preview / "CHANNEL.txt").write_text("Stable production channel")
+                elif mutation == "extra":
+                    (preview / "CANDIDATE.txt").write_text(repository.CANDIDATE_NOTICE)
+                elif mutation == "index":
+                    (preview / "addons.xml").write_bytes(b"changed")
+                else:
+                    target = next(preview.rglob("*.zip"))
+                    target.write_bytes(target.read_bytes() + b"changed")
+                with self.assertRaises(verifier.VerificationError):
+                    verifier.verify(preview, channel="preview")
+
+    def test_preview_current_package_completeness_and_retention_are_preserved(self):
+        self.retained_candidate()
+        retained_inventory = self.candidate / "release-inventory.json"
+        self.candidate = repository.build(self.root / "preview-retained",
+                                           retain_manifest=retained_inventory, channel="preview")
+        self.assertEqual(verifier.verify(self.candidate, channel="preview")["retained"], 1)
+        runtime = next(name for name in package.FILES
+                       if name.startswith("resources/lib/") and name.endswith(".py")
+                       and not name.endswith("__init__.py"))
+        self.rewrite_zip(lambda contents: contents.pop("plugin.video.homefx/" + runtime))
+        with self.assertRaises(verifier.VerificationError):
+            verifier.verify(self.candidate, channel="preview")
 
     def test_index_checksum(self):
         (self.candidate / "addons.xml").write_bytes(b"changed")

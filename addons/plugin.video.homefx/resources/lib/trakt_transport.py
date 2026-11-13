@@ -12,6 +12,7 @@ import math
 import re
 import ssl
 import time
+import unicodedata
 from urllib.parse import parse_qsl, urlsplit
 
 from .trakt_client import ApiError, Response
@@ -139,11 +140,12 @@ class Transport:
 
     connection_factory is a test seam with HTTPSConnection's signature. Production
     callers must use the default; custom factories are trusted code, not input.
+    rate_limits is an optional trusted shared limiter; no store is created by default.
     The default total budget is shorter than the token store's refresh-claim TTL.
     """
     def __init__(self, timeout=10, total_timeout=30, max_bytes=2 * 1024 * 1024,
                  cancelled=lambda: False, clock=time.monotonic,
-                 connection_factory=http.client.HTTPSConnection):
+                 connection_factory=http.client.HTTPSConnection, rate_limits=None):
         for value in (timeout, total_timeout):
             if (type(value) not in (int, float) or not 0 < value <= 60
                     or not math.isfinite(value)):
@@ -152,6 +154,10 @@ class Transport:
                 or not callable(cancelled) or not callable(clock)
                 or not callable(connection_factory)):
             raise TransportError("invalid_configuration")
+        if rate_limits is not None and not all(
+                callable(getattr(rate_limits, name, None)) for name in ("reserve", "observe")):
+            raise TransportError("invalid_configuration")
+        self._rate_limits = rate_limits
         self._timeout, self._total, self._max_bytes = timeout, total_timeout, max_bytes
         self._cancelled, self._clock, self._factory = cancelled, clock, connection_factory
 
@@ -214,32 +220,48 @@ class Transport:
 
     @staticmethod
     def _api_path(path):
-        if not _text(path, 2048) or not path.startswith("/") or path.startswith("//") or any(c in path for c in "%\\#"):
+        if (not _text(path, 2048) or not path.startswith("/") or path.startswith("//")
+                or any(c in path for c in "\\#")):
             raise TransportError("invalid_request")
         parsed = urlsplit(path)
-        if parsed.scheme or parsed.netloc or parsed.fragment:
+        if parsed.scheme or parsed.netloc or parsed.fragment or "%" in parsed.path:
             raise TransportError("invalid_request")
         slug = r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}"
         allowed = (r"/users/me/lists", r"/users/likes/lists", r"/users/settings",
                    r"/users/me/watched/movies",
                    r"/users/" + slug + r"/lists/" + slug + r"/items",
                    r"/sync/playback", r"/shows/[1-9][0-9]{0,19}/progress/watched",
-                   r"/shows/[1-9][0-9]{0,19}/seasons/[0-9]{1,5}")
+                   r"/shows/[1-9][0-9]{0,19}/seasons/[0-9]{1,5}",
+                   r"/search/(?:movie|show)", r"/movies/[1-9][0-9]{0,19}/related")
         if not any(re.fullmatch(pattern, parsed.path) for pattern in allowed):
             raise TransportError("invalid_request")
-        if parsed.path == "/users/me/watched/movies" and parsed.query:
+        searching = parsed.path in {"/search/movie", "/search/show"}
+        related = bool(re.fullmatch(r"/movies/[1-9][0-9]{0,19}/related", parsed.path))
+        if (parsed.path == "/users/me/watched/movies" and parsed.query
+                or not searching and "%" in parsed.query
+                or re.search(r"%(?![0-9A-Fa-f]{2})", parsed.query)):
             raise TransportError("invalid_request")
         try:
-            # Python 3.8 strict parsing rejects an empty query; it means no fields.
             query = (parse_qsl(parsed.query, keep_blank_values=True, strict_parsing=True,
-                               max_num_fields=6) if parsed.query else [])
+                               max_num_fields=6, errors="strict") if parsed.query else [])
         except ValueError:
             raise TransportError("invalid_request") from None
-        if len(dict(query)) != len(query):
+        fields = dict(query)
+        if len(fields) != len(query):
+            raise TransportError("invalid_request")
+        if searching and (set(fields) != {"query", "fields", "page", "limit"}
+                          or fields["fields"] != "title"
+                          or not 1 <= len(fields["query"]) <= 256
+                          or not fields["query"].strip()
+                          or any(unicodedata.category(c).startswith("C") for c in fields["query"])):
+            raise TransportError("invalid_request")
+        if related and set(fields) != {"page", "limit"}:
             raise TransportError("invalid_request")
         for key, value in query:
             if key in {"page", "limit"}:
                 valid = bool(re.fullmatch(r"[1-9][0-9]{0,2}", value)) and int(value) <= 100
+            elif searching:
+                valid = key in {"query", "fields"}
             else:
                 valid = (key, value) in {("extended", "full"), ("hidden", "false"), ("specials", "false")}
             if not valid:
@@ -249,6 +271,13 @@ class Transport:
         connection = response = None
         try:
             deadline = _Deadline(self._timeout, self._total, self._clock, self._cancelled)
+            deadline.remaining()
+            if self._rate_limits is not None:
+                wait = self._rate_limits.reserve()
+                if type(wait) is not int or not 0 <= wait <= 3600:
+                    raise TransportError("transport_failed")
+                if wait:
+                    return Response(429, {"retry-after": str(wait)}, None)
             context = ssl.create_default_context()
             connection = self._factory(host, port=443, timeout=deadline.remaining(), context=context)
             connection.connect()
@@ -284,6 +313,8 @@ class Transport:
                         encoding = value
                     else:
                         safe[key] = value
+            if self._rate_limits is not None:
+                self._rate_limits.observe(response.status, safe)
             if 300 <= response.status < 400:
                 raise TransportError("redirect_refused")
             if response.status not in success_statuses:

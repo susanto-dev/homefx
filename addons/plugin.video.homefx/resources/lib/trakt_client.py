@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 import re
+import unicodedata
 from urllib.parse import urlencode
 
 API_HOST = "https://api.trakt.tv"
@@ -53,6 +54,49 @@ def _positive_id(value):
     return value
 
 
+def search_arguments(query, kind="movie"):
+    """Validate a literal title query before any authenticated work."""
+    if (not isinstance(kind, str) or kind not in {"movie", "show"} or
+            not isinstance(query, str) or not 1 <= len(query) <= 128 or
+            any(unicodedata.category(c).startswith("C") for c in query)):
+        raise ApiError("invalid_search")
+    query = query.strip()
+    if not query:
+        raise ApiError("invalid_search")
+    return query, kind
+
+
+def metadata_id(value):
+    if type(value) is not int or not 1 <= value < 2 ** 63:
+        raise ApiError("invalid_identifier")
+    return value
+
+
+def metadata_rows(items, kind, wrapped=False):
+    """Project basic title metadata without inferring release or watched state."""
+    if not isinstance(items, list) or len(items) > 10000:
+        raise ApiError("invalid_metadata")
+    rows, seen = [], set()
+    for item in items:
+        if not isinstance(item, dict):
+            raise ApiError("invalid_metadata")
+        if wrapped and item.get("type") != kind:
+            raise ApiError("invalid_metadata")
+        media = item.get(kind) if wrapped else item
+        if not isinstance(media, dict) or not isinstance(media.get("ids"), dict):
+            raise ApiError("invalid_metadata")
+        ident = metadata_id(media["ids"].get("trakt"))
+        title, year = media.get("title"), media.get("year")
+        if (ident in seen or not isinstance(title, str) or not title.strip() or
+                len(title) > 1024 or any(unicodedata.category(c).startswith("C") for c in title) or
+                (year is not None and (type(year) is not int or not 1 <= year <= 9999))):
+            raise ApiError("invalid_metadata")
+        seen.add(ident)
+        rows.append({"kind": kind, "trakt_id": ident, "title": title, "year": year,
+                     "watched": None, "release_status": "unknown", "playable": False})
+    return rows
+
+
 def retry_delay(headers, now=None):
     """Return a bounded UI delay, never sleep or retry a request automatically."""
     raw = {str(k).lower(): v for k, v in headers.items()}.get("retry-after", "")
@@ -85,6 +129,21 @@ class Client:
         self._request = request
         self._client_id, self._token = client_id, access_token
         self.page_size, self.max_pages, self.max_items = page_size, max_pages, max_items
+
+    def search_titles(self, query, kind="movie"):
+        query, kind = search_arguments(query, kind)
+        # Trakt documents backslash escaping for literal search operators.
+        operators = set('+ -&|!(){}[]^"~*?:/\\'.replace(' ', ''))
+        literal = ''.join(('\\' + c) if c in operators else c for c in query)
+        rows = self._pages("/search/" + kind + "?" + urlencode({"query": literal, "fields": "title"}))
+        metadata_rows(rows, kind, wrapped=True)
+        return rows
+
+    def related_movies(self, trakt_id):
+        trakt_id = metadata_id(trakt_id)
+        rows = self._pages("/movies/" + str(trakt_id) + "/related")
+        metadata_rows(rows, "movie")
+        return rows
 
     def _get(self, path):
         headers = {"Authorization": "Bearer " + self._token,

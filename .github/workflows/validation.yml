@@ -28,17 +28,36 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python }}
       - name: Install build dependency
-        run: python -m pip install -r tools/build-requirements.txt
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r tools/build-requirements.txt -r tools/quality-requirements.txt
+      - name: Check Python correctness
+        run: python tools/check_quality.py
+      - name: Protect published release history
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT_NAME" in
+            pull_request) base="$PR_BASE" ;;
+            push) base="$PUSH_BEFORE" ;;
+            workflow_dispatch) base="$(git rev-parse HEAD^)" ;;
+            *) exit 1 ;;
+          esac
+          python tools/release_history.py releases/inventory.json --base-ref "$base"
       - name: Test synthetic behavior
         run: python -m unittest discover -s tests -v
       - name: Validate package and preview site
         run: python tools/build_site.py
+      - name: Verify embedded preview repository
+        run: python tools/verify_repository.py dist/site/repository --channel preview
       - name: Build inactive repository candidate
-        run: python tools/repository.py
+        run: python tools/repository.py --retain-manifest releases/inventory.json
       - name: Verify candidate before upload
         run: python tools/verify_repository.py dist/repository
       - name: Check reproducible release output

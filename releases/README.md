@@ -1,0 +1,17 @@
+# Reviewed release archives
+
+`inventory.json` pins archive identity, version, relative path and SHA-256. Keep every
+record and its original bytes once merged. Add current package records after final
+runtime changes; the history guard compares fresh builds and the review base.
+
+The initial retained video 0.8.0 archive was rebuilt from merged source commit
+`ce924ffde917dc68fabababecdea048016d57214` before the 0.9 changes. Its SHA-256 is
+`3b4503f0203eb15bddb488f66918a4b48e63dbc8f18bdf73ef8fff31e3d37617`.
+It is a reviewed predecessor, not a claim of successful TV installation or playback.
+The initial current archives are video 0.9.0 and repository 0.2.0, generated from
+this change's final runtime source with the reviewed deterministic builder.
+
+All packages contain the existing original-code MIT notice. No upstream add-on,
+skin or artwork has been incorporated. No profile, credentials or live account data
+belongs in this directory. See [release policy](../docs/releases.md) for bounds,
+publication, device acceptance and recovery; retaining a ZIP does not trigger a downgrade.

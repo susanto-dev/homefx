@@ -4,10 +4,12 @@ Start with Python 3.8-compatible syntax, the standard library, and a virtual
 environment if desired. The inspected cloud host runs Python 3.12; the TV's exact
 embedded interpreter must still be recorded. Build tools require defusedxml 0.7.1
 to reject unsafe XML. It is development-only; the Kodi add-on still uses no
-third-party Python packages. Optional lint tools are not required or claimed as run.
+third-party Python packages. Ruff 0.17.4 provides a pinned, read-only correctness check; it is also development-only.
 
 ```sh
-python3 -m pip install -r tools/build-requirements.txt
+python3 -m pip install --require-hashes -r tools/build-requirements.txt
+python3 -m pip install --require-hashes --only-binary=:all: -r tools/quality-requirements.txt
+python3 tools/check_quality.py
 python3 -m unittest discover -s tests -v
 python3 tools/package.py
 python3 tools/repository.py
@@ -17,7 +19,8 @@ python3 tools/verify_repository.py dist/repository
 The package command parses XML, checks the entry point/API dependency/assets/licence,
 checks Python syntax against the 3.8 grammar, and creates an allowlisted ZIP with
 fixed timestamps plus a SHA-256 sidecar. It is a focused project validator, not the
-full Kodi add-on checker. Add that checker and a pinned linter in a later CI batch.
+full Kodi add-on checker. The official Kodi add-on checker remains an explicit coverage gap. Ruff checks
+Pyflakes F rules in addons and tools with a Python 3.8 target; it does not validate Kodi APIs.
 
 Pure catalogue/routing logic lives under resources/lib; only default.py imports
 Kodi modules. Tests use the standard-library unittest runner and synthetic fixtures.
@@ -28,16 +31,16 @@ contacting online services. The Kodi adapter does not enable either provider net
 transport and session tests use temporary SQLite stores and fabricated HTTP streams.
 Never use the cloud development environment or CI for real debrid account traffic.
 
-Future CI should use reviewed immutable Action pins, minimal read permissions,
-stable check names, and no service secrets on PRs. Release permissions must be
+CI uses reviewed immutable Action pins, minimal read permissions,
+stable check names, and no service secrets on PRs. Release permissions are
 separate. A scan that skipped files or failed is not a clean scan. The Pages workflow runs tests before building and deploying the preview.
 The separate Security scans workflow runs Bandit and pip-audit weekly and on
 changes; see security.md for coverage, manual triage and report retention.
 Secret scanning and repository security settings remain maintainer-managed.
 
 The Validation workflow runs the complete available unittest suite and builds the
-package/site on PRs and main pushes with Python 3.8 and 3.12. It installs only the
-pinned build dependency; the optional Action-audit suite runs separately in Security
+package/site on PRs and main pushes with Python 3.8 and 3.12. Build, quality and security dependencies are installed from pinned, hash-locked
+requirement files in their respective jobs. The Action-audit suite runs in Security
 scans with its audited tool environment. All new Actions use the existing reviewed
 commit pins. Validation has read-only permissions and does not deploy or create PRs.
 Python 3.8 is a compatibility floor, not a recommendation for a new desktop install;
@@ -53,8 +56,8 @@ The repository generator writes a local candidate under `dist/repository` (or
 `--output PATH`). It accepts a fresh directory or identical prior output, and refuses
 to overwrite differing content. Use a new output directory for a changed candidate;
 inspect before removing old build output. Validation uploads the Python 3.12 candidate
-as a seven-day artifact for manual review. It is separate from `dist/site` and is not
-an operational update channel. Never publish arbitrary CI artifacts as releases
+as a seven-day artifact for manual review. The candidate is separate from the experimental preview repository staged inside
+`dist/site/repository`, which the Pages workflow deploys after a reviewed main merge. Never publish arbitrary CI artifacts as releases
 without inspecting their source/head and completing the publication gates.
 
 Main is protected and accepts PRs only. Do not bypass branch protection or use direct
@@ -83,3 +86,27 @@ The release repeatability check runs `python tools/check_reproducibility.py`. It
 two temporary site/package/candidate trees and compares their paths and bytes; neither
 run writes to the ordinary dist output. This checks one source revision and local
 toolchain, not reproducibility between different platforms or toolchain versions.
+
+## Release history and deployed bytes
+
+For video 0.9.0 and repository 0.2.0, record both current ZIPs and every retained
+version in `releases/inventory.json`. Run
+`python tools/release_history.py releases/inventory.json --base-ref BASE_SHA`
+against the reviewed base; existing records cannot be removed or changed. Builders
+validate retained hashes, archive contents and exact current build bytes. Bounds
+fail closed rather than pruning old releases. See [release policy](releases.md).
+
+The site builder defaults to that inventory when present and embeds a verified preview
+repository plus matching root bootstrap/video downloads. Use fresh output directories
+for changed builds. No skin is bundled. The existing skin's widget behavior remains
+a device acceptance item, as do repository installation and updates.
+
+After Pages deployment, `python tools/check_published.py PATH_TO_EXTRACTED_SITE`
+compares the exact deployed build artifact with public HTTPS responses. Do not rebuild
+the expected files for this check. HTTP integrity is independent of TV acceptance;
+CI must not label live accounts, navigation or playback as passed.
+
+Hash locks restrict accepted dependency artifacts, not all supply-chain risk. Refresh
+pins and hashes together after manual review; weekly dependency/Action discovery does
+not create update PRs. Install security tooling with
+`python -m pip install --require-hashes -r tools/security-requirements.txt`.

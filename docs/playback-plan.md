@@ -1,6 +1,6 @@
 # Real-Debrid and playback
 
-Real-Debrid is part of HomeFX's plan. The 0.8 preview adds inactive provider storage/transport/session foundations and a
+Real-Debrid is part of HomeFX's plan. The 0.9 preview retains inactive provider storage/transport/session foundations and a
 setup information screen; it does not sign in, resolve a real source or start Kodi's
 player. Existing widgets and the installed skin remain the browsing surface.
 
@@ -13,15 +13,17 @@ player. Existing widgets and the installed skin remain the browsing surface.
 | Real-Debrid | Account authorization and resolution of supplied supported links | Original injected contracts tested with fabricated responses |
 | Playback coordinator | Keep metadata separate from source, check cancellation/account state and call a player adapter once | Inactive mocked contract |
 | Kodi player | Actual audiovisual playback, subtitles and seek/resume | Device validation pending |
-| Umbrella adapter option | Possible alternate playback handoff | No verified callable interface or device pass |
+| Umbrella adapter option | Possible alternate playback handoff | Pinned source routes/licence inspected; no supported external contract or device pass |
 
 A title ID, air date, paused record or list entry is not evidence of a playable
 source. An account download list is not a title catalogue. Do not match a filename
 to a title and silently assume identity. Do not silently fall back between providers.
 
-Retain the Umbrella experiment as a candidate first live path. Inspect the installed
-version's supported interface and exact source licence before implementing an adapter;
-then test a movie and episode, cancellation, subtitles, resume and return navigation.
+Retain the Umbrella experiment as a candidate first live path. The
+[feasibility investigation](umbrella-feasibility.md) records the exact upstream source
+revision, GPLv3 declaration and observed candidate routes. No source/assets were copied.
+Verify the installed version/provenance and its supported interface before implementing
+an adapter; then test a movie and episode, cancellation, subtitles, resume and return navigation.
 If that handoff is unsuitable, the direct Real-Debrid path starts with an explicitly
 supplied authorized host link. Source discovery and automatic title-to-source matching
 need a separate reviewed design. Neither route has been selected as proven.

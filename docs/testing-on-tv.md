@@ -1,11 +1,16 @@
-# TV acceptance — preview 0.8.0
+# TV acceptance — preview 0.9.0
 
 Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout.
 Record device, embedded Python, skin and widget-configuration component versions,
 package SHA-256, steps, expected/observed behavior and elapsed load times.
 
-1. Transfer the locally built ZIP to the TV. In Kodi, use Add-ons → Install from
-   zip file. Review any Unknown sources prompt; no repository is installed by this ZIP.
+1. After the reviewed Pages deployment and HTTP check, use Kodi Settings → File
+   manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
+   Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
+   Review any Unknown sources prompt. Then use Install from repository → HomeFX
+   Preview Repository → Video add-ons → HomeFX Preview to install version 0.9.0.
+   If File manager listing fails, record it and transfer the repository ZIP manually.
+   The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks
    never start playback or ask for account credentials.
 3. Select demo widget lists. Deselect/reselect lists; confirm the root reflects it.
@@ -78,3 +83,21 @@ authorized sources and inactive provider integration, without asking for credent
 or starting media. Existing movie/episode clicks must still show demo information.
 There is no real account login or source input field to test in this version.
 Follow the separate [playback plan](playback-plan.md) before any future live experiment.
+
+## Experimental repository acceptance (0.2.0 repository / 0.9.0 video)
+
+Status: NOT RUN. Record the deployed revision, exact ZIP checksums and the HTTP-check
+result separately from device observations. Confirm Kodi can browse the source URL,
+install the repository bootstrap, refresh its index and install the video add-on.
+No skin package is supplied; keep the existing skin installed separately.
+
+Using a disposable test profile, verify an upgrade from a retained reviewed version
+preserves selected demo lists, local overrides and saved widget routes. Confirm the
+index advertises only the current versions and that older ZIPs remain available at
+their immutable paths. Test offline/error behavior and checksum rejection only with
+controlled local test artifacts; never alter the public channel to simulate corruption.
+A manual downgrade requires a separate profile-compatibility check and is not automatic.
+
+Do not mark this section passed because a build, deployment or HTTP check succeeded.
+Live accounts, real title recommendations, playable sources, next-episode playback,
+subtitles, resume and scrobbling remain deferred pending their separate activation gates.

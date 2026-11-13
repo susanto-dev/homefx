@@ -1,8 +1,11 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx supplies the synthetic preview. repository.homefx is a local
-candidate only, with no hosted update channel. A separate skin component is deferred. A skin fork requires a demonstrated limitation first.
+plugin.video.homefx 0.9.0 supplies the synthetic preview. repository.homefx 0.2.0
+provides the experimental repository-first installation contract. The 0.9 batch
+prepares its Pages publication on merge; successful deployment and TV install/update
+behavior remain separate acceptance gates. A separate skin component is deferred
+until a demonstrated limitation requires one.
 
 The preview boundary is: Kodi adapter → pure route/catalogue logic → invented data.
 Demo selected lists, saved movie IDs and watched overrides live in the add-on
@@ -24,9 +27,9 @@ are configured separately and are not automatically removed when a list is desel
 Changing route names later requires considering existing saved widget paths.
 
 Widget header clickability and context-menu behavior are skin/device-dependent.
-Folder access through the HomeFX root is the baseline fallback. Real metadata
-provider choice, persistent data caching, live authentication, and playback remain
-deferred.
+Folder access through the HomeFX root is the baseline fallback. Inactive Trakt search and related-movie contracts now supply a candidate metadata
+path; live UI integration, persistent data caching, authentication and playback
+remain deferred.
 
 ## Inactive Trakt foundations
 
@@ -132,3 +135,29 @@ The session uses local generation checks for playback guards. Those checks do no
 perform refresh/network operations. Real dispatch still needs an atomic player-side
 account/cancellation check and cross-invocation ownership. The new transport contacts
 only the API host, never a resolved media URL; actual media networking remains separate.
+
+## Experimental distribution and metadata (0.9)
+
+The site build includes the repository bootstrap ZIP, current index and package
+hashes, plus reviewed retained release artifacts. Generation, independent verification
+and immutable release-history checks are distinct boundaries. Publishing the Pages
+artifact does not activate service accounts or prove Kodi installation. See
+[release instructions](releases.md) for endpoint, retention and rollback checks.
+
+Inactive Trakt title-search and related-movie methods share the authenticated,
+allowlisted read transport and account/revision guards. Normalized results retain
+unknown watch/release status and have no playback action; neither title IDs nor
+recommendations establish source availability. Results use the existing bounded
+invocation-memory cache, with no persistent search history. See
+[metadata contracts](metadata-contract.md) for input and pagination limits.
+
+Optional cross-invocation request limits use private SQLite reservations and shared
+429 cooldowns. Both inactive transports accept this guard before network I/O; no
+Kodi route constructs it. Limits coordinate one local profile, not multiple devices. Persistent
+metadata-cache retention/invalidation remains undecided. TV measurements must inform
+performance decisions instead of assuming cloud timings reflect the target device.
+
+The [Umbrella investigation](umbrella-feasibility.md) identifies source-observed
+candidate routes and GPLv3 evidence without importing implementation or assets.
+No playback adapter or installed-version compatibility claim follows from that
+inspection. Resume, next-episode behavior and scrobbling still need explicit ownership.

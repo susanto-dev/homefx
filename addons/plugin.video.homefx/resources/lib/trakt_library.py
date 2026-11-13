@@ -6,7 +6,7 @@ import json
 import time
 
 from .trakt_auth import AuthError, _number
-from .trakt_client import ApiError, ListRef
+from .trakt_client import ApiError, ListRef, search_arguments, metadata_id, metadata_rows
 from . import trakt_views
 from .trakt_preferences import PreferencesError, account_uuid
 
@@ -283,6 +283,28 @@ class Library:
             pauses = self._read("paused", expected_generation=generation,
                                 expected_revision=revision)
             rows = trakt_views.continued(pauses, now)
+            self._assert_view(generation, revision)
+            return rows
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def search_titles(self, query, kind="movie"):
+        """Literal title metadata in server relevance order; never widget-sorted."""
+        query, kind = search_arguments(query, kind)
+        return self._metadata_view("search_titles", (query, kind), kind, wrapped=True)
+
+    def related_movies(self, trakt_id):
+        """Default related titles, without personalized ranking or playback claims."""
+        return self._metadata_view("related_movies", (metadata_id(trakt_id),), "movie")
+
+    def _metadata_view(self, operation, args, kind, wrapped=False):
+        try:
+            generation = self._session.cache_key()
+            revision = self._data_revision()
+            source = self._read(operation, *args, expected_generation=generation,
+                                expected_revision=revision)
+            rows = metadata_rows(source, kind, wrapped=wrapped)
             self._assert_view(generation, revision)
             return rows
         except (AuthError, ApiError):

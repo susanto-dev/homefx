@@ -1,4 +1,4 @@
-"""Build a local Kodi repository candidate, never publish or download content.
+"""Build local Kodi repository artifacts, never publish or download content.
 
 Kodi 21.2 supports an explicitly verified index checksum and ZIP SHA-256 sidecar
 fallback when custom Content-SHA256 headers are absent. These hashes detect
@@ -27,24 +27,36 @@ MAX_CONTENT = 32 * 1024 * 1024
 MAX_INVENTORY = 64 * 1024
 MAX_RETAINED = 32
 MAX_RETAINED_BYTES = 64 * 1024 * 1024
-CANDIDATE_NOTICE = """HomeFX repository candidate — NOT AN ACTIVE UPDATE CHANNEL
+CANDIDATE_NOTICE = """HomeFX repository candidate — LOCAL REVIEW ARTIFACT
 
-These artifacts are for review and device-test preparation only. The HTTPS endpoint
-in repository.homefx is reserved and is not deployed by this build or the preview
-site. Installing the candidate repository ZIP does not establish a working channel.
+This build is for review and device-test preparation. Generation does not publish
+or install anything. Check the deployed endpoint separately; a local candidate is
+not evidence of a working channel or Kodi installation/upgrade compatibility.
 
-Before activation: retain immutable known-good versions, publish packages before
-updating the index, verify HTTPS paths, and test fresh installation and upgrades on
-Kodi 21.2/Android TV. No live installation, update or rollback is claimed here.
-
-addons.xml.sha256 is a verified Kodi change marker, not a signature or authenticity
-proof. ZIP SHA-256 sidecars support Kodi integrity checks and manual comparison;
-the hosting origin must still be trusted. Do not upload profiles, private configuration or credentials.
-
-Retained versions are copied only from an explicitly reviewed local inventory.
-The index advertises current builds only. Retention does not activate a downgrade;
-manual rollback and profile compatibility still require separate device validation.
+The index advertises current builds only. Retained versions come from an explicitly
+reviewed local inventory and do not activate a downgrade. SHA-256 checks establish
+integrity, not signatures or source approval. Never include profiles or credentials.
 """
+PREVIEW_NOTICE = """HomeFX experimental preview repository
+
+This directory is prepared for the HomeFX preview installation/update channel.
+It contains the synthetic video add-on and this repository add-on. No separate skin,
+real account connection, playable sources or playback integration is supplied.
+
+Generation does not publish or install anything. Actual Kodi 21.2/Android TV fresh
+installation, updates, offline behavior and rollback require device validation.
+Retained immutable versions do not trigger downgrades; the index advertises only
+current builds. SHA-256 checks establish integrity, not signatures or source approval.
+Never include profiles, private configuration or credentials in published artifacts.
+"""
+
+
+def channel_notice(channel):
+    """Return the exact local marker for an explicitly selected output channel."""
+    if type(channel) is not str or channel not in {"candidate", "preview"}:
+        raise ValueError("Invalid repository channel")
+    return (("CANDIDATE.txt", CANDIDATE_NOTICE) if channel == "candidate" else
+            ("CHANNEL.txt", PREVIEW_NOTICE))
 
 
 def _manifest(data, expected_id=None, expected_version=None):
@@ -327,8 +339,9 @@ def _tree_bytes(directory):
 
 
 def build(output=None, video_source=package.ADDON, repository_source=REPOSITORY,
-          retain_manifest=None):
+          retain_manifest=None, channel="candidate"):
     """Build fresh or verify an identical output tree; never overwrite stale files."""
+    notice_name, notice = channel_notice(channel)
     output = Path(output) if output is not None else ROOT / "dist/repository"
     video_source, repository_source = Path(video_source), Path(repository_source)
     repo_data, repo_version = _repository_manifest(repository_source)
@@ -351,7 +364,7 @@ def build(output=None, video_source=package.ADDON, repository_source=REPOSITORY,
         _retain(retained, staged, {"plugin.video.homefx": video_version,
                                    "repository.homefx": repo_version})
         _write_inventory(staged)
-        (staged / "CANDIDATE.txt").write_text(CANDIDATE_NOTICE, encoding="utf-8")
+        (staged / notice_name).write_text(notice, encoding="utf-8")
         if output.exists() or output.is_symlink():
             if _tree_bytes(output) != _tree_bytes(staged):
                 raise ValueError("Output differs; use a fresh output directory")
@@ -364,5 +377,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, help="Fresh or identical candidate directory")
     parser.add_argument("--retain-manifest", type=Path, help="Reviewed local release inventory")
+    parser.add_argument("--channel", choices=("candidate", "preview"), default="candidate")
     args = parser.parse_args()
-    print(build(args.output, retain_manifest=args.retain_manifest))
+    print(build(args.output, retain_manifest=args.retain_manifest, channel=args.channel))

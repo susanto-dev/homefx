@@ -48,6 +48,28 @@ class SessionTests(unittest.TestCase):
     def install(self, expires=5000):
         self.store.install(TokenSet("synthetic-access-old", "synthetic-refresh-old", expires))
 
+    def test_metadata_operations_are_guarded_reads(self):
+        self.install()
+        self.api_reply = lambda: Response(200, body=[])
+        self.assertEqual(self.session.read("search_titles", "Synthetic", "show"), [])
+        self.assertEqual(self.session.read("related_movies", 10), [])
+        self.assertEqual(len(self.api_calls), 2)
+        def replace_account():
+            self.install()
+            return Response(200, body=[])
+        self.api_reply = replace_account
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.read("related_movies", 10)
+
+    def test_bad_metadata_query_never_refreshes_expired_session(self):
+        self.install(expires=1001)
+        with self.assertRaises(ApiError):
+            self.session.read("search_titles", "\n")
+        with self.assertRaises(ApiError):
+            self.session.read("related_movies", True)
+        self.assertEqual(self.oauth_calls, [])
+        self.assertEqual(self.api_calls, [])
+
     def test_confirmed_login_and_disconnect_reject_stale_generation(self):
         self.install()
         stale = self.store.snapshot().generation
