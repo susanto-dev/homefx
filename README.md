@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.11.0
+## Current preview: 0.12.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
@@ -19,7 +19,7 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.11.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+Version 0.12.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
 account/session coordination, a cancellable account-flow controller, saved account-list
 preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is
@@ -80,3 +80,16 @@ metadata, plus upcoming episodes from Trakt's personal calendar. A show filter n
 that calendar; it does not guarantee a complete schedule for arbitrary selected lists.
 These contracts remain inactive for real accounts. See the [backlog](docs/backlog.md)
 for remaining activation, provider, playback and TV acceptance work.
+
+
+The 0.12 foundations assemble the Trakt and Real-Debrid components with shared request
+limits and add a reusable device-login dialog adapter. They remain inactive: the
+preview still shows synthetic data and does not offer live account connection or
+playback. Device registration, private storage, authorization and cancellation need
+actual TV validation before activation.
+
+
+For the next device check, run **Test private storage** from the HomeFX root. It uses
+synthetic temporary SQLite data after confirmation and reports private-file and
+cleanup results without exposing account data. See the [TV checklist](docs/testing-on-tv.md).
+This check does not connect accounts or prove live token storage/recovery.

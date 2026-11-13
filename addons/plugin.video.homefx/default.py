@@ -7,7 +7,7 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 import xbmcvfs
-from resources.lib import catalogue as model, state, routes, readiness
+from resources.lib import catalogue as model, state, routes, readiness, storage_probe
 
 
 def main():
@@ -103,6 +103,18 @@ def main():
                 lambda: xbmc.getInfoLabel("System.BuildVersion"),
                 lambda: xbmcaddon.Addon("plugin.video.umbrella").getAddonInfo("version"),
                 repository_version=repository_version))
+            return
+        if route == "storage_check":
+            if dialog.yesno("HomeFX — Test private storage",
+                            "Create and remove temporary synthetic SQLite files in the HomeFX profile? "
+                            "Existing account files will not be read or changed. "
+                            "No network, login or playback test will run."):
+                try:
+                    location = xbmcvfs.translatePath(addon.getAddonInfo("profile"))
+                    result = storage_probe.report(location)
+                except Exception:
+                    result = "Private storage self-check could not run. No success is established."
+                dialog.ok("HomeFX — Private storage result", result)
             return
         if route == "widget_setup":
             dialog.ok("HomeFX — Widget setup",
@@ -224,6 +236,7 @@ def main():
                 add("Trakt connection setup…", "setup", False)
                 add("Playback and Real-Debrid setup…", "playback_setup", False)
                 add("Device readiness", "readiness", False)
+                add("Test private storage…", "storage_check", False)
                 add("Reset demo data…", "reset", False)
         elif route == "seasons":
             for summary in model.seasons(items, key):

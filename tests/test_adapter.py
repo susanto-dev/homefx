@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / 'addons/plugin.video.homefx'
 sys.path.insert(0, str(ADDON))
-from resources.lib import routes, state
+from resources.lib import routes, state, storage_probe
 
 
 class Tag:
@@ -91,6 +91,33 @@ class AdapterTests(unittest.TestCase):
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             module.main()
+
+    def test_storage_check_cancel_does_not_access_profile_or_probe(self):
+        self.confirm = False
+        self.modules['xbmcvfs'].translatePath = lambda value: self.fail('Profile translation forbidden')
+        with patch.object(storage_probe, 'report', side_effect=AssertionError('Probe forbidden')), \
+                patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')):
+            self.run_route('storage_check')
+        self.assertEqual((self.rows, self.ends, self.commands, self.messages), ([], [], [], []))
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_storage_check_is_explicit_synthetic_and_before_profile_loading(self):
+        self.modules['xbmc'].Player = lambda: self.fail('Player forbidden')
+        with patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')), \
+                patch('socket.create_connection', side_effect=AssertionError('Network forbidden')):
+            self.run_route('storage_check')
+        self.assertIn('Overall: passed', self.messages[-1])
+        self.assertNotIn(self.temp.name, self.messages[-1])
+        self.assertEqual((self.rows, self.ends, self.commands), ([], [], []))
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_storage_check_only_in_root_and_rejects_extra_parameters(self):
+        self.run_route()
+        self.assertTrue(any('route=storage_check' in url for url, _, _ in self.rows))
+        self.run_route('widgets')
+        self.assertFalse(any('route=storage_check' in url for url, _, _ in self.rows))
+        with self.assertRaises(ValueError):
+            routes.parse('?route=storage_check&id=private')
 
     def test_readiness_without_profile_network_or_optional_kodi_information(self):
         with patch.object(state, 'load', side_effect=AssertionError('Profile read forbidden')), \

@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, urlencode
 BASE = "plugin://plugin.video.homefx/"
 ROUTES = {"home", "list", "show", "continue", "next", "upcoming", "search",
           "similar", "play", "watched", "select", "reset", "info", "sequence", "setup",
-          "collect", "readiness", "widgets", "seasons", "upcoming_movies", "playback_setup", "widget_setup"}
+          "collect", "readiness", "widgets", "seasons", "upcoming_movies", "playback_setup", "widget_setup", "storage_check"}
 LIST_FILTERS = {"all", "unwatched", "released_unwatched", "upcoming"}
 
 
@@ -31,10 +31,10 @@ def parse(query):
     # saved widget URLs working, without accepting absent IDs on title routes.
     if params.get("id") == "" and route in {
             "home", "continue", "next", "upcoming", "search", "select", "reset",
-            "setup", "readiness", "widgets", "upcoming_movies", "playback_setup", "widget_setup"}:
+            "setup", "readiness", "widgets", "upcoming_movies", "playback_setup", "widget_setup", "storage_check"}:
         del params["id"]
-    if route == "widget_setup" and params:
-        raise ValueError("Unexpected widget setup parameter")
+    if route in {"widget_setup", "storage_check"} and params:
+        raise ValueError("Unexpected setup parameter")
     if "filter" in params:
         choices = {"all", "aired_unwatched"} if route == "show" else LIST_FILTERS if route == "list" else set()
         if params["filter"] not in choices:

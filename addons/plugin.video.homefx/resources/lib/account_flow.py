@@ -1,8 +1,9 @@
 """Inactive, injected account interaction; no Kodi UI or network construction.
 
 The UI adapter implements confirm_replace(), show_code(code, url), close(), and
-confirm_disconnect(). The latter must explain that all local list choices are
-removed, without promising remote revocation. wait(seconds) must advance the
+confirm_disconnect(). The latter must describe provider-specific local cleanup:
+Trakt also removes local list choices; Real-Debrid removes its local grant. Neither
+promises remote revocation. wait(seconds) must advance the
 injected monotonic clock and return truthy on cancellation. Requests themselves
 must have transport timeouts: this controller cannot interrupt blocking I/O.
 """
@@ -10,6 +11,7 @@ from enum import Enum
 from math import isfinite
 
 from .trakt_auth import AuthError
+from .debrid_auth import AuthError as DebridAuthError
 
 
 class FlowResult(str, Enum):
@@ -35,7 +37,9 @@ class AccountFlow:
 
     disconnect_callback must accept expected_generation and return False when
     that generation no longer matches. Library.disconnect provides this contract.
-    Authorization means credentials were stored, not account/library verification.
+    Authorization means credentials were stored, not account/library verification
+    or provider entitlement. The same generation/timing protocol supports Trakt
+    and Real-Debrid; unknown provider refusal responses are never guessed pending.
     """
     def __init__(self, session, ui, wait, cancelled, clock, disconnect_callback,
                  max_seconds=600):
@@ -120,7 +124,7 @@ class AccountFlow:
                         break
         except _Stopped as stopped:
             result = stopped.result
-        except AuthError as error:
+        except (AuthError, DebridAuthError) as error:
             result = (FlowResult.SESSION_CHANGED if error.args == ("session_changed",)
                       else FlowResult.FAILED)
         except Exception:

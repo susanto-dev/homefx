@@ -1,7 +1,7 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx 0.11.0 supplies the synthetic preview. repository.homefx 0.2.0
+plugin.video.homefx 0.12.0 supplies the synthetic preview. repository.homefx 0.2.0
 provides the experimental repository-first installation contract. The 0.9 publication and hosted-byte verification passed. Each later release must
 pass its own publication checks; TV installation/update behavior remains a separate
 acceptance gate. A separate skin component is deferred
@@ -191,3 +191,18 @@ No persistent metadata cache or background polling is introduced.
 
 Detailed contracts: [resume enrichment](continue-contract.md),
 [personal calendars](calendar-contract.md), and [release proposals](release-preparation.md).
+
+
+## Explicit account assemblies and UI adapters (0.12)
+
+An optional factory layer joins existing private stores, shared request limits, fixed
+HTTPS transports and provider sessions. Trakt additionally receives its account-bound
+list preferences and library; mutation transport remains unconfigured. Construction
+may create private local databases but performs no provider request. No Kodi route
+constructs these assemblies.
+
+The account interaction controller handles both providers' known error types. The
+injected dialog adapter supplies confirmation, device-code display and bounded waits
+without importing Kodi or reading profiles. A future entry-point integration must
+supply real Kodi objects only after the existing activation gates. Cancellation and
+local credential deletion do not imply service-side revocation.

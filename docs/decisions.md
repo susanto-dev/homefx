@@ -221,3 +221,22 @@ quota. No live route or new provider is enabled by these contracts.
 Release preparation produces a verified local proposal for review. It does not overwrite
 checked-in releases, prune old archives, publish or install packages. Published identity,
 path and hash records remain immutable; current-version changes require a new version.
+
+## Explicit account assembly and interaction (0.12)
+
+Keep live entry-point routes disabled. Explicit development factories may create
+private local stores and assemble sessions, but construction must not log in,
+refresh, contact providers or expose credential values. Validate configuration before
+storage creation and attach shared provider limits to both transports. Trakt mutation
+requests remain unconfigured in this assembly.
+
+The common account interaction accepts both providers' known error types while
+preserving generation-safe replacement, cancellation and disconnect behavior. An
+unrecognized provider refusal is a failure; it is not guessed to mean pending or
+explicit denial. No application registration or entitlement is assumed.
+
+The dialog adapter receives Kodi-shaped objects from a future caller; it imports no
+Kodi modules and is not instantiated by the current entry point. Device codes are
+shown only in the intended private dialog. Provider-specific confirmations distinguish
+local deletion, saved Trakt choices and remote authorization. The adapter opens no URL
+or browser and does not replace real TV responsiveness and cleanup tests.
