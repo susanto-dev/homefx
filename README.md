@@ -30,9 +30,17 @@ persistence, TLS, login, refresh or playback. Live preview accounts remain inact
 
 The owner also confirmed that the registered Development public client ID and
 redirect match the configured variables. This is not service-side verification.
-The separate Development device-test build succeeded. Direct installation from the
-existing HomeFX source is prepared for the next checked Pages publication; its hosted
-ZIP and TV installation have not yet been verified. This does not enable public live routes.
+The separate Development test was published and installed directly from the HomeFX
+source on the TV. Its own synthetic storage check passed, and local status correctly
+reported disconnected. Connecting failed before any authorization code appeared;
+login, TLS and refresh acceptance remain incomplete.
+
+The **0.17.5 candidate** accepts Trakt's current exact activation address as well as
+the legacy address, and adds fixed failure diagnostics to the separate test. The
+compatibility bug is reproduced with fabricated responses; it is a plausible cause
+of the TV failure, not proof of that response. Version 0.17.4 remains the verified
+published preview until the candidate merges and publication checks pass. See the
+[bounded retry](docs/development-device-test.md#retry-after-the-0175-candidate-is-published).
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

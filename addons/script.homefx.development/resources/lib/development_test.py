@@ -84,11 +84,70 @@ def _no_api(*args, **kwargs):
     raise DevelopmentError("operation_not_available")
 
 
+class LoginDiagnostics:
+    """Invocation-only fixed labels; never retain bodies, codes or exception text."""
+    STAGES = {
+        "account": "local account preparation", "account_check": "local authorization state",
+        "device_request": "device code request", "device_response": "device response validation",
+        "grant_request": "token request", "grant_response": "token response validation",
+        "dialog": "authorization dialog", "waiting": "authorization wait",
+    }
+    CATEGORIES = {
+        "unavailable": "unavailable", "cancelled": "cancelled", "timeout": "timeout",
+        "invalid_response": "response rejected", "redirect_refused": "redirect refused",
+        "response_too_large": "response too large", "invalid_json": "response format rejected",
+        "transport_failed": "request unavailable (network, TLS or local request guard)",
+        "status": "request status rejected", "dialog": "code display unavailable",
+    }
+
+    def __init__(self):
+        self.stage, self.category, self.status = "account", "unavailable", None
+
+    def __repr__(self):
+        return "LoginDiagnostics(<fixed categories>)"
+
+    def request(self, callback, method, path, body):
+        device = path == "/oauth/device/code"
+        self.stage = "device_request" if device else "grant_request"
+        self.category, self.status = "unavailable", None
+        try:
+            response = callback(method, path, body)
+        except trakt_transport.TransportError as error:
+            if (len(error.args) == 1 and type(error.args[0]) is str
+                    and error.args[0] in self.CATEGORIES):
+                self.category = error.args[0]
+            raise
+        self.stage = "device_response" if device else "grant_response"
+        if type(response.status) is int and 100 <= response.status <= 599:
+            self.status = response.status
+            if response.status != 200:
+                self.category = "status"
+        return response
+
+    def report(self):
+        # Only enumerated literals and a bounded integer reach the result dialog.
+        stage = self.STAGES.get(self.stage, "unavailable")
+        category = self.CATEGORIES.get(self.category, "unavailable")
+        status = (str(self.status) if type(self.status) is int and 100 <= self.status <= 599
+                  else "unavailable")
+        return ("\nLast stage: " + stage + "\nCategory: " + category + "\nResponse status: " + status
+                + "\nA status may come from a local request limit; it does not prove service access.")
+
+
+class DiagnosticSession(trakt_session.Session):
+    def begin_login(self, expected_generation=None):
+        self.diagnostics.stage = "account"
+        prompt = super().begin_login(expected_generation=expected_generation)
+        self.diagnostics.stage = "account_check"
+        return prompt
+
+
 @dataclass(repr=False)
 class Runtime:
     store: object = field(repr=False)
     session: object = field(repr=False)
     oauth: object = field(repr=False)
+    diagnostics: object = field(default=None, repr=False)
 
     def __repr__(self):
         return "DevelopmentRuntime(<private connection>)"
@@ -101,13 +160,28 @@ def assemble(profile, config, cancelled, *, clock=time.time, monotonic=time.mono
     transport = trakt_transport.Transport(cancelled=cancelled, rate_limits=limits,
         clock=monotonic, connection_factory=connection_factory)
     store = trakt_tokens.TokenStore(profile, clock=clock)
-    session = trakt_session.Session(store, transport.oauth_request, _no_api,
+    diagnostics = LoginDiagnostics()
+    def request(method, path, body):
+        return diagnostics.request(transport.oauth_request, method, path, body)
+    session = DiagnosticSession(store, request, _no_api,
                                     config["client_id"], config["redirect_uri"],
                                     clock=clock, monotonic=monotonic)
-    return Runtime(store, session, transport.oauth_request)
+    session.diagnostics = diagnostics
+    return Runtime(store, session, request, diagnostics)
 
 
 class TestUI(AccountUI):
+    diagnostics = None
+
+    def show_code(self, code, url):
+        if self.diagnostics is not None:
+            self.diagnostics.stage = "dialog"
+            self.diagnostics.category = "dialog"
+        super().show_code(code, url)
+        if self.diagnostics is not None:
+            self.diagnostics.stage = "waiting"
+            self.diagnostics.category = "unavailable"
+
     def confirm_disconnect(self):
         return self._confirm(
             "Remove credentials for this Development test scope only? The public HomeFX "
@@ -120,7 +194,7 @@ def _consent(action):
         return ("Start a Development Trakt login on this TV? This contacts Trakt and can store "
                 "unencrypted tokens in this test add-on's private profile. Other code running "
                 "as Kodi and profile backups may access them. No lists or history will be read. "
-                "Authorize only at https://trakt.tv/activate on your own device; never share codes. "
+                "Use only the trusted Trakt activation address shown on your own device; never share codes. "
                 "Public HomeFX remains inactive.")
     if action == 3:
         return ("Test one live refresh rotation? This consumes the stored refresh token. "
@@ -202,6 +276,7 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
                 state = runtime.session.status()["state"]
                 outcome = "Local status: " + STATES.get(state, "unavailable") + ". No network test was run."
             else:
+                ui.diagnostics = runtime.diagnostics
                 flow = AccountFlow(runtime.session, ui, ui.wait, ui.cancelled,
                                    clock, runtime.session.disconnect)
                 result = flow.connect() if action == 2 else flow.disconnect()
@@ -209,7 +284,12 @@ def run(addon, dialog, progress_factory, monitor, translate_path, *,
                 if action == 4:
                     outcome += " Local deletion is not remote revocation or backup erasure."
                 else:
-                    outcome += " Authorization does not validate refresh, lists or public preview activation."
+                    if result == FlowResult.FAILED and runtime.diagnostics is not None:
+                        outcome += runtime.diagnostics.report()
+                    if result == FlowResult.AUTHORIZED:
+                        outcome += " Authorization does not validate refresh, lists or public preview activation."
+                    else:
+                        outcome += " No successful authorization is established. Stop and report fixed results only."
     except _Cancelled:
         outcome = None
     except Exception:

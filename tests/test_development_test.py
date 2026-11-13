@@ -309,5 +309,95 @@ class DevelopmentTestTests(unittest.TestCase):
             runpy.run_path(str(SOURCE / 'default.py'), run_name='development_entry_fixture')
 
 
+    def test_current_activation_url_works_through_actual_assembly(self):
+        def response(host, method, path):
+            if path == '/oauth/device/code':
+                return 200, {'device_code': 'synthetic-device-code', 'user_code': 'SYNTHETIC-CODE',
+                             'verification_url': 'https://auth.trakt.tv/activate',
+                             'interval': 5, 'expires_in': 600}
+        self.service.hook = response
+        self.run_action(2)
+        self.assertIn('Connection test: authorized', self.screen.messages[-1])
+        self.assertIn('https://auth.trakt.tv/activate', self.screen.codes[0])
+        self.assertNotIn('SYNTHETIC-CODE', self.screen.messages[-1])
+        self.assertEqual([request[2] for request in self.service.requests],
+                         ['/oauth/device/code', '/oauth/device/token'])
+
+    def test_non_success_device_response_has_fixed_diagnostics_and_no_retry(self):
+        self.service.hook = lambda *args: (403, {'error': 'PRIVATE-BODY-CODE-TOKEN'})
+        self.run_action(2)
+        result = self.screen.messages[-1]
+        self.assertIn('Connection test: failed', result)
+        self.assertIn('Last stage: device response validation', result)
+        self.assertIn('Category: request status rejected', result)
+        self.assertIn('Response status: 403', result)
+        self.assertNotIn('PRIVATE', result)
+        self.assertNotIn('Authorization does not validate', result)
+        self.assertEqual(len(self.service.requests), 1)
+        self.assertEqual(self.screen.codes, [])
+
+    def test_malformed_successful_response_is_not_authorization(self):
+        self.service.hook = lambda *args: (200, {'private': 'PRIVATE-BODY'})
+        self.run_action(2)
+        result = self.screen.messages[-1]
+        self.assertIn('Last stage: device response validation', result)
+        self.assertIn('Response status: 200', result)
+        self.assertIn('No successful authorization', result)
+        self.assertEqual(len(self.service.requests), 1)
+        self.assertEqual(self.screen.codes, [])
+        self.assertNotIn('PRIVATE', result)
+
+    def test_transport_categories_are_allowlisted_and_do_not_echo_exceptions(self):
+        for category in ('timeout', 'invalid_json', 'redirect_refused', 'transport_failed',
+                         'PRIVATE-TOKEN-PATH'):
+            with self.subTest(category=category):
+                with patch.object(development.trakt_transport.Transport, 'oauth_request',
+                                  side_effect=development.trakt_transport.TransportError(category)) as request:
+                    self.run_action(2)
+                request.assert_called_once()
+                result = self.screen.messages[-1]
+                self.assertIn('Last stage: device code request', result)
+                self.assertIn('Response status: unavailable', result)
+                self.assertNotIn('PRIVATE', result)
+                self.assertNotIn('SYNTHETIC-CODE', result)
+                expected = development.LoginDiagnostics.CATEGORIES.get(category, 'unavailable')
+                self.assertIn('Category: ' + expected, result)
+        self.assertEqual(self.service.requests, [])
+
+    def test_local_account_failure_is_not_reported_as_a_network_failure(self):
+        with patch.object(development.trakt_tokens.TokenStore, 'disconnect',
+                          side_effect=OSError('PRIVATE-PATH')):
+            self.run_action(2)
+        result = self.screen.messages[-1]
+        self.assertIn('Last stage: local account preparation', result)
+        self.assertIn('Response status: unavailable', result)
+        self.assertNotIn('PRIVATE', result)
+        self.assertEqual(self.service.requests, [])
+
+    def test_code_dialog_failure_is_distinct_and_redacted(self):
+        with patch.object(self.screen, 'create', side_effect=RuntimeError('PRIVATE-CODE-TOKEN')):
+            self.run_action(2)
+        result = self.screen.messages[-1]
+        self.assertIn('Last stage: authorization dialog', result)
+        self.assertIn('Category: code display unavailable', result)
+        self.assertNotIn('PRIVATE', result)
+        self.assertNotIn('SYNTHETIC-CODE', result)
+        self.assertEqual(len(self.service.requests), 1)
+
+    def test_cancel_after_code_dialog_is_cancelled_without_poll_or_diagnostics(self):
+        def create(title, text):
+            self.screen.codes.append(text)
+            self.screen.cancel = True
+        with patch.object(self.screen, 'create', side_effect=create):
+            self.run_action(2)
+        result = self.screen.messages[-1]
+        self.assertIn('Connection test: cancelled', result)
+        self.assertNotIn('Last stage:', result)
+        self.assertNotIn('SYNTHETIC-CODE', result)
+        self.assertEqual(len(self.service.requests), 1)
+        self.run_action(1)
+        self.assertIn('Local status: disconnected', self.screen.messages[-1])
+
+
 if __name__ == '__main__':
     unittest.main()

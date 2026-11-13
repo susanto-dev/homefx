@@ -1,7 +1,9 @@
 # Bounded Development Trakt test on Kodi
 
 **This is a separate experimental test add-on, not live mode for HomeFX Preview.**
-HomeFX Preview 0.17.4 and repository 0.2.0 remain unchanged. The test adds no list
+HomeFX Preview 0.17.4 and repository 0.2.0 are the verified published versions.
+The 0.17.5 candidate updates shared authentication code; public preview live routes
+remain inactive. The test adds no list
 widgets, account-data reads, history/list writes, playback, Real-Debrid or scrobbling.
 It is a Kodi program add-on, not a new Android app or server.
 
@@ -14,12 +16,14 @@ tests, not cloud results.
 
 ## Install directly from the HomeFX source
 
-The source-install change is a candidate until its PR is merged and the normal
-Pages publication and hosted-byte checks pass. The existing manual build succeeded,
-but the Development ZIP has not yet been verified in the hosted source or installed
-on the TV. Do not treat its absence before publication as a Kodi failure.
+PR #32 merged and its publication checks passed. The hosted Development ZIP and
+checksum were verified, and the owner installed it from the HomeFX source on the TV.
+Its own storage permissions, directory check, SQLite transaction and cleanup all
+passed. Local status reported **disconnected**, which is expected before login.
+**Connect Development Trakt failed before any code appeared**; the owner stopped.
+This does not establish TLS, login, persistence or refresh acceptance.
 
-After that publication is verified:
+The installation path is:
 
 1. Keep the existing File manager source `https://susanto-dev.github.io/homefx/`,
    named **HomeFX**. No new source, computer download or file transfer is needed.
@@ -33,7 +37,8 @@ After that publication is verified:
    **Development test** and shows the exact current filename.
 4. Wait for the installation notification. Open **HomeFX Development Test** under
    **Program add-ons**, then run **Test this add-on's private storage** first.
-   Skin labels may vary; this source-install/menu path remains unverified on TV.
+   The owner confirmed this source-install/menu path on the target TV; skin labels
+   may vary on other installations.
 5. Keep HomeFX Preview, HomeFX Preview Repository and the current skin installed.
    The test does not replace their files, routes or profiles. Installation does not
    initiate login; each action requires its own consent.
@@ -48,8 +53,9 @@ still a direct ZIP installation.
 After a reviewed main merge, the existing **Publish preview** workflow builds the
 separate script ZIP using the **Development** environment and adds it to the same
 Pages source. It does not contact Trakt, obtain credentials or start login. No
-additional manual workflow is needed for this installation path. The public video
-ZIP, repository ZIP and all recorded release archives remain unchanged.
+additional manual workflow is needed for this installation path. The 0.17.5
+candidate requires a new video archive because shared authentication bytes change;
+repository 0.2.0 and every previously recorded archive remain unchanged.
 
 The script ZIP embeds the **public** Development client ID and registered redirect
 from `TRAKT_CLIENT_ID` and `TRAKT_REDIRECT_URI`. Anyone can download these public
@@ -99,8 +105,9 @@ debug logging or capture/share a screen containing an authorization code for thi
    test stores, but does not refresh or contact Trakt.
 3. **Connect Development Trakt**. Read the consent and confirm only when ready to
    authorize. The storage check runs again before credentials or network setup.
-   Use your own phone/computer to open exactly `https://trakt.tv/activate` and enter
-   the code displayed privately on the TV. Never copy the code into chat, logs or
+   Use your own phone/computer to open the trusted address displayed on the TV:
+   exactly `https://auth.trakt.tv/activate` or legacy `https://trakt.tv/activate`.
+   Enter the code displayed privately on the TV. Never copy the code into chat, logs or
    an issue. The dialog supports cancellation and is bounded to ten minutes; network
    operations have their own limits, while OS DNS resolution can still delay return.
 4. First exercise cancellation while the code prompt is open and **before**
@@ -126,6 +133,34 @@ new login is cancelled. Denial, expiry, cancellation, offline/slow responses and
 interrupted-refresh recovery remain separate acceptance outcomes. Record cases
 that were not exercised as **not run**; do not manufacture a pass from the happy path.
 
+## Retry after the 0.17.5 candidate is published
+
+Trakt's current documented activation page is `https://auth.trakt.tv/activate`.
+The earlier code rejected that address before displaying a code. A fabricated
+successful response reproduces the failure; the actual TV response is unknown.
+The candidate permits only that exact address and legacy `https://trakt.tv/activate`.
+It does not allow arbitrary URLs, alternate paths, queries, fragments or redirects.
+
+After the repair merges and its normal publication and hosted-byte checks pass:
+
+1. Reopen **Install from zip file → HomeFX** and install the newly listed
+   `script.homefx.development-0.1.0-<SHA-256>.zip`. Its checksum filename changes;
+   this separate test does not receive repository auto-updates. Updating HomeFX
+   Preview alone does not update the program add-on.
+2. Fully restart Kodi and reopen **HomeFX Development Test**. Run its private
+   storage check first; proceed only if all results, including cleanup, pass.
+3. Choose **Connect Development Trakt** once. If a code appears, cancel **before**
+   authorizing for this first rerun. Expect a cancelled outcome, then local status
+   disconnected. Report that observation without the code or a code screenshot.
+4. If it still fails, stop and report only the fixed **Last stage**, **Category** and
+   **Response status** fields. A response status may originate from a local request
+   limit and does not prove that Trakt received the request. A generic request
+   failure does not identify TLS specifically. Do not retry repeatedly or proceed
+   to refresh. No response body, exception text, profile path or credential is needed.
+
+A successful code/cancellation rerun is not successful authorization or refresh.
+Review that result before resuming the remaining account tests above.
+
 ## Storage and privacy limits
 
 The test uses its own Kodi add-on profile, further separated by a digest of the public
@@ -149,6 +184,7 @@ Return only:
 - The publication or manual-build run link/source SHA, test harness version and ZIP checksum.
 - Fixed storage results, including cleanup and overall status.
 - Fixed connect/cancel, restart-status, refresh and disconnect outcomes.
+- On connection failure, fixed Last stage, Category and Response status fields only.
 - Approximate wait times, responsiveness and any unexercised cases marked not run.
 
 Do not return public app values unnecessarily, or any client secret, token, device

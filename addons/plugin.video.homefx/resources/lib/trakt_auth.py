@@ -6,9 +6,9 @@ response sizes/timeouts, disable redirects, and never log request/response bodie
 from dataclasses import dataclass, field
 import math
 import time
-from urllib.parse import urlsplit
 
 AUTH_HOST = "https://auth.trakt.tv"
+ACTIVATION_URLS = frozenset(("https://auth.trakt.tv/activate", "https://trakt.tv/activate"))
 
 
 class AuthError(Exception):
@@ -113,10 +113,9 @@ class DeviceLogin:
             if (not _number(interval, 1, 3600) or not _number(expires, 1, 86400)
                     or not _text(code) or not _text(user, 128) or not _text(url, 2048)):
                 raise AuthError("invalid_device_response")
-            parsed = urlsplit(url)
-            if (parsed.scheme != "https" or parsed.hostname != "trakt.tv"
-                    or parsed.username or parsed.password or parsed.port not in (None, 443)
-                    or parsed.fragment):
+            # Current hosted activation and the legacy endpoint are exact choices;
+            # do not accept arbitrary paths, query data, ports or redirects.
+            if url not in ACTIVATION_URLS:
                 raise AuthError("invalid_device_response")
             now = self._clock()
             self.prompt = DevicePrompt(user, url, now + expires)
