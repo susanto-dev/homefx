@@ -241,5 +241,29 @@ Resume enrichment and personal-calendar reads validate identifiers and date wind
 before authenticated operations. Compound results must keep one account generation
 and mutation revision. Request/row bounds limit enrichment; errors are not disguised
 as a successful partial history. No source URLs, credentials or persistent watch data
-are added to these metadata views. Existing local rate-limit guards remain optional
-and inactive until the live connection is assembled and validated on the device.
+are added to these metadata views. Transport rate-limit injection remains optional for direct development use. The
+explicit account factories always attach shared provider limits; these assemblies
+remain unused by Kodi routes until device activation gates are satisfied.
+
+
+## Account construction and dialog boundaries
+
+Provider assembly validates configuration before creating private stores and performs
+no network operation during construction. Imports create neither storage nor dialogs.
+The explicit Trakt assembly leaves mutation requests disabled. Public client IDs and
+registered redirect URIs are not proof that a registration or grant works; no shared
+client-secret configuration is provided.
+
+Device codes are intentionally shown only in the progress dialog, never stored in
+profiles, public routes or diagnostics. Verification destinations are provider-specific
+HTTPS locations; the adapter does not launch external URLs. Polling and waits are bounded; cleanup is attempted once and errors use fixed
+diagnostics. Blocking callback responsiveness still needs device validation. Local disconnect is not remote
+revocation or guaranteed erasure from backups.
+
+
+The optional **Test private storage** action is separate from the read-only readiness
+report. It runs only after confirmation, uses its own fresh private temporary directory
+and synthetic SQLite values, and never opens account stores. Its fixed result does
+not expose paths or exception text. Cleanup failure is explicit; an empty newly created
+profile directory may remain. Passing does not protect against other code running as
+Kodi or establish real credential lifecycle safety.

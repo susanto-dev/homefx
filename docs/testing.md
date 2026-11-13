@@ -116,3 +116,10 @@ watched precedence, identity conflicts, changed accounts/revisions, bounded requ
 UTC windows and personal-calendar filtering. Release-proposal tests prove existing
 records stay immutable and invalid input cannot leave a promoted partial proposal.
 No live account, device or playback acceptance is inferred.
+
+The 0.12 suite exercises both account assemblies through actual private stores,
+framed fabricated HTTPS responses, provider sessions, the account controller and
+injected dialogs. It checks no construction-time network, invalid configuration
+before storage, readonly Trakt writes, shared cooldowns, cancellation, replacement
+races and provider-isolated disconnect. UI stand-ins establish API contracts only;
+they do not prove Kodi dialog behavior or TV responsiveness.

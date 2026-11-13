@@ -1,6 +1,6 @@
 # Real-Debrid and playback
 
-Real-Debrid is part of HomeFX's plan. The 0.9 preview retains inactive provider storage/transport/session foundations and a
+Real-Debrid is part of HomeFX's plan. The preview retains inactive provider storage/transport/session foundations and a
 setup information screen; it does not sign in, resolve a real source or start Kodi's
 player. Existing widgets and the installed skin remain the browsing surface.
 
@@ -94,3 +94,9 @@ The inactive [playback event observer](playback-events.md) distinguishes a dispa
 request from AV start, pause/resume and terminal callbacks. It supplies observations
 only: completion thresholds, scrobbling ownership and the real Kodi adapter remain
 open. An ended event is not a successful watched-state update.
+
+
+The explicit [service assembly](service-runtime.md) and
+[account interaction](provider-account-flow.md) now compose the Real-Debrid foundation
+with shared local request limits and injected dialogs. They do not enable the Kodi
+account menu, establish entitlement or select a playback/source strategy.

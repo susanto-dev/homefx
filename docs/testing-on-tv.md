@@ -8,7 +8,7 @@ package SHA-256, steps, expected/observed behavior and elapsed load times.
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install version 0.11.0.
+   Preview Repository → Video add-ons → HomeFX Preview to install version 0.12.0.
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks
@@ -90,7 +90,7 @@ or starting media. Existing movie/episode clicks must still show demo informatio
 There is no real account login or source input field to test in this version.
 Follow the separate [playback plan](playback-plan.md) before any future live experiment.
 
-## Experimental repository acceptance (0.2.0 repository / 0.11.0 video)
+## Experimental repository acceptance (0.2.0 repository / 0.12.0 video)
 
 Status: NOT RUN. Record the deployed revision, exact ZIP checksums and the HTTP-check
 result separately from device observations. Confirm Kodi can browse the source URL,
@@ -107,3 +107,20 @@ A manual downgrade requires a separate profile-compatibility check and is not au
 Do not mark this section passed because a build, deployment or HTTP check succeeded.
 Live accounts, real title recommendations, playable sources, next-episode playback,
 subtitles, resume and scrobbling remain deferred pending their separate activation gates.
+
+
+## Explicit private-storage check
+
+Open **Test private storage** from the HomeFX root and review its confirmation. This
+separate action creates synthetic temporary files inside the add-on profile, checks
+private permissions and SQLite commit/rollback, then removes its own temporary files.
+It does not read account databases, contact services or start playback. Cancelling
+before the check must leave the profile untouched. Existing **Device readiness**
+continues to avoid profile access.
+
+Record only the fixed result labels, HomeFX/Kodi versions and whether cleanup passed.
+A failure must not be reported as account-storage acceptance. An empty profile
+directory may remain when the profile did not exist before. Do not share profile
+paths, backups or credentials. A pass is a local synthetic check, not proof of token
+refresh recovery, account authorization, cross-device quotas or protection from
+other code running as Kodi. These remain separate tests.

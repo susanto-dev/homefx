@@ -24,3 +24,7 @@ is unnecessary when only the indexed video add-on changes.
 Video 0.11.0 was prepared through the verified local proposal helper. Its integration
 preserves the four existing records and their ZIP bytes; only the new video archive
 and prospective inventory are added. Repository 0.2.0 remains unchanged.
+
+Video 0.12.0 was staged with the same verified proposal workflow, preserving all five
+prior records and bytes. Its optional storage self-check uses synthetic temporary
+files only; no profile or account configuration is packaged.

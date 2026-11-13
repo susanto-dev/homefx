@@ -1,6 +1,6 @@
 # Preparing a Trakt development connection
 
-The 0.11.0 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.12.0 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
@@ -66,3 +66,12 @@ verify confirmed/already-present/not-found/error outcomes with the registered ap
 review how to reconcile an uncertain result, and check account-switch behavior.
 Do not add automatic retries for mark-watched: duplicate plays can be recorded.
 The local preview's remove/unwatched actions are demonstrations, not remote deletions.
+
+## Assembly and dialog preparation
+
+The inactive [service runtime factories](service-runtime.md) join private stores,
+shared request limits and bounded transports. The [shared account controller](provider-account-flow.md)
+and [injected dialog adapter](account-ui.md) support development tests without adding
+a live Kodi route. Their existence does not satisfy the registration or device gates
+above. Public client identity syntax is checked, not service registration validity.
+No client secret should be added to settings or source to bypass a failed grant.

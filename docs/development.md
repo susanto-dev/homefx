@@ -89,7 +89,7 @@ toolchain, not reproducibility between different platforms or toolchain versions
 
 ## Release history and deployed bytes
 
-For video 0.11.0 and repository 0.2.0, record both current ZIPs and every retained
+For video 0.12.0 and repository 0.2.0, record both current ZIPs and every retained
 version in `releases/inventory.json`. Run
 `python tools/release_history.py releases/inventory.json --base-ref BASE_SHA`
 against the reviewed base; existing records cannot be removed or changed. Builders
@@ -117,3 +117,9 @@ in a fresh external or dist subdirectory. The helper does not modify releases in
 place. Review its inventory and new ZIPs, integrate only the intended new records,
 then run the history guard against the reviewed base. Never replace published bytes
 to make a changed same-version build pass.
+
+The account assemblies and UI adapter are explicit, inactive development entry points.
+See [service runtime](service-runtime.md), [shared interaction](provider-account-flow.md)
+and [dialog contract](account-ui.md). Supply the same cancellation probe throughout;
+no constructor should contact providers. The optional on-device storage self-check is
+separate from account assembly and uses only synthetic data after confirmation.
