@@ -1,10 +1,12 @@
 """Inactive device-code dialogs using injected UI objects, without Kodi imports."""
 import math
 
+from .trakt_auth import ACTIVATION_URLS
+
 
 _PROVIDERS = {
-    "trakt": ("Trakt", "https://trakt.tv/activate"),
-    "realdebrid": ("Real-Debrid", "https://real-debrid.com/device"),
+    "trakt": ("Trakt", ACTIVATION_URLS),
+    "realdebrid": ("Real-Debrid", frozenset(("https://real-debrid.com/device",))),
 }
 
 
@@ -73,7 +75,7 @@ class AccountUI:
         self._check()
         if (type(code) is not str or not 1 <= len(code) <= 128
                 or any(not 32 < ord(char) < 127 or char in "[]" for char in code)
-                or type(url) is not str or url != _PROVIDERS[self._provider][1]):
+                or type(url) is not str or url not in _PROVIDERS[self._provider][1]):
             self._fail()
         if self._progress is not None:
             self._fail()

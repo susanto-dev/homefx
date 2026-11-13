@@ -1,7 +1,8 @@
 # Trakt authentication feasibility
 
 Rechecked 2026-11-13. Status: supported by current documented contracts; no live
-login, token refresh, account access, or Android TV test has been performed.
+login, token refresh or account access has succeeded. The target TV passed the
+Development test storage check, but connection failed before a code appeared.
 
 ## Proposed path
 
@@ -18,7 +19,8 @@ appropriate URI and verify secret-free refresh with a real device-issued token
 before calling this integration complete. Do not invent a URI or assume omission
 works. The device-code flow itself does not require a callback server.
 
-Development app registration and the public client ID remain unverified. Current
+The owner confirmed the registered Development public client ID and redirect match
+the configured variables; service-side registration and grant acceptance remain unverified. Current
 registration guidance requires a verified GitHub account, allows the owner and up
 to 16 invited users in Development, and allows any redirect URI for Development
 testing. The actual configured redirect must still be supplied and verified. Personal
@@ -27,6 +29,29 @@ separate Production application and client ID. Production registration calls
 for privacy documentation and a Trakt nonendorsement notice. Premium is not stated
 as mandatory for the proposed basic functionality. No account or paid service was
 created during this investigation.
+
+## Activation address compatibility and the observed failure
+
+The official device-code documentation at
+[revision 226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/api/src/contracts/oauth/index.ts)
+names `https://auth.trakt.tv/activate` as the hosted activation page. The earlier
+HomeFX parser and dialog accepted only the legacy host/address. An actual parser
+call with a fabricated successful response using the current address failed before
+code display. This is a reproduced compatibility bug and a plausible explanation
+for the reported TV failure, not evidence of the TV's actual response.
+
+The 0.17.5 candidate shares an exact allowlist between response validation and the
+code dialog: `https://auth.trakt.tv/activate` and `https://trakt.tv/activate`. It
+preserves the accepted URL and rejects lookalikes, arbitrary paths, query strings,
+fragments, user information and explicit ports. No redirect following, TLS bypass
+or client secret is introduced. Only original validation code changes; no upstream
+implementation is copied.
+
+The separate Development test adds invocation-only fixed failure stages/categories
+and a bounded response-status value. It does not display response bodies, exception
+text or credentials. A status may come from a local rate-limit response, and a
+request failure can involve network, TLS or a local request guard; neither establishes
+a provider-specific cause. See the [bounded retry](development-device-test.md#retry-after-the-0175-candidate-is-published).
 
 ## Implemented mocked foundations
 
@@ -83,10 +108,11 @@ handoff remains a separate test gate. Aired/released does not imply playable.
 
 ## Primary sources
 
-On 2026-11-13 the official repository's `master` branch still resolved to
-`030a5e3cb6aacb11508f250865c0b907ab17b2ed`. The linked device-token, optional-secret,
-refresh and base-field contracts were reread alongside the current registration
-and OAuth guides. This checks published requirements, not the owner's registered
+The earlier contract review used official repository revision
+`030a5e3cb6aacb11508f250865c0b907ab17b2ed` for the device-token, optional-secret,
+refresh and base-field links below. The activation-address correction above uses
+later revision `226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c`, checked on 2026-11-13.
+These are published requirements, not verification of the owner's registered
 application, actual grants, rotated refreshes or device compatibility.
 
 - [Authentication](https://developer.trakt.tv/docs/authentication-oauth)

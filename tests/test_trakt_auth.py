@@ -67,6 +67,45 @@ class DeviceLoginTests(unittest.TestCase):
         self.assertEqual(request.calls[1][1], "/oauth/device/token")
         self.assertNotIn("client_secret", request.calls[1][2])
 
+    def test_current_and_legacy_activation_urls_preserve_exact_prompt_and_authorize(self):
+        for url in ('https://auth.trakt.tv/activate', 'https://trakt.tv/activate'):
+            with self.subTest(url=url):
+                self.now = 10
+                login, request = self.login(response(body=token_body()), verification_url=url)
+                self.assertEqual(login.prompt.verification_url, url)
+                self.assertEqual(login.prompt.user_code, 'DEMO-CODE')
+                self.assertNotIn('DEMO-CODE', repr(login.prompt))
+                self.assertNotIn('synthetic-device-code', repr(login))
+                self.now = 15
+                self.assertEqual(login.poll(), 'authorized')
+                self.assertEqual(len(request.calls), 2)
+
+    def test_activation_url_variants_and_lookalikes_fail_without_retaining_codes(self):
+        for base in ('https://auth.trakt.tv/activate', 'https://trakt.tv/activate'):
+            urls = (base + '/', base + '?code=PRIVATE', base + '#PRIVATE',
+                    base.replace('/activate', '/other'),
+                    base.replace('https://', 'http://'),
+                    base.replace('https://', 'https://name:PRIVATE@'),
+                    base.replace('/activate', ':443/activate'),
+                    base.replace('/activate', ':8443/activate'),
+                    base.replace('.tv/', '.tv.evil.invalid/'),
+                    base.replace('/activate', '/%61ctivate'),
+                    base + '\nPRIVATE')
+            for url in urls:
+                with self.subTest(url=url):
+                    request = FakeRequest(response(body=device_body(verification_url=url)))
+                    login = DeviceLogin(request, 'synthetic-client', lambda: self.now)
+                    with self.assertRaisesRegex(AuthError, '^device_code_failed$') as caught:
+                        login.begin()
+                    self.assertEqual(login.state, 'failed')
+                    self.assertIsNone(login.prompt)
+                    self.assertIsNone(login._code)
+                    self.assertEqual(len(request.calls), 1)
+                    for value in (str(caught.exception), repr(login)):
+                        self.assertNotIn('PRIVATE', value)
+                        self.assertNotIn('DEMO-CODE', value)
+                        self.assertNotIn('synthetic-device-code', value)
+
     def test_terminal_statuses_never_retry(self):
         for status, expected in ((404, "invalid"), (409, "used"), (410, "expired"),
                                  (418, "denied"), (500, "failed")):

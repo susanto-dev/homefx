@@ -51,8 +51,8 @@ new application or accept changed service terms as part of this handoff.
 ## 3. Explicitly authorize a bounded Development device test
 
 Use the [separately installed Development device test](development-device-test.md)
-after the source-install change is reviewed, merged and its Pages publication is
-verified. Install its script ZIP directly from **Install from zip file → HomeFX**;
+from the verified source installation path. PR #32 publication and the owner’s
+installation succeeded; its own storage check passed. Install its script ZIP directly from **Install from zip file → HomeFX**;
 a manual artifact workflow or file transfer is not required. Building or installing
 it initiates no login. Each on-TV action requires consent. It tests only its own profile and does not wire
 public live routes or real-list widgets into HomeFX Preview.
@@ -92,4 +92,19 @@ See [security](security.md) and the [complete backlog](backlog.md) for the wider
 The 0.17.4 TV result passed private permissions, directory check, SQLite transaction
 and cleanup checks, with failure stage none. The separate test add-on must test its
 own storage scope before live connect/refresh; the preview pass is not transferred
-as blanket permission for a different path or for live account access.
+as blanket permission for a different path or for live account access. The owner
+subsequently passed that separate test's own storage check and correctly saw local
+status disconnected. Connecting then failed before any code appeared, so the
+remaining account tests were not run.
+
+## Current bounded retry
+
+The 0.17.5 candidate fixes rejection of Trakt's documented current activation
+address and adds fixed failure diagnostics to the separate test. The compatibility
+bug reproduces offline; it is not a confirmed account of the TV response. Keep
+0.17.4 as the verified published preview until normal candidate publication passes.
+Then reinstall the newly listed Development script ZIP from the existing HomeFX
+source, restart Kodi, check storage and attempt connection once. Cancel before
+authorizing if the code dialog appears; otherwise return only fixed Last stage, Category
+and Response status fields. See the [retry sequence](development-device-test.md#retry-after-the-0175-candidate-is-published).
+No code screenshots, logs, tokens or profile paths are needed.

@@ -194,12 +194,27 @@ and fabricated tests are not real login, TLS, refresh or TV evidence. After thos
 results, plan the smallest real read-only list/widget integration; do not add more
 demo-only features to substitute for that acceptance.
 
-## Prepared: install the Development test from HomeFX
+## Verified delivery: install the Development test from HomeFX
 
-PR #31 merged and its post-merge validation/publication passed. The manual Development
-build also succeeded. The next source-install change puts the test ZIP directly in
-**Install from zip file → HomeFX**, removing the required download/transfer step.
-Its hosted bytes and TV installation remain unverified until normal post-merge
-publication and device acceptance. Preview 0.17.4, repository 0.2.0 and all 18 recorded
-archives remain unchanged. The current test ZIP is outside the retained inventory;
-older test URLs may disappear after later merges. No login is initiated by publication.
+PR #32 merged and its post-merge validation/publication passed. The hosted test ZIP
+and checksum were verified. The owner installed it directly from **Install from zip
+file → HomeFX**, then passed its own permissions, directory, SQLite and cleanup
+checks. Local status disconnected was the expected pre-login result. Connecting
+failed before any code appeared; the remaining account tests were not run.
+
+## Candidate 0.17.5: activation-address compatibility and safe diagnostics
+
+The current Trakt documentation names `https://auth.trakt.tv/activate`, which the
+earlier parser/dialog rejected. A fabricated response reproduces that bug. The
+candidate accepts that exact address and the legacy exact address, without broader
+URL trust. This plausibly explains the TV result but does not prove its cause.
+The separate test now reports fixed Last stage, Category and Response status on failure;
+no response body, code, token or exception text is exposed.
+
+Shared runtime changes require a new 0.17.5 video archive. Repository 0.2.0 and all
+18 prior archive records/bytes remain unchanged; 0.17.4 remains the verified hosted
+preview until the normal merged publication passes. The script keeps harness
+version 0.1.0 with a new checksum filename. Reinstall it directly from the HomeFX
+source after verification; it is not automatically updated. The first bounded retry
+is code display followed by cancellation before authorization, or fixed failure
+categories if it still fails. No live list, playback or provider scope is added.

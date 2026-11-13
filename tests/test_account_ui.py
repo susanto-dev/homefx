@@ -103,7 +103,8 @@ class AccountUITests(unittest.TestCase):
             self.assertEqual(self.creations, 0)
 
     def test_known_provider_urls_only_and_invalid_prompts_never_open_dialog(self):
-        for provider, url in [('trakt', 'https://trakt.tv/activate'),
+        for provider, url in [('trakt', 'https://auth.trakt.tv/activate'),
+                              ('trakt', 'https://trakt.tv/activate'),
                               ('realdebrid', 'https://real-debrid.com/device')]:
             ui = self.make(provider)
             ui.show_code('DEMO-123', url)
@@ -124,6 +125,31 @@ class AccountUITests(unittest.TestCase):
                 ui.show_code(code, url)
             self.assertEqual(self.creations, 0)
             self.assertEqual(self.progress.messages, [])
+
+    def test_activation_url_variants_never_open_a_dialog_or_leak_prompt(self):
+        for base in ('https://auth.trakt.tv/activate', 'https://trakt.tv/activate'):
+            urls = (base + '/', base + '?code=PRIVATE', base + '#PRIVATE',
+                    base.replace('/activate', '/other'),
+                    base.replace('https://', 'http://'),
+                    base.replace('https://', 'https://name:PRIVATE@'),
+                    base.replace('/activate', ':443/activate'),
+                    base.replace('/activate', ':8443/activate'),
+                    base.replace('.tv/', '.tv.evil.invalid/'),
+                    base.replace('/activate', '/%61ctivate'),
+                    base + '\nPRIVATE')
+            for url in urls:
+                with self.subTest(url=url):
+                    ui = self.make()
+                    with self.assertRaisesRegex(UIError, '^ui_failed$') as caught:
+                        ui.show_code('PRIVATE-CODE', url)
+                    self.assertEqual(self.creations, 0)
+                    self.assertEqual(self.progress.messages, [])
+                    self.assertNotIn('PRIVATE', str(caught.exception))
+                    self.assertNotIn('PRIVATE', repr(ui))
+        ui = self.make('realdebrid')
+        with self.assertRaisesRegex(UIError, '^ui_failed$'):
+            ui.show_code('PRIVATE-CODE', 'https://auth.trakt.tv/activate')
+        self.assertEqual(self.creations, 0)
 
     def test_partial_create_and_update_failures_close_once_and_fail_closed(self):
         for failure in ('create', 'update'):

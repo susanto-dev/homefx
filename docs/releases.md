@@ -441,7 +441,30 @@ retention of any recorded video/repository release. Existing site validation,
 bounded artifact staging and exact postdeployment byte comparison include the test
 download pair and fail on partial, malformed or mismatched content.
 
-The ZIP is not yet verified at the hosted source or on TV. After merge, verify the
-normal publication run and every expected hosted byte before claiming availability.
-The [device-test guide](development-device-test.md) then starts with the test add-on's
-own synthetic private-storage check; successful delivery is not login acceptance.
+After PR #32 merged, the normal publication passed and the hosted ZIP/checksum
+were verified. The owner installed it through the source and passed its own
+synthetic storage check. Connection failed before any authorization code appeared;
+successful delivery and storage are not login acceptance.
+
+
+## 0.17.5 activation-address compatibility candidate
+
+The shared parser and dialog now accept the exact current Trakt activation address
+`https://auth.trakt.tv/activate` as well as legacy `https://trakt.tv/activate`.
+A fabricated response reproduces the earlier rejection before code display. The
+actual TV failure remains unproven; the separate Development test adds fixed failure
+stages/categories and a bounded response status to support a safe rerun.
+
+Because shared packaged runtime bytes change, prepare a new video **0.17.5** archive.
+Do not overwrite 0.17.4. Repository **0.2.0**, all 18 prior inventory records and their
+archive bytes remain unchanged. Version 0.17.4 remains the verified published
+preview until this candidate merges and normal publication passes. The existing
+Pages workflow then advertises 0.17.5 and builds a new content-addressed Development
+script ZIP with harness version 0.1.0. No independent deployment is required.
+
+The test ZIP is not in the repository auto-update channel. Reinstall the newly
+listed script ZIP from the existing source and fully restart Kodi before the
+[bounded retry](development-device-test.md#retry-after-the-0175-candidate-is-published).
+No registration changes, client secret, TLS relaxation, live preview activation,
+list access, playback or new dependency is included. Device authorization,
+persistence and refresh remain acceptance gates.
