@@ -8,13 +8,13 @@ into TV evidence. No real account belongs in CI.
 ## 1. Try the published demo on TV
 
 Follow the [installation guide](install.md) on Kodi 21.2 with the existing skin.
-The published candidate is HomeFX Preview 0.17.2 and repository 0.2.0. The owner’s
-TV reports those versions with Kodi 21.2 / Python 3.11.7, but its private-storage
-check did not pass: permissions failed, SQLite was not run and cleanup passed.
-The exact cause is unknown. The **0.17.3 diagnostic candidate is not yet published
-or tested on TV**; use the [diagnostic rerun](testing-on-tv.md#observed-device-diagnostics-and-0173-rerun)
-only after merge and verified publication. It adds scrollable reports and a fixed
-failure-stage label without relaxing the storage gate.
+The verified published candidate is HomeFX Preview 0.17.3 and repository 0.2.0.
+The TV previously confirmed Kodi 21.2 / Python 3.11.7. Its 0.17.3 storage rerun
+stopped at **directory permissions**: SQLite not run, cleanup passed, overall not
+passed. The complete storage result is visible; the filesystem cause is unknown.
+The **0.17.4 candidate is not yet published or tested on TV**. It explicitly sets
+private mode on only its fresh synthetic directory, then verifies it; see the
+[storage rerun below](#next-storage-rerun-after-0174-publication).
 
 - Fully restart Kodi after installation/update. Open **Device readiness** and record
   the displayed versions and fixed capability results, including unavailable results.
@@ -32,7 +32,8 @@ failure-stage label without relaxing the storage gate.
 
 **Return only:** versions, fixed result/error categories, cleanup status,
 success/failure/not-run observations and timings. The observed 0.17.2 storage
-failure is **not a pass**; navigation/timing and the 0.17.3 rerun remain untested. A storage/readiness pass does not prove
+failure is **not a pass**; the 0.17.3 rerun also failed. Navigation/timing and the
+0.17.4 rerun remain untested. A storage/readiness pass does not prove
 TLS, Trakt authorization, refresh or playback works.
 
 ## 2. Verify registration before planning login
@@ -87,3 +88,12 @@ Never share tokens, client secrets, device codes, profile paths, private lists/h
 unredacted logs or full Kodi backups. No screenshot is required. Return only the safe
 categories and observations above; retain private application/account details locally.
 See [security](security.md) and the [complete backlog](backlog.md) for the wider scope.
+
+## Next storage rerun after 0.17.4 publication
+
+The 0.17.3 TV result stops at directory permissions before SQLite; cleanup passed.
+After the 0.17.4 candidate is merged and its publication verified, update through
+the HomeFX repository, restart Kodi and rerun Test private storage. Return the
+fixed **Directory check**, **Failure stage**, **Temporary cleanup** and **Overall**
+results. Mode changes affect only a fresh synthetic test directory. No account
+activation is implied even if the check passes; the remaining gates above apply.

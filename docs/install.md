@@ -39,8 +39,8 @@ The official **HomeFX project source** is:
 Download snapshot checked on **13 November 2026**:
 
 - Repository installer: [repository.homefx-0.2.0.zip](https://susanto-dev.github.io/homefx/repository.homefx-0.2.0.zip).
-- Video add-on: **HomeFX Preview 0.17.2**. Its separate manual download is
-  [plugin.video.homefx-0.17.2.zip](https://susanto-dev.github.io/homefx/repository/plugin.video.homefx/plugin.video.homefx-0.17.2.zip).
+- Video add-on: **HomeFX Preview 0.17.3**. Its separate manual download is
+  [plugin.video.homefx-0.17.3.zip](https://susanto-dev.github.io/homefx/repository/plugin.video.homefx/plugin.video.homefx-0.17.3.zip).
 
 Start with the **repository ZIP**, not the video ZIP. The repository is Kodi's
 installation and update source for HomeFX. Later releases may advertise a newer
@@ -111,11 +111,11 @@ those actions can remove Kodi configuration and other add-ons' data.
 
 Open **Add-ons → Video add-ons → HomeFX Preview**. Its root menu contains both checks.
 
-On 0.17.2, the TV reported a private-permission failure with cleanup passed and
-SQLite not run. The exact cause is still unknown. **0.17.3 is a diagnostic candidate,
-not yet a verified download**: after its merge and verified publication, the reports
-will be scrollable and include a fixed **Failure stage** label. Until then, keep the
-verified download snapshot above. A screen showing only some fields is incomplete
+The published 0.17.3 reports are scrollable. The TV result now identifies
+**directory permissions** as the failure stage, with cleanup passed and SQLite
+not run. The underlying filesystem cause is still unknown. **0.17.4 is a candidate,
+not yet a verified download**; use the published snapshot above until its merge
+and publication are verified. A screen showing only some fields is incomplete
 evidence; do not guess the hidden results.
 
 1. Choose **Device readiness**. Record the displayed HomeFX/repository versions and
@@ -127,7 +127,8 @@ evidence; do not guess the hidden results.
    HomeFX profile, checks them and attempts cleanup. It does not read account files
    or log in. You can cancel the prompt; cancellation means the test was **not run**.
 4. If you run it, record every fixed result, especially **Temporary cleanup**.
-   On 0.17.3, scroll through the report and include **Failure stage**.
+   Scroll through the report and include **Failure stage**. On 0.17.4, also
+   include **Directory check**, which describes the initial directory setup.
    The expected result is **passed** for private file permissions, SQLite
    commit/rollback and temporary cleanup, with **Overall: passed**.
 5. If any result is unavailable, failed, unsupported or not run, report it as shown.
@@ -139,7 +140,8 @@ Safe observations to return:
 
 - The displayed versions and fixed Device readiness capability labels/results.
 - **Private file permissions**, **SQLite commit/rollback**, **Temporary cleanup**
-  and **Overall**, plus **Failure stage** where available, or that you cancelled
+  and **Overall**, plus **Failure stage** and **Directory check** where available,
+  or that you cancelled
   and did not run the test.
 - Whether installation/update, opening HomeFX, Back and restart worked.
 - Approximate first-open and immediate-reopen times, if measured.
@@ -193,18 +195,49 @@ login in this preview.
 
 ## 7. Update or uninstall
 
-For an update, open **Settings → Add-ons → My add-ons → Video add-ons → HomeFX
-Preview** and inspect its information/version screen. If Kodi offers **Update** or
-**Versions**, select the published HomeFX repository version you intend to install.
-Automatic updates depend on your Kodi settings; installing a repository is not
-proof that an update happened. Review any warnings and confirm the installed
-version in **Device readiness**, then fully restart Kodi and recheck saved rows.
-Menu labels can vary by skin.
+The repository and video add-on have independent versions. Repository **0.2.0**
+is still current; it does not need a new version or a fresh ZIP installation every
+time the video add-on changes. Keep **HomeFX Preview Repository** installed and
+enabled. Installing only a video ZIP does not install the repository.
 
-You normally do not need to reinstall the repository ZIP for every video add-on
-update. If a new repository installer is advertised, follow its release instructions.
-Do not replace a failed update with an arbitrary older ZIP: retained archives do not
-establish safe rollback of every stored-data format.
+Automatic updates are not an immediate push from the download site. Kodi 21.2's
+[default repository recheck interval is 24 hours](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/xbmc/addons/Repository.cpp#L184).
+The interval is not a promise that an update will install within 24 hours: Kodi must
+be running, the repository must be reachable, and update settings/rules must allow it.
+
+If an expected update has not appeared:
+
+1. Confirm **HomeFX Preview Repository** is installed and enabled under **My add-ons
+   → Add-on repository**.
+2. Check **Settings → System → Add-ons → Updates**. Choose **Install updates
+   automatically** if that is your preferred policy; a notification-only setting
+   requires you to install the offered update yourself.
+3. Open **My add-ons → Video add-ons → HomeFX Preview** and check its **Auto-update**
+   control. Keep it enabled if you want automatic updates.
+4. In Kodi's add-on browser, choose **Check for updates** and wait for the refresh.
+   Menu locations and labels may differ in your skin. This requests a refresh;
+   it is not proof that installation completed.
+5. Open HomeFX Preview's **Versions** or **Update** screen. Choose the latest
+   published version explicitly labelled **HomeFX Preview Repository**. Review any
+   confirmation, wait for completion, fully restart Kodi, then confirm the installed
+   version in **Device readiness**. Recheck saved widget rows.
+
+A manual video-ZIP install can leave Kodi without a repository origin for that
+installation; Kodi also maintains update pin rules. This follows Kodi's
+[ZIP installation path](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/xbmc/addons/AddonInstaller.cpp#L409)
+and [origin/update-rule handling](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/xbmc/addons/AddonInstaller.cpp#L823),
+not an inspection of your TV's database. Selecting the latest version from the
+HomeFX repository is the supported recovery path to try; do not assume the manual
+ZIP has preserved the previous repository association. Record the version/source
+shown, whether refresh found an update, and whether installation succeeded. Actual
+automatic update behavior still needs a later repository-delivered release to test.
+
+If the HomeFX repository version is absent after refresh, stop and report the fixed
+error category or missing entry. Do not broaden trust to every repository, edit
+Kodi's add-on database, uninstall unrelated add-ons, or clear Kodi data to force it.
+Do not choose an arbitrary older ZIP: retained archives do not establish safe
+rollback of every stored-data format. If a new repository installer is advertised,
+follow that release's instructions.
 
 To remove HomeFX, first remove any HomeFX widget/menu shortcuts you no longer want.
 Open its add-on information screen and choose **Uninstall**. Review Kodi's question

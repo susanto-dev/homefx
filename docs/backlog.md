@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status checked on 13 November 2026: published **video 0.17.2 / repository 0.2.0**.
+Status checked on 13 November 2026: published **video 0.17.3 / repository 0.2.0**.
 The installation guide is merged in PR #27; its post-merge publication workflow
 passed. **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
@@ -73,13 +73,13 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.2 publication and HTTP integrity verified | TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.2 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.3 publication and HTTP integrity verified | TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.3 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
-| Q04 | Device readiness and sanitized test checklist | Implemented; partial TV evidence received on 0.17.2 | Permissions failed, SQLite not run, cleanup passed; 0.17.3 diagnostic candidate adds scrollable reports and fixed failure stages without relaxing checks |
+| Q04 | Device readiness and sanitized test checklist | Implemented; partial TV evidence received on 0.17.2 | Permissions failed, SQLite not run, cleanup passed; 0.17.3 rerun stopped at directory permissions; 0.17.4 candidate explicitly sets and strictly checks the synthetic directory mode |
 | G01 | Original-code licence | Decision | Existing MIT remains; final owner preference still unconfirmed |
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
@@ -109,7 +109,7 @@ The subsequent 0.17.2 release contains the concurrent demo-state lost-update
 correction described above. Public configuration syntax acceptance does not prove
 registered identity, actual login/refresh or device readiness.
 
-## Current diagnostic candidate: 0.17.3
+## Published diagnostic checkpoint: 0.17.3
 
 The TV reports HomeFX 0.17.2, repository 0.2.0, Kodi 21.2 and Python 3.11.7.
 Private file permissions failed, SQLite commit/rollback did not run, temporary
@@ -117,12 +117,10 @@ cleanup passed and the overall result did not pass. Only version fields were
 visible in the supplied readiness result, so SQLite/TLS capability evidence is
 still missing. The precise storage failure cause remains unknown.
 
-The 0.17.3 candidate adds scrollable diagnostics and a fixed **Failure stage**
-label. It preserves the permission requirements and inactive account boundary.
-It is not published or tested on TV yet; follow the
-[bounded diagnostic rerun](testing-on-tv.md#observed-device-diagnostics-and-0173-rerun)
-after merge and verified publication. No installation-path or widget acceptance
-is inferred from these diagnostic observations.
+Version 0.17.3 added scrollable diagnostics and a fixed **Failure stage** label.
+Its subsequent TV storage report identified **directory permissions**, with SQLite
+not run and cleanup passed. The underlying filesystem cause remains unknown;
+see the 0.17.4 candidate below. No path, token or private account data is required.
 
 ## Next checkpoint: diagnose the TV storage blocker
 
@@ -137,7 +135,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|
-| 1 | R01–R03, Q04, B10 | Storage failed on 0.17.2; after 0.17.3 publication, collect full readiness and failure-stage/cleanup results; installation path, navigation and restart acceptance remain open |
+| 1 | R01–R03, Q04, B10 | Storage failed at directory permissions on 0.17.3; after 0.17.4 publication, collect directory-check/failure-stage/cleanup results; installation path, navigation and restart acceptance remain open |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
 | 3 | T01–T03, T05 | Development configuration preflight passed; Production not run; registered identity/redirect verification and bounded device authorization still required before live wiring |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
@@ -161,3 +159,19 @@ NBA, a separate Android app and an always-on server are outside scope. A new ski
 a conditional future option, not a required component. See [playback plan](playback-plan.md),
 [account gates](account-setup.md), [handoff evidence](umbrella-feasibility.md),
 [metadata contracts](metadata-contract.md) and [TV checklist](testing-on-tv.md).
+
+## 0.17.4 candidate: directory setup and update recovery
+
+The owner reported 0.17.3 stopping at **directory permissions**, SQLite **not run**,
+cleanup **passed**, overall **not passed**. The complete storage report is now
+visible. The underlying filesystem cause is not established. This candidate
+explicitly sets and strictly verifies permissions on only the probe's fresh
+synthetic directory, matching private-store setup, and adds a fixed initial
+`Directory check` result. It does not activate accounts or weaken permissions.
+
+The hosted 0.17.3/repository 0.2.0 index and SHA-256/package paths were verified.
+No repository format defect was found. Kodi refresh timing, update settings and
+manual ZIP origin are separate from publication: use the documented repository
+refresh/version-selection steps. Auto-update on the TV remains unverified.
+After 0.17.4 merge/publication, rerun storage and return fixed stage/directory/cleanup
+results. No source-provider, playback, scrobbling or custom-skin expansion is included.

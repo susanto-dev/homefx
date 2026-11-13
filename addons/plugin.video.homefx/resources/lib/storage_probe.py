@@ -39,6 +39,7 @@ def report(profile):
     directory = connection = None
     failed = False
     stage, failure_stage = "platform prerequisites", "none"
+    directory_check = "not run"
     try:
         if os.name != "posix" or not hasattr(os, "fchmod"):
             permissions = "unsupported"
@@ -59,9 +60,31 @@ def report(profile):
         directory = Path(tempfile.mkdtemp(prefix=".homefx-storage-check-", dir=str(profile)))
         cleanup = "pending"
         permissions = "failed"
+        # Apply the same private mode requested by account stores, but only to
+        # this invocation's fresh synthetic directory, never the profile itself.
+        stage = "directory permission change"
+        directory_check = "permission change failed"
+        descriptor = os.open(str(directory), os.O_RDONLY | os.O_NONBLOCK
+                             | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            info = os.fstat(descriptor)
+            path_info = directory.lstat()
+            if (not stat.S_ISDIR(info.st_mode) or not stat.S_ISDIR(path_info.st_mode)
+                    or (info.st_dev, info.st_ino) != (path_info.st_dev, path_info.st_ino)):
+                raise ValueError()
+            os.fchmod(descriptor, 0o700)
+        finally:
+            os.close(descriptor)
         stage = "directory permissions"
-        if not _private(directory, 0o700, directory=True):
+        directory_check = "inspection failed"
+        info = directory.lstat()
+        if not stat.S_ISDIR(info.st_mode):
+            directory_check = "not a directory"
             raise ValueError()
+        if stat.S_IMODE(info.st_mode) != 0o700:
+            directory_check = "mode mismatch after setting private permissions"
+            raise ValueError()
+        directory_check = "passed"
         database = directory / "synthetic.sqlite3"
         stage = "database creation"
         descriptor = os.open(str(database), os.O_CREAT | os.O_EXCL | os.O_RDWR
@@ -122,6 +145,7 @@ def report(profile):
         "SQLite commit/rollback: " + transaction,
         "Temporary cleanup: " + cleanup,
         "Failure stage: " + failure_stage,
+        "Directory check: " + directory_check,
         "Overall: " + ("passed" if passed else "not passed"),
         "No account files were read. No network or login was attempted.",
         "This does not verify token recovery, service access or playback.",
