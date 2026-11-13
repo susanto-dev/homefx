@@ -51,7 +51,29 @@ jobs:
           esac
           python tools/release_history.py releases/inventory.json --base-ref "$base"
       - name: Test synthetic behavior
-        run: python -m unittest discover -s tests -v
+        run: python tools/run_tests.py --summary dist/tests/summary.json
+      - name: Summarize automated tests
+        if: always()
+        run: |
+          if [ -f dist/tests/summary.json ]; then
+            {
+              echo '### Automated test results'
+              echo 'Aggregate counts only; skipped tests are not passes. No device or live-service acceptance is implied.'
+              echo '```json'
+              cat dist/tests/summary.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Automated test summary unavailable; inspect the failed or skipped setup/test step.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Save aggregate test results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: test-results-python-${{ matrix.python }}
+          path: dist/tests/summary.json
+          retention-days: 7
+          if-no-files-found: warn
       - name: Validate package and preview site
         run: python tools/build_site.py
       - name: Verify embedded preview repository

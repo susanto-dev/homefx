@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This change prepares `plugin.video.homefx` 0.13.0 alongside
+The current published packages are `plugin.video.homefx` 0.13.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -119,8 +119,11 @@ also passed build, deployment and hosted-byte verification. The following 0.11.0
 passed build, deployment and hosted-byte verification. Video 0.12.0 deployed from merge commit
 `4fbc5b3a34bfb76c5aac3fce5646814b82f7a7b0`;
 [publication run 43349117123](https://github.com/susanto-dev/homefx/actions/runs/43349117123)
-passed build, deployment and hosted-byte verification. Version 0.13.0 awaits its
-own merge and publication. Previously indexed archives remain immutable.
+passed build, deployment and hosted-byte verification. Video 0.13.0 deployed from merge commit
+`66ad23d0b43ba2fa3be2a00a5036e0ffadc7a669`;
+[publication run 43353289076](https://github.com/susanto-dev/homefx/actions/runs/43353289076)
+passed build, deployment and hosted-byte verification. The following test-quality
+batch changes no package bytes or versions. Previously indexed archives remain immutable.
 
 
 ## Local preparation
