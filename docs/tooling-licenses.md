@@ -85,3 +85,19 @@ archive and repository-index checks remain the applicable gates. Official
 Kodi.org submission requirements must be assessed separately if submission is
 later proposed. Any future redistribution or modification of the checker would
 need its GPL obligations reviewed first.
+
+The checker evaluation was repeated on 2026-11-13. PyPI still reports 0.0.36;
+its wheel SHA-256 is
+`bb524725f145bab9cd46ac59b10ca136717ef0c664b00f1d50fc296f431f9e8b`.
+The release archive was inspected statically without installing or executing it.
+The inspected upstream revision
+[`67be5c1eca23e01402a447f995e2216bd83202f3`](https://github.com/xbmc/addon-check/tree/67be5c1eca23e01402a447f995e2216bd83202f3)
+still has the HTTP initialization and repository schema limitations above. Its
+[CLI](https://github.com/xbmc/addon-check/blob/67be5c1eca23e01402a447f995e2216bd83202f3/kodi_addon_checker/__main__.py)
+offers no reviewed local-index mode. Its broad dependency constraints would also
+require a separately reviewed hash-locked installation before adoption.
+
+HomeFX instead strengthens its own current source-manifest contract, with mutation
+tests for required metadata, duplicate/unknown extensions and unexpected dependency
+imports. This adds no checker code or dependencies and changes no published bytes.
+It remains a focused project gate, not official checker acceptance.

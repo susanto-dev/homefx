@@ -273,3 +273,13 @@ Kodi or establish real credential lifecycle safety.
 See [local storage boundaries](storage-boundaries.md) for per-operation path checks,
 strict persisted-state validation, migration compatibility and fail-closed errors.
 Concurrent path replacement by same-user code remains outside this boundary.
+
+## Declared dependency consistency
+
+The offline inventory guard runs before CI dependency installation and rejects
+unsupported or conflicting pins/hashes in the four reviewed requirements files.
+It does not resolve dependencies, verify hashes against PyPI or determine whether
+packages are safe. Existing pip hash enforcement, advisory scans and manual update
+triage remain necessary. GitHub's dependency graph already detects the declarations;
+see [inventory scope and settings](dependencies.md). No automatic update PRs are
+enabled by this batch.
