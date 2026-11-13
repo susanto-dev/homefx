@@ -5,6 +5,9 @@ menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
 
+Use the [short activation handoff checklist](activation-checklist.md) to track the
+next evidence and owner input. It summarizes these gates without enabling live routes.
+
 ## Owner input for the read-only milestone
 
 Live access remains blocked until the registered **public client ID** and **exact

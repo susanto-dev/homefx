@@ -4,6 +4,9 @@ Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout
 Record device, embedded Python, skin and widget-configuration component versions,
 package SHA-256, steps, expected/observed behavior and elapsed load times.
 
+Use the [short activation handoff checklist](activation-checklist.md) to track the
+next evidence and owner input. It summarizes these gates without enabling live routes.
+
 ## Start here: bounded read-only journey
 
 1. **Published package first:** follow the repository installation/update steps below.

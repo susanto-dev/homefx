@@ -12,6 +12,10 @@ It covers repository-first installation, a full Kodi restart, safe readiness/sto
 checks and demo widget setup with your existing skin. Updates to the Pages guide are published by the normal checked deployment after
 changes merge to main.
 
+For the next device and account checkpoint, use the
+[activation handoff checklist](docs/activation-checklist.md). It separates safe demo
+observations from the gates required before any live connection.
+
 ## Current preview: 0.17.2
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**

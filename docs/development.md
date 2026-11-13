@@ -178,3 +178,14 @@ missing/corrupt hosted guide bytes fail publication verification. The guide is n
 included in any Kodi ZIP. Main merge publishes automatically through the existing
 Pages workflow; PR checks do not deploy. Verify the hosted guide after merge rather
 than dispatching publication separately. A browser layout test is not a Kodi/TV test.
+
+## Installation navigation checks
+
+`python tools/run_tests.py --pattern test_documentation.py` checks local file links
+and heading anchors across the README and installation/account/widget handoff docs,
+plus backlog/release evidence, including project GitHub `blob/main` links mapped to
+this checkout. Heading checks use the guide renderer and the current plain ASCII
+linked headings; this is not a general GitHub Markdown/Unicode slug validator. It also checks
+README → Pages guide and landing page → guide → downloads navigation. The normal
+full suite includes these checks. External HTTP availability is checked separately
+after publication; offline link checks do not establish hosted or TV acceptance.
