@@ -1,10 +1,11 @@
-"""Private list selections only; no tokens, titles, settings or history are saved.
+"""Private list selections and widget key; no tokens, titles or history are saved.
 
 Trakt's settings contract identifies user.ids.uuid as globally unique and suitable
 for local identification. Treat it as an opaque bounded identifier, not a slug or
 an assumed RFC UUID format. Account hashes are namespaces, not anonymization.
 """
 import hashlib
+import hmac
 import json
 import os
 from pathlib import Path
@@ -95,7 +96,7 @@ class AccountPreferences:
     @staticmethod
     def _initialize(conn, created):
         version = conn.execute('PRAGMA user_version').fetchone()[0]
-        if version not in (0, 1, 2):
+        if version not in (0, 1, 2, 3):
             raise PreferencesError('preferences_version_unsupported')
         if created:
             conn.execute('CREATE TABLE selections ('
@@ -110,7 +111,16 @@ class AccountPreferences:
                 conn.execute('INSERT INTO preference_state(id,epoch) VALUES(1,0)')
         AccountPreferences._table(conn, 'preference_state')
         AccountPreferences._epoch(conn)
-        conn.execute('PRAGMA user_version=2')
+        if version < 3:
+            existing = conn.execute("SELECT 1 FROM sqlite_master WHERE name='widget_identity'").fetchone()
+            if existing is not None:
+                raise PreferencesError('preferences_invalid')
+            conn.execute('CREATE TABLE widget_identity ('
+                         'id INTEGER PRIMARY KEY CHECK(id=1), secret BLOB NOT NULL)')
+            conn.execute('INSERT INTO widget_identity(id,secret) VALUES(1,?)', (os.urandom(32),))
+        AccountPreferences._table(conn, 'widget_identity')
+        AccountPreferences._widget_key(conn)
+        conn.execute('PRAGMA user_version=3')
 
     @staticmethod
     def _table(conn, name):
@@ -118,12 +128,60 @@ class AccountPreferences:
             'selections': [('account', 'TEXT', 0, 1), ('selected', 'TEXT', 1, 0),
                            ('revision', 'INTEGER', 1, 0)],
             'preference_state': [('id', 'INTEGER', 0, 1), ('epoch', 'INTEGER', 1, 0)],
+            'widget_identity': [('id', 'INTEGER', 0, 1), ('secret', 'BLOB', 1, 0)],
         }
         columns = conn.execute('PRAGMA table_info(' + name + ')').fetchall()
         shape = [(row[1], row[2].upper(), row[3], row[5]) for row in columns]
         table = conn.execute('SELECT type FROM sqlite_master WHERE name=?', (name,)).fetchone()
         if table != ('table',) or shape != expected[name]:
             raise PreferencesError('preferences_invalid')
+
+    @staticmethod
+    def _widget_key(conn):
+        rows = conn.execute('SELECT id,secret FROM widget_identity LIMIT 2').fetchall()
+        if (len(rows) != 1 or type(rows[0][0]) is not int or rows[0][0] != 1
+                or type(rows[0][1]) is not bytes or len(rows[0][1]) != 32):
+            raise PreferencesError('preferences_invalid')
+        return rows[0][1]
+
+    @staticmethod
+    def _reference(secret, domain, account, epoch, key, kind=None, ident=None):
+        # Canonical framing and domain separation; locators are not authorization.
+        payload = json.dumps([domain, account, epoch, key, kind, ident],
+                             separators=(',', ':'), ensure_ascii=True).encode('ascii')
+        return hmac.new(secret, payload, hashlib.sha256).hexdigest()
+
+    def widget_snapshot(self, uuid):
+        """Read current selections, clear epoch and opaque refs in one transaction."""
+        account = _account_key(uuid)
+        def read(conn):
+            epoch = self._epoch(conn)
+            selected = self._rows(conn).get(account, ([], 0))[0]
+            secret = self._widget_key(conn)
+            refs = [self._reference(secret, 'homefx-widget-list-v1', account, epoch, key)
+                    for key in selected]
+            return epoch, selected, refs
+        return self._transaction(read)
+
+    def widget_item_refs(self, uuid, key, identities, expected_epoch):
+        """Return opaque item locators only within a currently selected list."""
+        account = _account_key(uuid)
+        _selection([key])
+        if (not _integer(expected_epoch) or not isinstance(identities, (list, tuple))
+                or len(identities) > 10000 or any(
+                    not isinstance(pair, (list, tuple)) or len(pair) != 2
+                    or pair[0] not in ('movie', 'show') or type(pair[1]) is not int
+                    or not 1 <= pair[1] <= _MAX_INTEGER for pair in identities)):
+            raise PreferencesError('invalid_widget_reference')
+        def read(conn):
+            epoch = self._epoch(conn)
+            selected = self._rows(conn).get(account, ([], 0))[0]
+            if epoch != expected_epoch or key not in selected:
+                raise PreferencesError('preferences_changed')
+            secret = self._widget_key(conn)
+            return [self._reference(secret, 'homefx-widget-item-v1', account, epoch,
+                                    key, kind, ident) for kind, ident in identities]
+        return self._transaction(read)
 
     @staticmethod
     def _epoch(conn):
@@ -217,10 +275,12 @@ class AccountPreferences:
             conn = self._connect()
             conn.execute('BEGIN IMMEDIATE')
             if validate:
-                if conn.execute('PRAGMA user_version').fetchone()[0] != 2:
+                if conn.execute('PRAGMA user_version').fetchone()[0] != 3:
                     raise PreferencesError('preferences_version_unsupported')
                 self._table(conn, 'selections')
                 self._table(conn, 'preference_state')
+                self._table(conn, 'widget_identity')
+                self._widget_key(conn)
                 self._epoch(conn)
                 self._rows(conn)
             value = action(conn)

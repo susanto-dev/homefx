@@ -37,7 +37,7 @@ scrobbling acceptance is part of this milestone.
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install version 0.15.0.
+   Preview Repository → Video add-ons → HomeFX Preview to install version 0.16.0.
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks
@@ -119,7 +119,7 @@ or starting media. Existing movie/episode clicks must still show demo informatio
 There is no real account login or source input field to test in this version.
 Follow the separate [playback plan](playback-plan.md) before any future live experiment.
 
-## Experimental repository acceptance (0.2.0 repository / 0.15.0 video)
+## Experimental repository acceptance (0.2.0 repository / 0.16.0 video)
 
 Status: NOT RUN. Record the deployed revision, exact ZIP checksums and the HTTP-check
 result separately from device observations. Confirm Kodi can browse the source URL,
@@ -153,3 +153,17 @@ directory may remain when the profile did not exist before. Do not share profile
 paths, backups or credentials. A pass is a local synthetic check, not proof of token
 refresh recovery, account authorization, cross-device quotas or protection from
 other code running as Kodi. These remain separate tests.
+
+## Inactive account-bound route acceptance (0.16)
+
+Do not attempt these live steps before registration, explicit authorization and
+account/device gates. Then verify a saved personal/liked widget survives restart
+and refresh, fails safely for another account, and does not rebind after list
+reordering/deselection. Clear/disconnect must invalidate the old reference; choose
+new sources after reconnecting. Test title and episode metadata actions without
+playback, and a full-list shortcut when the heading cannot be clicked.
+
+Include account/selection changes around directory submission. Failed completion
+must not be assumed to clear skin-held rows: record actual stale-row behavior,
+Back/return position and cancellation, and resolve it before public activation.
+Return only fixed outcomes/timings, not URLs, private names, contents or profile data.

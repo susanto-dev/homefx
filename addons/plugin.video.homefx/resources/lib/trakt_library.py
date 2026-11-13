@@ -3,10 +3,12 @@ from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import asdict
 import json
+import hmac
+import re
 import time
 
 from .trakt_auth import AuthError, _number
-from .trakt_client import ApiError, ListRef, search_arguments, metadata_id, metadata_rows
+from .trakt_client import ApiError, ListRef, search_arguments, metadata_id, metadata_rows, season_arguments, episode_arguments
 from . import trakt_views
 from .trakt_preferences import PreferencesError, account_uuid
 
@@ -276,6 +278,133 @@ class Library:
             result = trakt_views.browse_list(source, now)
             self._assert_view(generation, revision)
             return result
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    @staticmethod
+    def _widget_reference(value):
+        if type(value) is not str or not re.fullmatch(r'[a-f0-9]{64}', value):
+            raise ApiError('invalid_widget_reference')
+        return value
+
+    def _widget_context(self):
+        if self._preferences is None:
+            raise PreferencesError('widget_storage_required')
+        available = {ref.key: ref for ref in self.lists()}
+        generation, revision, account = self._generation, self._revision, self._account
+        epoch, selected, refs = self._preferences.widget_snapshot(account)
+        selected = tuple(selected)
+        if epoch != self._preferences_epoch:
+            self.clear()
+            raise PreferencesError('preferences_changed')
+
+        def guard():
+            try:
+                self._assert_view(generation, revision)
+                current_epoch, current_selected, current_refs = self._preferences.widget_snapshot(account)
+                if (current_epoch != epoch or tuple(current_selected) != selected
+                        or current_refs != refs):
+                    raise PreferencesError('preferences_changed')
+                self._assert_view(generation, revision)
+            except (AuthError, ApiError):
+                self.clear()
+                raise
+
+        guard()
+        if any(key not in available for key in selected):
+            raise ApiError('unavailable_selection')
+        return account, epoch, selected, refs, available, guard
+
+    def widget_sources(self):
+        """Private selected folders with restart-stable opaque, account-bound refs."""
+        try:
+            _, _, selected, refs, available, guard = self._widget_context()
+            result = [{'name': available[key].name, 'ref': ref}
+                      for key, ref in zip(selected, refs)]
+            guard()
+            return {'items': result, 'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_list(self, ref):
+        """Resolve selected membership before reading; never accept a caller list ID."""
+        self._widget_reference(ref)
+        try:
+            account, epoch, selected, refs, _, guard = self._widget_context()
+            key = next((key for key, candidate in zip(selected, refs)
+                        if hmac.compare_digest(ref, candidate)), None)
+            if key is None:
+                raise ApiError('unavailable_selection')
+            result = self.browse_list(key)
+            guard()
+            rows = result['items']
+            item_refs = self._preferences.widget_item_refs(account, key,
+                [(row['kind'], row['trakt_id']) for row in rows], expected_epoch=epoch)
+            for row, item_ref in zip(rows, item_refs):
+                row['item_ref'] = item_ref
+            guard()
+            return dict(result, guard=guard)
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_details(self, ref, item_ref):
+        """Return one list member's metadata; no source lookup or remote mutation."""
+        self._widget_reference(item_ref)
+        try:
+            result = self.widget_list(ref)
+            matches = [row for row in result['items'] if hmac.compare_digest(row['item_ref'], item_ref)]
+            if len(matches) != 1:
+                raise ApiError('unavailable_selection')
+            result['guard']()
+            return {'items': matches, 'unsupported_count': 0, 'guard': result['guard']}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def _widget_show(self, ref, item_ref):
+        result = self.widget_details(ref, item_ref)
+        row = result['items'][0]
+        if row['kind'] != 'show':
+            raise ApiError('unavailable_selection')
+        return row['trakt_id'], result['guard']
+
+    def widget_seasons(self, ref, item_ref):
+        try:
+            show_id, guard = self._widget_show(ref, item_ref)
+            rows = self.series_seasons(show_id)
+            guard()
+            return {'items': rows, 'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_episodes(self, ref, item_ref, season):
+        # Validate the local number before authenticated work.
+        season_arguments(1, season)
+        try:
+            show_id, guard = self._widget_show(ref, item_ref)
+            rows = self.episode_view(show_id, season)
+            if any(row['season'] != season for row in rows):
+                raise ApiError('mismatched_season')
+            guard()
+            return {'items': rows, 'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_episode_details(self, ref, item_ref, season, episode):
+        """Resolve one episode inside the bound list's selected show/season."""
+        episode_arguments(1, season, episode)
+        try:
+            result = self.widget_episodes(ref, item_ref, season)
+            rows = [row for row in result['items'] if row['episode'] == episode]
+            if len(rows) != 1:
+                raise ApiError('unavailable_selection')
+            result['guard']()
+            return {'items': rows, 'unsupported_count': 0, 'guard': result['guard']}
         except (AuthError, ApiError):
             self.clear()
             raise

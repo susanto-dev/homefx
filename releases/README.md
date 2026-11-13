@@ -48,3 +48,7 @@ published 0.14.1 repair. Repository 0.2.0 is reused unchanged.
 The 0.15.0 read-only list preparation retains all ten previous records and archive
 bytes, including published 0.14.2. Repository 0.2.0 remains unchanged. Live account
 routes remain inactive; publication is not device or account acceptance.
+
+The 0.16.0 widget preparation retains all eleven prior package records and bytes.
+Repository 0.2.0 is unchanged. Inactive preference-store schema 3 is not readable by
+older runtimes; immutable ZIP retention does not establish profile downgrade safety.

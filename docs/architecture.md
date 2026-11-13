@@ -1,7 +1,7 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx 0.15.0 supplies the synthetic preview. repository.homefx 0.2.0
+plugin.video.homefx 0.16.0 supplies the synthetic preview. repository.homefx 0.2.0
 provides the experimental repository-first installation contract. The 0.9 publication and hosted-byte verification passed. Each later release must
 pass its own publication checks; TV installation/update behavior remains a separate
 acceptance gate. A separate skin component is deferred
@@ -214,5 +214,15 @@ for mixed movie/show metadata, local selection and season/episode reads. Selecti
 confirmation pins the account and atomically compares prior ordered choices;
 result delivery checks the captured account even after UI callbacks. It supplies
 explicit empty/error/cancellation states without enabling a public live route.
-Existing synthetic widget URLs remain stable; private account-bound route identity
-and actual Kodi rendering remain the next gated integration boundary.
+Existing synthetic widget URLs remain stable. The next preparation is described
+in [account-bound routing](widget-routing.md); public activation remains gated.
+
+## Account-bound directory preparation (0.16)
+
+An inactive route namespace and injected renderer consume guarded Library reads.
+Private preference schema 3 supplies a persistent profile key for opaque list/item
+references; current verified account and fresh selection checks remain mandatory.
+Routes survive restart without using positional slots or exposing account/list names.
+The public adapter still imports none of this stack. Strict read-only dispatch,
+metadata dialogs and disabled private disk caching are tested with fabricated data;
+actual Kodi directory retention and skin behavior remain device gates.

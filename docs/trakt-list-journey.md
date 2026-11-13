@@ -41,12 +41,12 @@ logged, persisted or placed directly in public URLs.
 
 ## Remaining live boundary
 
-A future gated Kodi renderer must finish a directory atomically, clear stale rows
-on failure, disable disk caching for private data, and sanitize displayed service
-text. It must allocate opaque account-bound references for saved widget routes;
-never use positional selection slots that can rebind after an account change.
-Full-list folders must work independently of skin heading clickability. Selecting
-lists in HomeFX and assigning rows in the skin remain separate steps.
+The [account-bound route and renderer](widget-routing.md) now prepares opaque
+persistent references, full-list access and injected read-only presentation. It is
+not called by the public entry point. Gated dispatch, real account integration and
+actual Kodi/skin acceptance remain necessary. Kodi submission is not a transaction;
+failed completion does not prove that a skin discarded rows already submitted.
+Selecting lists in HomeFX and assigning rows in the skin remain separate steps.
 
 Registration/public identity and the exact registered redirect are owner inputs.
 The [account gates](account-setup.md) and [staged TV checks](testing-on-tv.md) remain

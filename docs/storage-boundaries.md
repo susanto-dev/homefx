@@ -108,3 +108,13 @@ A chooser opened before another local selection changed cannot overwrite that
 selection after confirmation. This adds no schema migration; existing callers
 without expected choices retain their behavior. Credential generations and verified
 account UUIDs remain separate checks around the UI interaction.
+
+## Widget identity (0.16)
+
+Preference schema 3 stores a generated profile key alongside existing selections
+and clear state. Valid old schemas migrate transactionally; missing/malformed
+version-3 key state is never regenerated. HMAC references bind account, list and
+clear epoch; item references also bind kind/title identity. Keys stay in private
+storage and references do not authorize access. Fresh account/selection/epoch
+checks reject stale resolves and presentation. No schema downgrade is supported;
+older packages require a separate compatible profile. See [routing](widget-routing.md).

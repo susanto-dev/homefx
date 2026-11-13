@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This read-only preparation batch prepares `plugin.video.homefx` 0.15.0 alongside
+This widget preparation batch prepares `plugin.video.homefx` 0.16.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -192,3 +192,25 @@ would advertise 0.15.0; no independent deployment is required. Public browsing
 remains synthetic: the packaged list interaction is inactive until registration,
 account-bound route design and device acceptance gates are completed. No paid
 service, dependency, account registration or new hosting is provisioned.
+
+
+## Account-bound widget preparation (0.16.0)
+
+The 0.15.0 preparation merged at `b3fd8af2422d78fc467750eac9a9a885c163a5be`.
+[Validation 43368695530](https://github.com/susanto-dev/homefx/actions/runs/43368695530)
+and [publication 43368695517](https://github.com/susanto-dev/homefx/actions/runs/43368695517)
+passed, including deployed-byte verification. Direct HTTPS checks confirmed the
+0.15.0 index and both root/repository video ZIPs with SHA-256
+`c3b500261578d62d84f8ab3c8b8c7baf2cd979ea1b57a4fe950dccedd43c7e6e`.
+
+This batch prepares video 0.16.0, preserving all eleven earlier package records and
+bytes; repository 0.2.0 is unchanged. Only the ordinary successful post-merge Pages
+workflow would advertise the new video version. Public routes remain synthetic.
+No account, paid service, dependency or new hosting is provisioned.
+
+Opening the inactive preference store in this version migrates its private schema
+to version 3. Existing selections and clear epoch are preserved. Older runtimes
+reject that newer schema: retained ZIP availability does not imply a safe downgrade
+of a migrated profile. Installing the public preview does not itself open the real
+account store. Never delete private storage or restore a backup merely to make a
+downgrade pass; use a separate test profile for older releases.
