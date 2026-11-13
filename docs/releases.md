@@ -292,3 +292,12 @@ a later build to repair that pair.
 the normal workflow would publish video 0.17.1 with repository 0.2.0 unchanged,
 retaining all previous archives. No live provider routes, credentials, remote writes,
 playback or skin changes are introduced. The official checker limitations remain.
+
+## Environment configuration preflight
+
+The separate Trakt configuration workflow checks the selected environment's public
+configuration offline. It does not alter video 0.17.1, repository 0.2.0, their ZIP
+bytes, the inventory or Pages inputs. Merging this tooling change runs the ordinary
+publication path with identical packages and starts a separate Development
+configuration check. Production requires a manual main-branch selection. A green
+configuration check establishes syntax only; live activation gates remain unchanged.

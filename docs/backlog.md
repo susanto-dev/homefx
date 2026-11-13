@@ -37,7 +37,7 @@ cancellation/packaging repair does not claim to resolve it.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Application registration, public ID/redirect URI, actual login/refresh and TV storage/TLS verification |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner reports registration and environment-scoped public IDs/shared redirect configured; offline workflow preflight prepared, actual registration/login/refresh and TV storage/TLS verification pending |
 | T02 | Account connect/cancel/switch/disconnect UI | Controller and injected dialog adapter inactive (0.12); setup guidance implemented | Wire UI only after activation gates; verify revocation/privacy wording and recovery on TV |
 | T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
@@ -104,7 +104,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 |---|---|---|
 | 1 | R01–R03, Q04, B10 | Published candidate ready; owner checks install/update, readiness/storage, navigation and restart on TV |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Registration public ID/redirect/mode and bounded device authorization required before live wiring; verify login/refresh/TLS and account isolation |
+| 3 | T01–T03, T05 | Development/Production configuration preflight prepared; registered identity/redirect verification and bounded device authorization still required before live wiring |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
 | Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
 | Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |

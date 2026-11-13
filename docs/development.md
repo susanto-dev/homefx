@@ -140,3 +140,12 @@ extension, singleton MIT/all metadata and reviewed asset declarations. These are
 HomeFX preview policies; nonblank identity fields are stricter than the inspected
 official schema's string-presence requirement. Historical archive validation remains
 separate, and changing build policy does not rewrite retained releases.
+
+## Public Trakt configuration preflight
+
+See [environment setup](account-setup.md#github-configuration-environments).
+`tools/check_trakt_config.py` checks process environment values offline and emits
+fixed diagnostics only. Tests use fabricated identities and redirects; no actual
+account belongs in CI. The dedicated main-only workflow selects Development by
+default and Production only by explicit manual choice. It does not change release
+bytes, add a client-secret requirement or enable provider access.
