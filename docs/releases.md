@@ -132,3 +132,9 @@ The [release-preparation helper](release-preparation.md) builds a complete verif
 proposal without changing authoritative release inputs. It preserves current and
 review-base records, stages only validated bytes and fails rather than replacing
 a published version. A proposal is neither publication nor permission to merge.
+
+The subsequent test-reporting batch published unchanged package bytes from
+`50047325a8ee3ec02d705770bb83948f66609649`;
+[publication run 43354769976](https://github.com/susanto-dev/homefx/actions/runs/43354769976)
+passed build, deployment and hosted-byte verification. The dependency/manifest
+validation batch also changes no package versions or retained archive bytes.

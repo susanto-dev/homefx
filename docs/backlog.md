@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the test-quality batch after 0.13 (video add-on 0.13.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the dependency and manifest validation batch after 0.13 (video add-on 0.13.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -65,28 +65,34 @@ provider or release choice. The current public add-on remains synthetic.
 | R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.13 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
-| Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented | Manual issue triage; no automatic update PRs or PR comments |
-| Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
+| Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
+| Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
 | Q04 | Device readiness and sanitized test checklist | Implemented; optional synthetic private-storage check added (0.12); TV results pending | Provide safe version fields and observations; no full backup or secrets needed |
 | G01 | Original-code licence | Decision | Existing MIT remains; final owner preference still unconfirmed |
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current combined batch: test quality after 0.13
+## Current combined batch: dependencies and manifest validation
 
-Parallel scope: focused browsing, account and playback boundary regressions, a
-standard-library unittest runner, and aggregate CI reports that distinguish passed,
-skipped and failed outcomes. Tests continue to use synthetic data. The runner
-fails on test errors, unexpected successes and empty discovery; report generation
-cannot convert a failed suite into a successful job. See [testing](testing.md).
+Parallel scope: verify GitHub dependency-graph detection, validate declared Python
+inventory pins/hashes before CI installation, and tighten the source video manifest
+contract. The existing requirements files and workflow manifests are already
+recognized by GitHub; no dependency-graph configuration file or automatic-update
+PR configuration is needed. See [dependency inventory](dependencies.md).
 
-No runtime or package version changes are needed for this batch. Video 0.13.0 and
-repository 0.2.0 deployed from merge commit
-`66ad23d0b43ba2fa3be2a00a5036e0ffadc7a669`. The
-[publication run](https://github.com/susanto-dev/homefx/actions/runs/43353289076)
-passed build, deployment and public-byte verification. All seven existing archive
-records and bytes remain unchanged. HTTP checks never establish Kodi installation
-or upgrade acceptance. Live accounts, playback and scrobbling remain inactive.
+The offline guard checks declarations and consistency, not transitive dependency
+resolution, package provenance or advisory status. Existing security scans and
+Action-update discovery remain separate. The official Kodi checker remains blocked
+on secure/offline input and repository schema compatibility; stronger project checks
+must not be described as a full checker pass.
+
+No runtime, archive or version changes are included. Video 0.13.0 and repository
+0.2.0 remain current. The previous batch deployed from merge commit
+`50047325a8ee3ec02d705770bb83948f66609649`;
+[publication run](https://github.com/susanto-dev/homefx/actions/runs/43354769976)
+passed build, deployment and hosted-byte verification. All seven prior records and
+archive bytes remain unchanged. Live accounts, playback and scrobbling are inactive;
+TV installation and update acceptance remain pending.
 
 ## External inputs and decisions
 

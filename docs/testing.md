@@ -162,3 +162,10 @@ confirmation, malformed UI callbacks, issuance deadlines and atomic rate-limit
 rollback. Playback contract tests use synthetic player callbacks and account
 generations; they do not establish a real Kodi adapter connection. Runner tests
 exercise failed/skipped/expected-failure outcomes and redacted aggregate reporting.
+
+The dependency/manifest batch tests strict requirement declarations, malformed and
+conflicting pins/hashes, and fixed offline inventory reporting. Source-manifest
+mutations check that dependencies, extension points and metadata match the current
+preview contract before packaging. Unchanged packages must still reproduce exactly
+and preserve the published inventory. These are project-specific gates; the full
+official Kodi checker remains pending.

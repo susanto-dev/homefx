@@ -40,15 +40,46 @@ def validate(source=ADDON):
         manifest = parse_manifest(stream.read(1024 * 1024 + 1))
     if manifest.tag != "addon" or manifest.get("id") != "plugin.video.homefx":
         raise ValueError("Unexpected add-on ID")
+    # Require meaningful current-source identity without freezing display branding.
+    if any(not manifest.get(name, "").strip() for name in ("name", "provider-name")):
+        raise ValueError("Expected nonempty add-on name and provider-name")
     version = manifest.get("version", "")
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
         raise ValueError("Expected numeric major.minor.patch version")
-    dep = manifest.find("./requires/import[@addon='xbmc.python']")
-    if dep is None or dep.get("version") != "3.0.1":
-        raise ValueError("Preview targets Kodi Python API 3.0.1")
+    # This is the current source contract; retained releases keep their separate
+    # archive validator so a build-policy change cannot redefine release history.
+    requires = manifest.findall("requires")
+    if len(requires) != 1 or len(requires[0]) != 1:
+        raise ValueError("Expected one Kodi Python dependency")
+    dep = requires[0][0]
+    if (dep.tag != "import" or dep.get("addon") != "xbmc.python"
+            or dep.get("version") != "3.0.1" or len(dep)
+            or dep.get("optional", "false") != "false"):
+        raise ValueError("Preview requires Kodi Python API 3.0.1 without third-party dependencies")
+    extensions = manifest.findall("extension")
+    if (len(extensions) != 2 or {node.get("point") for node in extensions} != {
+            "xbmc.python.pluginsource", "xbmc.addon.metadata"}):
+        raise ValueError("Expected one plugin and one metadata extension")
     plugin = manifest.find("./extension[@point='xbmc.python.pluginsource']")
-    if plugin is None or plugin.get("library") != "default.py" or plugin.findtext("provides") != "video":
+    if (plugin.get("library") != "default.py" or len(plugin) != 1
+            or plugin[0].tag != "provides" or plugin[0].text != "video" or len(plugin[0])):
         raise ValueError("Invalid plugin entry point")
+    metadata = manifest.find("./extension[@point='xbmc.addon.metadata']")
+    for name, expected in (("license", "MIT"), ("platform", "all")):
+        nodes = metadata.findall(name)
+        if len(nodes) != 1 or nodes[0].text != expected or len(nodes[0]):
+            raise ValueError("Invalid metadata " + name)
+    assets = metadata.findall("assets")
+    if len(assets) != 1:
+        raise ValueError("Expected one metadata assets declaration")
+    expected_assets = {"icon": "resources/art/icon.png", "poster": "resources/art/poster.png",
+                       "fanart": "resources/art/fanart.png"}
+    names = [asset.tag for asset in assets[0]]
+    if "icon" not in names or len(names) != len(set(names)):
+        raise ValueError("Expected one metadata icon and unique asset declarations")
+    for asset in assets[0]:
+        if asset.tag not in expected_assets or asset.text != expected_assets[asset.tag] or len(asset):
+            raise ValueError("Manifest asset differs from reviewed artwork")
     for path in FILES:
         file = source / path
         if file.is_symlink() or not file.is_file():

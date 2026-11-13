@@ -7,6 +7,7 @@ to reject unsafe XML. It is development-only; the Kodi add-on still uses no
 third-party Python packages. Ruff 0.17.4 provides a pinned, read-only correctness check; it is also development-only.
 
 ```sh
+python3 tools/check_dependencies.py
 python3 -m pip install --require-hashes -r tools/build-requirements.txt
 python3 -m pip install --require-hashes --only-binary=:all: -r tools/quality-requirements.txt
 python3 tools/check_quality.py
@@ -127,3 +128,15 @@ separate from account assembly and uses only synthetic data after confirmation.
 Use the [test runner](testing.md) for aggregate local/CI results. Focused runs are
 useful during development, but do not replace full discovery before review. A
 report of passing tests is not a measurement of source-line or branch coverage.
+
+The [dependency inventory guard](dependencies.md) uses only the standard library and
+runs before dependency installation in CI. It checks the supported declaration
+format and cross-file consistency; pip hash verification and vulnerability scans
+remain separate gates. No dependency graph or update settings are changed by it.
+
+The current video source validator requires nonblank add-on name/provider fields,
+one mandatory Kodi Python 3.0.1 import, one video plugin extension and one metadata
+extension, singleton MIT/all metadata and reviewed asset declarations. These are
+HomeFX preview policies; nonblank identity fields are stricter than the inspected
+official schema's string-presence requirement. Historical archive validation remains
+separate, and changing build policy does not rewrite retained releases.
