@@ -7,7 +7,7 @@ import sqlite3
 import stat
 import sys
 import tempfile
-from threading import Barrier
+from threading import Barrier, Event
 import unittest
 from unittest.mock import patch
 
@@ -157,6 +157,97 @@ class RequestLimitsTests(unittest.TestCase):
                     RequestLimits(profile, 'trakt')
                 self.assertEqual(path.read_bytes(), data)
 
+    def test_deleted_database_is_not_recreated_by_later_operations(self):
+        self.rd.observe(429, {'Retry-After': '120'})
+        self.path.unlink()
+        for operation in (self.rd.reserve, lambda: self.rd.observe(429, {})):
+            with self.assertRaisesRegex(LimitError, '^limit_store_unavailable$'):
+                operation()
+            self.assertFalse(self.path.exists())
+        self.assertEqual(list(self.path.parent.iterdir()), [])
+
+    def test_competing_creation_does_not_initialize_an_existing_empty_file(self):
+        with tempfile.TemporaryDirectory() as profile:
+            path = Path(profile) / 'limits/requests.sqlite3'
+            real_open = os.open
+            inserted = []
+
+            def open_after_competing_creation(name, flags, *args):
+                if str(name) == str(path) and not inserted:
+                    path.write_bytes(b'')
+                    inserted.append(True)
+                return real_open(name, flags, *args)
+
+            with patch('resources.lib.request_limits.os.open', side_effect=open_after_competing_creation):
+                with self.assertRaisesRegex(LimitError, '^limit_store_unavailable$'):
+                    RequestLimits(profile, 'trakt')
+            self.assertEqual(inserted, [True])
+            self.assertEqual(path.read_bytes(), b'')
+
+    def test_incompatible_schemas_fail_before_reservations_or_cooldown_writes(self):
+        changes = [
+            ('ALTER TABLE state RENAME TO old_state',
+             'CREATE TABLE state (provider TEXT, cooldown REAL NOT NULL, last REAL NOT NULL)',
+             'INSERT INTO state SELECT * FROM old_state'),
+            ('ALTER TABLE issued RENAME TO old_issued',
+             'CREATE VIEW issued AS SELECT provider,stamp FROM old_issued'),
+            ('ALTER TABLE issued ADD COLUMN unrelated TEXT',),
+        ]
+        for statements in changes:
+            with self.subTest(statements=statements), tempfile.TemporaryDirectory() as profile:
+                limits = RequestLimits(profile, 'realdebrid', clock=lambda: 1000)
+                limits.reserve()
+                limits.observe(429, {'Retry-After': '120'})
+                path = Path(profile) / 'limits/requests.sqlite3'
+                with sqlite3.connect(str(path)) as connection:
+                    for sql in statements:
+                        connection.execute(sql)
+                before = path.read_bytes()
+                for operation in (limits.reserve, lambda: limits.observe(429, {}),
+                                  lambda: RequestLimits(profile, 'realdebrid')):
+                    with self.assertRaisesRegex(LimitError, '^limit_store_invalid$'):
+                        operation()
+                    self.assertEqual(path.read_bytes(), before)
+
+    def test_waiting_reservation_samples_clock_after_write_lock(self):
+        self.rd.observe(429, {'Retry-After': '10'})
+        entered = Event()
+        sampled = []
+        real_connect = self.rd._connect
+
+        class Connection:
+            def __init__(self, connection):
+                self.connection = connection
+
+            def execute(self, sql, *args):
+                if sql == 'BEGIN IMMEDIATE':
+                    entered.set()
+                return self.connection.execute(sql, *args)
+
+            def __getattr__(self, name):
+                return getattr(self.connection, name)
+
+        def clock():
+            sampled.append(self.now[0])
+            return self.now[0]
+
+        self.rd._clock = clock
+        blocker = sqlite3.connect(str(self.path))
+        self.addCleanup(blocker.close)
+        blocker.execute('BEGIN IMMEDIATE')
+        with patch.object(self.rd, '_connect', side_effect=lambda: Connection(real_connect())):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pending = pool.submit(self.rd.reserve)
+                try:
+                    self.assertTrue(entered.wait(timeout=1))
+                    self.assertEqual(sampled, [])
+                    self.now[0] = 1010
+                finally:
+                    blocker.rollback()
+                self.assertEqual(pending.result(timeout=5), 0)
+        self.assertEqual(sampled, [1010])
+        self.assertEqual(self.query('SELECT stamp FROM issued'), [(1010,)])
+
     def test_private_permissions_and_minimal_persisted_fields(self):
         self.assertEqual(stat.S_IMODE(self.path.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(self.path.parent.stat().st_mode), 0o700)
@@ -190,6 +281,36 @@ class RequestLimitsTests(unittest.TestCase):
                 with self.assertRaisesRegex(LimitError, '^limit_store_unavailable$'):
                     RequestLimits(root, 'trakt')
                 self.assertEqual(target.read_bytes(), b'unchanged')
+
+    def test_later_unsafe_database_and_sidecars_leave_existing_data_untouched(self):
+        for suffix in ('', '-journal', '-wal', '-shm'):
+            for kind in ('symlink', 'hardlink', 'fifo', 'directory'):
+                with self.subTest(suffix=suffix, kind=kind), tempfile.TemporaryDirectory() as profile:
+                    limits = RequestLimits(profile, 'realdebrid', clock=lambda: 1000)
+                    limits.reserve()
+                    path = Path(profile) / 'limits/requests.sqlite3'
+                    original = path.read_bytes()
+                    unsafe = Path(str(path) + suffix)
+                    if suffix == '':
+                        path.unlink()
+                    target = Path(profile) / 'target'
+                    target.write_bytes(b'unchanged')
+                    target.chmod(0o640)
+                    if kind == 'symlink':
+                        unsafe.symlink_to(target)
+                    elif kind == 'hardlink':
+                        os.link(str(target), str(unsafe))
+                    elif kind == 'fifo':
+                        os.mkfifo(str(unsafe))
+                    else:
+                        unsafe.mkdir()
+                    for operation in (limits.reserve, lambda: limits.observe(429, {})):
+                        with self.assertRaisesRegex(LimitError, '^limit_store_unavailable$'):
+                            operation()
+                    self.assertEqual(target.read_bytes(), b'unchanged')
+                    self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o640)
+                    if suffix:
+                        self.assertEqual(path.read_bytes(), original)
 
     def test_configuration_and_response_validation(self):
         for provider in ('other', '', None, []):

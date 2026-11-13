@@ -90,7 +90,7 @@ toolchain, not reproducibility between different platforms or toolchain versions
 
 ## Release history and deployed bytes
 
-For video 0.13.0 and repository 0.2.0, record both current ZIPs and every retained
+For video 0.14.0 and repository 0.2.0, record both current ZIPs and every retained
 version in `releases/inventory.json`. Run
 `python tools/release_history.py releases/inventory.json --base-ref BASE_SHA`
 against the reviewed base; existing records cannot be removed or changed. Builders

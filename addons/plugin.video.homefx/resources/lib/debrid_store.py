@@ -77,16 +77,20 @@ class CredentialStore:
             raise AuthError("invalid_store_configuration")
         self._clock, self._ttl = clock, claim_ttl
         self._now()
-        self._directory = Path(profile_directory).absolute() / "realdebrid"
-        self._path = self._directory / "credentials.sqlite3"
         try:
+            self._directory = Path(profile_directory).absolute() / "realdebrid"
+            self._path = self._directory / "credentials.sqlite3"
             self._safe_paths()
             self._directory.mkdir(mode=0o700, parents=True, exist_ok=True)
             self._safe_paths()
             os.chmod(str(self._directory), 0o700)
-            existing = self._path.exists()
-            flags = os.O_CREAT | os.O_RDWR | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
-            descriptor = os.open(str(self._path), flags, 0o600)
+            flags = os.O_RDWR | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
+            try:
+                descriptor = os.open(str(self._path), flags | os.O_CREAT | os.O_EXCL, 0o600)
+                created = True
+            except FileExistsError:
+                descriptor = os.open(str(self._path), flags)
+                created = False
             try:
                 info = os.fstat(descriptor)
                 if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
@@ -95,7 +99,7 @@ class CredentialStore:
             finally:
                 os.close(descriptor)
             with closing(self._connect()) as conn:
-                if not existing:
+                if created:
                     self._initialize(conn)
             self.snapshot()  # Reject malformed existing records rather than repairing them.
         except (OSError, sqlite3.Error, ValueError, TypeError):
@@ -103,11 +107,11 @@ class CredentialStore:
 
     @staticmethod
     def _initialize(conn):
-        conn.execute("CREATE TABLE IF NOT EXISTS credential ("
+        conn.execute("CREATE TABLE credential ("
                      "id INTEGER PRIMARY KEY CHECK(id=1), generation INTEGER NOT NULL, "
                      "state TEXT NOT NULL, owner TEXT, deadline REAL, client_id TEXT, "
                      "client_secret TEXT, access TEXT, refresh TEXT, expires REAL)")
-        conn.execute("INSERT OR IGNORE INTO credential(id,generation,state) "
+        conn.execute("INSERT INTO credential(id,generation,state) "
                      "VALUES(1,0,'disconnected')")
         conn.commit()
 
@@ -123,38 +127,51 @@ class CredentialStore:
             raise AuthError("invalid_store_clock")
         return value
 
-    def _safe_paths(self):
+    def _safe_paths(self, require_file=False):
         if any(path.is_symlink() for path in (self._directory,) + tuple(self._directory.parents)):
             raise OSError()
         if self._directory.exists() and not self._directory.is_dir():
             raise OSError()
         for path in (self._path,) + tuple(Path(str(self._path) + suffix)
                                          for suffix in ("-journal", "-wal", "-shm")):
-            if path.is_symlink():
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                if require_file and path == self._path:
+                    raise
+                continue
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
                 raise OSError()
-            if path.exists():
-                info = path.stat()
-                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                    raise OSError()
 
     def _connect(self):
-        self._safe_paths()
-        conn = sqlite3.connect(str(self._path), timeout=2)
+        self._safe_paths(require_file=True)
+        conn = sqlite3.connect(self._path.as_uri() + "?mode=rw", timeout=2, uri=True)
         try:
             conn.execute("PRAGMA synchronous=FULL")
             conn.execute("PRAGMA secure_delete=ON")
-            conn.execute("PRAGMA journal_mode=DELETE")
             return conn
         except sqlite3.Error:
             conn.close()
             raise
 
+    @staticmethod
+    def _schema(conn):
+        expected = [("id", "INTEGER", 0, None, 1), ("generation", "INTEGER", 1, None, 0),
+                    ("state", "TEXT", 1, None, 0), ("owner", "TEXT", 0, None, 0),
+                    ("deadline", "REAL", 0, None, 0), ("client_id", "TEXT", 0, None, 0),
+                    ("client_secret", "TEXT", 0, None, 0), ("access", "TEXT", 0, None, 0),
+                    ("refresh", "TEXT", 0, None, 0), ("expires", "REAL", 0, None, 0)]
+        if [row[1:] for row in conn.execute("PRAGMA table_info(credential)")] != expected:
+            raise AuthError("credential_store_invalid")
+
     def _transaction(self, operation):
         conn = None
         try:
-            now = self._now()
+            self._now()  # Reject invalid clocks before opening storage.
             conn = self._connect()
             conn.execute("BEGIN IMMEDIATE")
+            now = self._now()  # Waiting for a write lock must not extend a refresh claim.
+            self._schema(conn)
             result = operation(conn, now)
             conn.commit()
             return result

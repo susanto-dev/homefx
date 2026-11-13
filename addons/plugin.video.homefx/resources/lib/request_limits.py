@@ -85,9 +85,13 @@ class RequestLimits:
             self._directory.mkdir(mode=0o700, parents=True, exist_ok=True)
             self._safe_paths()
             os.chmod(str(self._directory), 0o700)
-            exists = self._path.exists()
-            flags = os.O_CREAT | os.O_RDWR | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
-            descriptor = os.open(str(self._path), flags, 0o600)
+            flags = os.O_RDWR | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
+            try:
+                descriptor = os.open(str(self._path), flags | os.O_CREAT | os.O_EXCL, 0o600)
+                created = True
+            except FileExistsError:
+                descriptor = os.open(str(self._path), flags)
+                created = False
             try:
                 info = os.fstat(descriptor)
                 if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
@@ -95,46 +99,68 @@ class RequestLimits:
                 os.fchmod(descriptor, 0o600)
             finally:
                 os.close(descriptor)
-            with closing(self._connect()) as connection:
-                if not exists:
-                    connection.execute("BEGIN IMMEDIATE")
+            with closing(self._connect(new=created)) as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                if created:
                     connection.execute("CREATE TABLE state (provider TEXT PRIMARY KEY, "
                                        "cooldown REAL NOT NULL, last REAL NOT NULL)")
                     connection.execute("CREATE TABLE issued (provider TEXT NOT NULL, stamp REAL NOT NULL)")
                     connection.executemany("INSERT INTO state VALUES (?,0,0)",
                                            [(name,) for name in PROVIDERS])
-                    connection.commit()
+                self._schema(connection)
                 self._read(connection)
+                connection.commit()
         except (OSError, sqlite3.Error, ValueError, TypeError, OverflowError):
             raise LimitError("limit_store_unavailable") from None
 
     def __repr__(self):
         return "RequestLimits(provider={!r}, private state)".format(self.provider)
 
-    def _safe_paths(self):
-        if any(path.is_symlink() for path in (self._directory,) + tuple(self._directory.parents)):
-            raise OSError()
-        if self._directory.exists() and not self._directory.is_dir():
-            raise OSError()
+    def _safe_paths(self, require_file=False):
+        for path in (self._directory,) + tuple(self._directory.parents):
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISDIR(info.st_mode):
+                raise OSError()
         for path in (self._path,) + tuple(Path(str(self._path) + suffix)
                                          for suffix in ("-journal", "-wal", "-shm")):
-            if path.is_symlink():
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                if require_file and path == self._path:
+                    raise
+                continue
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
                 raise OSError()
-            if path.exists():
-                info = path.stat()
-                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                    raise OSError()
 
-    def _connect(self):
-        self._safe_paths()
-        connection = sqlite3.connect(str(self._path), timeout=2)
+    def _connect(self, new=False):
+        self._safe_paths(require_file=True)
+        connection = sqlite3.connect(self._path.as_uri() + "?mode=rw", timeout=2, uri=True)
         try:
+            if not new:
+                self._schema(connection)
             connection.execute("PRAGMA synchronous=FULL")
-            connection.execute("PRAGMA journal_mode=DELETE")
             return connection
-        except sqlite3.Error:
+        except (sqlite3.Error, LimitError):
             connection.close()
             raise
+
+    @staticmethod
+    def _schema(connection):
+        expected = {
+            "state": [("provider", "TEXT", 0, None, 1),
+                      ("cooldown", "REAL", 1, None, 0), ("last", "REAL", 1, None, 0)],
+            "issued": [("provider", "TEXT", 1, None, 0), ("stamp", "REAL", 1, None, 0)],
+        }
+        for table, columns in expected.items():
+            kind = connection.execute("SELECT type FROM sqlite_master WHERE name=?", (table,)).fetchall()
+            if not kind:
+                raise sqlite3.DatabaseError()
+            actual = [row[1:] for row in connection.execute("PRAGMA table_info({})".format(table))]
+            if kind != [("table",)] or actual != columns:
+                raise LimitError("limit_store_invalid")
 
     @staticmethod
     def _read(connection):
@@ -166,6 +192,7 @@ class RequestLimits:
                 raise LimitError("invalid_limit_clock") from None
             if not _number(now, MAX_CLOCK):
                 raise LimitError("invalid_limit_clock")
+            self._schema(connection)
             states, issued = self._read(connection)
             cooldown, last = states[self.provider]
             if now < last:

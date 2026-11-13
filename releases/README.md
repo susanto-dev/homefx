@@ -32,3 +32,7 @@ files only; no profile or account configuration is packaged.
 Video 0.13.0 uses the same verified proposal workflow and preserves all six prior
 records and archive bytes. Repository 0.2.0 remains unchanged. Storage regression
 fixtures are synthetic and are not included in the video package.
+
+Video 0.14.0 extends credential and request-limit storage guards. Its release
+proposal preserves all seven previous records and ZIP bytes; repository 0.2.0
+remains unchanged. No account data or test fixtures are included.

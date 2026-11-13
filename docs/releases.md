@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-The current published packages are `plugin.video.homefx` 0.13.0 alongside
+This batch prepares `plugin.video.homefx` 0.14.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -138,3 +138,9 @@ The subsequent test-reporting batch published unchanged package bytes from
 [publication run 43354769976](https://github.com/susanto-dev/homefx/actions/runs/43354769976)
 passed build, deployment and hosted-byte verification. The dependency/manifest
 validation batch also changes no package versions or retained archive bytes.
+
+The dependency/manifest batch deployed unchanged video 0.13.0/repository 0.2.0
+packages from `a7fb4fbe1639a32de4f56f3dbc57b77e552ca234`.
+[Publication run 43356354268](https://github.com/susanto-dev/homefx/actions/runs/43356354268)
+passed build, deployment and hosted-byte verification. Video 0.14.0 awaits this
+batch's merge and publication; all seven prior archive records are preserved.
