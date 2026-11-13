@@ -76,3 +76,7 @@ controller, for example `cancelled=ui.cancelled`, so transport checks observe di
 cancellation too. The default probe never requests cancellation. Socket deadlines
 remain necessary: neither UI polling nor this assembly can forcibly interrupt an
 arbitrary blocking callback or operating-system DNS lookup.
+
+The [joined video dispatcher](video-integration.md) supplies the same active UI
+cancellation callback to this factory and the interaction. It remains uncalled by
+the public Kodi entry point; factory reuse is not public live activation.

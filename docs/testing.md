@@ -252,3 +252,20 @@ continue to invalidate the captured view. Renderer tests check fixed scoped cont
 URLs, independent counts, bounded percentages and the absence of fabricated resume
 seconds or playable flags. Public activation and actual Kodi acceptance remain
 separate; these tests use synthetic metadata and private temporary profiles.
+
+## Refresh process interruption
+
+`test_trakt_process_recovery.py` exits a child process without cleanup during the
+synthetic OAuth request and after validating replacement credentials but before
+committing them. The parent reopens real temporary SQLite stores: the refresh claim
+is durable, active tokens are unavailable, and the old token is never replayed before
+or after the claim deadline. After deterministic expiry the state requires login;
+an explicit new login can replace the failed state, and stale generations stay rejected.
+No sleep, real network, private credentials or destructive TV action is involved.
+
+This proves the implementation's crash/reopen invariant at those controlled boundaries,
+not Android filesystem behavior under power loss or a particular live provider failure.
+Existing authentication/flow tests cover denial and expiry; lost-response tests cover
+ambiguous refresh outcomes. The owner separately confirmed real grant/refresh,
+restart persistence, cancellation/disconnect and responsive offline error handling.
+Do not convert one evidence type into a claim about the other.

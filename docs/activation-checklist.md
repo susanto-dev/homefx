@@ -31,7 +31,8 @@ the observed synthetic-probe blocker, not all account-store or network acceptanc
 
 **Return only:** versions, fixed result/error categories, cleanup status,
 success/failure/not-run observations and timings. Navigation/timing and actual
-account-store persistence remain unverified. A storage/readiness pass does not
+video-profile account-store persistence remain unverified; the separate program
+restart check subsequently passed. A storage/readiness pass does not
 prove TLS, Trakt authorization, refresh or playback works.
 
 ## 2. Verify registration before planning login
@@ -103,12 +104,19 @@ remaining account tests were not run. That diagnostic report identified a
 
 After PR #34 publication, the owner supplied **Connection test: authorized** and
 **Refresh rotation: passed** reports from the separate Development program add-on.
-The refresh test made no list or history request. These clear the observed happy-path
-login/refresh blocker; they do not establish restart persistence, cancellation,
-disconnect, failure recovery or real list/widget acceptance.
+The refresh test made no list or history request. The owner subsequently confirmed restart persistence, disconnect, code-dialog
+cancellation and responsive offline failure. Restoring networking allowed a new
+code without reinstalling. These clear the observed lifecycle blockers, not real
+list/widget acceptance; live denial/expiry and interrupted refresh are not claimed.
 
-Use the short [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh)
-for restart status, local disconnect and a later cancellation check. No new test ZIP
+The owner completed the short [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh)
+for restart status, local disconnect and cancellation. Do not repeat those passes. No new test ZIP
 or repeat authorization is needed just to record these outcomes. Leave unexercised
 gates as not run. The next implementation target is the existing video add-on's
 read-only list journey, subject to the remaining gates, without importing test tokens.
+
+Failure evidence is divided explicitly between automated synthetic cases and TV
+observations in [account setup](account-setup.md#evidence-required-without-destructive-account-tests).
+A controlled process-interruption test uses synthetic stores; no destructive live
+refresh experiment is requested. The remaining integration work is the video entry
+and immutable configuration delivery, then one deliberately enabled read-only TV journey.

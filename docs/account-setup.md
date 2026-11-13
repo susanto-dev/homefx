@@ -1,6 +1,6 @@
 # Preparing a Trakt development connection
 
-The 0.17.4 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.17.6 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
@@ -8,11 +8,11 @@ no live connection route is enabled. Do not paste tokens into plugin URLs or sou
 Use the [short activation handoff checklist](activation-checklist.md) to track the
 next evidence and owner input. It summarizes these gates without enabling live routes.
 
-The owner has now confirmed that the Development public ID and registered redirect
-match the GitHub variables, and supplied a passing 0.17.4 synthetic storage report.
-A [separate Development device-test add-on](development-device-test.md) prepares
-explicit on-TV login/refresh checks. Public preview routes stay inactive; no actual
-TLS, login, token persistence or refresh success follows from those confirmations.
+The owner confirmed the Development public ID/redirect match the GitHub variables.
+The separate program test passed storage, authorization, refresh, restart persistence,
+local disconnect and code-dialog cancellation on TV. An offline request failed while
+Kodi remained responsive; restoring networking allowed a new code without reinstalling.
+These observations do not establish live lists/widgets or general public app approval.
 
 ## Owner input for the read-only milestone
 
@@ -124,6 +124,28 @@ documented as requiring Premium. Changed terms or a paid option need separate re
    also clears all saved list choices in this local profile.
 6. Verify selected personal/liked lists, read-only progress and UTC date handling.
    Watch-history/list writes, playback, subtitles and scrobbling remain separate work.
+
+## Evidence required, without destructive account tests
+
+The gates above combine automated and actual-device evidence; they do not require
+repeating every fabricated failure with a real account. Device evidence covers
+registration/grant compatibility, storage, restart, actual UI cancellation and
+network failure behavior. The completed owner checks are recorded in the
+[backlog](backlog.md#current-checkpoint-development-authorization-and-refresh-passed).
+Elapsed offline wait time and live widget performance have not been measured.
+
+Denial/expiry parsing, deadline handling, lost refresh responses and process
+interruption are validated using synthetic responses and isolated temporary stores.
+These tests establish implementation behavior under the injected conditions, not
+observed live provider responses. Do not deliberately kill a real refresh or edit
+real token files to manufacture those failures. A newly observed service mismatch
+requires review; it must not be silently accepted because a fixture passed.
+
+Public activation still requires reviewed video configuration delivery, explicit
+own-profile account actions, and actual read-only list/widget acceptance. The new
+joined video adapter remains uncalled by the public entry point. No program tokens
+are migrated. The final list/widget acceptance requires a deliberate candidate;
+it cannot be satisfied by the existing demo routes.
 
 ## Privacy and recovery
 
