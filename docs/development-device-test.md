@@ -9,9 +9,12 @@ the HomeFX source and reported its private storage checks passing.
 The latest TV reports show **Connection test: authorized** and **Refresh rotation:
 passed**. These establish successful authorization and one refresh rotation in the
 separate test scope. The refresh report explicitly says no list or history request
-was made. The owner confirmed the add-on was reinstalled without restarting Kodi,
-so restart persistence has not been tested. Cancellation/disconnect, failure recovery
-and actual list/widget behavior are not established by these screenshots.
+was made. The owner subsequently fully restarted Kodi and reported credentials stored, then
+confirmed local disconnect and code-dialog cancellation both left local status
+disconnected. With networking off, Kodi remained responsive during the request;
+the failure dialog was dismissed with Back. Restoring networking allowed code
+issuance without reinstalling. Wait duration was not measured. Real lists/widgets
+and live denial/expiry or interrupted-refresh outcomes remain unverified.
 
 ## Why a program add-on
 
@@ -28,6 +31,8 @@ add-on is not a permanent requirement for using the eventual video experience.
 
 ## After successful authorization and refresh
 
+The owner has completed the restart, disconnect and cancellation steps below.
+They remain a checklist for future installations, not a request to repeat them.
 Do not repeat a successful grant just to produce another screenshot. Keep the
 matching test ZIP installed for now; no new package is required for these checks.
 

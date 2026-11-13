@@ -1,8 +1,7 @@
 # Complete project backlog
 
-Status checked on 13 November 2026: published **video 0.17.4 / repository 0.2.0**.
-The installation guide is merged in PR #27; its post-merge publication workflow
-passed. **Implemented** means source and automated checks exist; **published** means
+Status checked on 13 November 2026: published **video 0.17.6 / repository 0.2.0**.
+PR #35 is merged; its post-merge validation and publication passed. **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -38,8 +37,8 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner confirms registered Development ID/redirect match GitHub variables; 0.17.4 synthetic storage passed; separate Development device test prepared, Development authorization and one refresh rotation passed on TV; restart persistence and failure-path acceptance pending |
-| T02 | Account connect/cancel/switch/disconnect UI | Controller/dialog adapter implemented; separate explicit Development test prepared | Public preview UI stays inactive; test consent, cancellation, restart, disconnect/revocation and recovery on TV |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner confirms registered Development ID/redirect match GitHub variables; 0.17.4 synthetic storage passed; separate Development device test prepared, Development authorization and one refresh rotation passed on TV; restart persistence, disconnect, cancellation and responsive offline failure passed on TV; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed |
+| T02 | Account connect/cancel/switch/disconnect UI | Controller/dialog adapter implemented; separate explicit Development test prepared | Development consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
 | T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
 | T05 | Live Trakt read views | Pending | Enable after registration, transport and device checks |
@@ -79,7 +78,7 @@ This repair does not alter private account stores or enable live services.
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
-| Q04 | Device readiness and sanitized test checklist | Implemented; 0.17.4 synthetic storage passed on TV | Actual test-addon account-store persistence, TLS and live authorization remain separate checks |
+| Q04 | Device readiness and sanitized test checklist | Implemented; 0.17.4 synthetic storage passed on TV | Development storage, authorization/refresh, restart and responsive offline handling passed; video-profile and live widget acceptance remain |
 | G01 | Original-code licence | Decision | Existing MIT remains; final owner preference still unconfirmed |
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
@@ -137,7 +136,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 |---|---|---|
 | 1 | R01–R03, Q04, B10 | 0.17.4 synthetic storage passed; installation/update path, navigation and restart acceptance remain open |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Development identity/redirect confirmed; source installation, authorization and refresh passed on TV; restart and failure-path acceptance still unverified; Production not run |
+| 3 | T01–T03, T05 | Development identity/redirect confirmed; source installation, authorization and refresh passed on TV; restart/disconnect/cancellation/offline responsiveness passed; automated denial/expiry/recovery evidence stays distinct; Production not run |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
 | Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
 | Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |
@@ -148,8 +147,9 @@ remains maintainer-merged after independent review and successful checks.
 
 ## External inputs and decisions
 
-The next useful device evidence is restart persistence, then the remaining
-Development cancellation/disconnect and failure-path checks, plus widget/navigation. Registered Development values are
+The next useful device evidence is the deliberately enabled video-profile list
+journey and widget/navigation, after configuration delivery is reviewed. Completed
+Development lifecycle checks need not be repeated. Registered Development values are
 owner-confirmed; no app values need to be posted. Real lists/views,
 movie release region/type, first playback path, source-provider choice, scrobbling
 ownership, final original-code licence and TV acceptance of repository updates/rollback remain open.
@@ -247,9 +247,10 @@ reports from the separately installed program add-on; the refresh made no list/h
 | Next bounded item | Status | Evidence still needed |
 |---|---|---|
 | Development login and one refresh | Passed on target TV | Broader failure paths remain separate |
-| Restart persistence | Not run; owner reinstalled without restarting Kodi | Full restart followed by fixed local status |
-| Local disconnect and code-dialog cancellation | Not reported | Disconnected/cancelled fixed outcomes; no code screenshots |
-| Denial/expiry, slow/offline and interrupted-refresh recovery | Not reported on TV | Existing gates; fabricated tests are not live evidence |
+| Restart persistence | Passed on TV after full restart | Local status reported credentials stored |
+| Local disconnect and code-dialog cancellation | Passed on TV | Disconnect and post-cancel status disconnected; cancellation reported cancelled |
+| Offline failure and recovery | Passed on TV | Kodi remained responsive during request; error dismissed with Back; network restoration allowed code issuance; elapsed time unmeasured |
+| Denial/expiry and interrupted-refresh recovery | Automated failure evidence; not live-tested | See testing.md; no destructive real-token test requested |
 | Read-only connection/list/widget in the video add-on | Prepared assemblies; live wiring inactive | Gate review, own-profile login/storage, one list and restart acceptance |
 | Live performance and skin navigation | Not measured | Cold/warm, multiple rows, focus/Back/return position |
 
@@ -257,3 +258,18 @@ The program is a temporary authentication test, not the intended product interfa
 Do not migrate its tokens into the video profile or add more demo features to avoid
 these acceptance steps. Follow the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
 Writes, playback, Real-Debrid and scrobbling remain outside this milestone.
+
+## Current implementation batch: joined video entry
+
+The authentication implementation is already shared: the Development ZIP bundles
+modules from the video add-on source. The missing adapter joins those modules with
+list selection and widget rendering for a future gated Kodi entry point. This batch
+adds that adapter and process-interruption recovery regressions with synthetic tokens.
+It does not activate the public preview, import program credentials, add a provider,
+or change stable demo/widget routes. No repeated successful owner test is required.
+
+Next release proposal: video 0.17.7, repository 0.2.0 unchanged, all 20 previous
+archive records preserved. The next integration decision is how to deliver reviewed
+public Development configuration to the video package without changing a published
+version's bytes. Existing GitHub variables configure only the separate program ZIP.
+A general public connection must not presume Production approval from owner tests.

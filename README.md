@@ -28,11 +28,17 @@ reported passing private storage checks, **Connection test: authorized** and
 **Refresh rotation: passed** in the separate Development program add-on on TV.
 No list or history request was made by that refresh test.
 
-These are real device observations, not cloud test results. Restart persistence,
-cancellation/disconnect and live list/widget acceptance remain unverified. The
+These are real device observations, not cloud test results. The owner also confirmed restart persistence, cancellation/disconnect and responsive
+offline failure followed by code issuance after networking recovered. Live list/widget
+acceptance remains unverified; offline wait duration was not measured. The
 public video preview still uses demo data and does not inherit the test's tokens.
 See [what to do after successful login](docs/development-device-test.md#after-successful-authorization-and-refresh)
 and [why the test is separate](docs/development-device-test.md#why-a-program-add-on).
+
+The **0.17.7 candidate** joins shared login, selection and directory components in
+one [video dispatcher](docs/video-integration.md). Public live routes remain inactive;
+no program credentials are migrated. Automated crash/reopen recovery tests use
+synthetic tokens, not a destructive real-account experiment.
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

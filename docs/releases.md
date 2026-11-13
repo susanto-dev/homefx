@@ -495,3 +495,21 @@ workflow. Video 0.17.6, repository 0.2.0 and the Development script bytes remain
 unchanged for unchanged public configuration. No new ZIP installation is required
 for the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
 No independent dispatch/deployment is needed.
+
+## 0.17.7 joined video entry candidate
+
+The proposed release adds the shared read-only video dispatcher, while the public
+entry point and live configuration stay inactive. The separate program builder
+bundles shared runtime source, so its digest filename changes as well; it does not
+enable new program actions. Existing successful device checks need no reinstall.
+
+Prepare a new video 0.17.7 archive and preserve all 20 previous records and bytes.
+Repository 0.2.0 remains unchanged. Merge uses the existing checked Pages workflow;
+no independent deployment or workflow dispatch is required. Current hosted video
+0.17.6 and repository 0.2.0 hashes match the retained inventory. PR #35 post-merge
+validation, security and publication passed. This candidate is not yet published.
+
+The additional recovery test uses synthetic token stores and actual child-process
+exit. It does not contact Trakt or establish live interrupted-refresh acceptance.
+See [video integration](video-integration.md) for the remaining configuration-delivery
+and deliberate real-list TV acceptance work.

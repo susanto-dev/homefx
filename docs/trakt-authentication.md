@@ -3,7 +3,9 @@
 Rechecked 2026-11-13. After PR #34 publication, the owner reported successful
 Development authorization and one refresh rotation on the target TV. These are
 observed outcomes for the separate program test, not public video activation.
-Restart persistence, failure-path acceptance and real lists remain unverified.
+Development restart persistence, disconnect/cancellation and responsive offline
+failure were subsequently confirmed. Real lists and video-profile acceptance remain
+unverified; synthetic failure tests are separate from live provider outcomes.
 See the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
 
 ## Proposed path
@@ -100,7 +102,8 @@ token. Failed, timed-out or abandoned refresh requires login again. Disconnect o
 a new login invalidates an old in-flight completion. This conservative behavior can
 require another login after a temporary network fault; it avoids replaying a
 single-use refresh token. The TV passed synthetic SQLite/permissions checks and
-one real refresh; restart persistence and interrupted-refresh recovery remain unverified.
+one real refresh plus restart persistence. Interrupted-refresh recovery is covered
+by synthetic process-exit tests; live interrupted-refresh outcomes remain unverified.
 
 Read API foundations cover personal/liked lists, list items, episode metadata,
 show progress, paused playback and account settings. They enforce bounded results
