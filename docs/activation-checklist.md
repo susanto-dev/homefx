@@ -8,7 +8,8 @@ into TV evidence. No real account belongs in CI.
 ## 1. Try the published demo on TV
 
 Follow the [installation guide](install.md) on Kodi 21.2 with the existing skin.
-The verified published candidate is HomeFX Preview 0.17.4 and repository 0.2.0.
+Published HomeFX Preview is 0.17.5 with repository 0.2.0; PR #33 post-merge
+validation and publication passed.
 The TV previously confirmed Kodi 21.2 / Python 3.11.7. The owner supplied a passing
 0.17.4 synthetic storage report: private permissions, directory check, SQLite
 commit/rollback, cleanup and overall passed; failure stage was none. This clears
@@ -95,16 +96,22 @@ own storage scope before live connect/refresh; the preview pass is not transferr
 as blanket permission for a different path or for live account access. The owner
 subsequently passed that separate test's own storage check and correctly saw local
 status disconnected. Connecting then failed before any code appeared, so the
-remaining account tests were not run.
+remaining account tests were not run. The latest diagnostic report identifies a
+403 response rejection before code display; the local limiter only generates 429.
 
 ## Current bounded retry
 
-The 0.17.5 candidate fixes rejection of Trakt's documented current activation
-address and adds fixed failure diagnostics to the separate test. The compatibility
-bug reproduces offline; it is not a confirmed account of the TV response. Keep
-0.17.4 as the verified published preview until normal candidate publication passes.
+The 0.17.6 candidate corrects missing documented OAuth headers: the public client
+ID as API key, API version 2 and an honest HomeFX user agent. The current and legacy
+exact activation addresses remain supported. A 403 can indicate an invalid key or
+unapproved app, but the actual cause remains unverified; no successful login is
+established. Keep 0.17.5 as the published preview until normal candidate publication
+passes.
+
 Then reinstall the newly listed Development script ZIP from the existing HomeFX
 source, restart Kodi, check storage and attempt connection once. Cancel before
-authorizing if the code dialog appears; otherwise return only fixed Last stage, Category
-and Response status fields. See the [retry sequence](development-device-test.md#retry-after-the-0175-candidate-is-published).
-No code screenshots, logs, tokens or profile paths are needed.
+authorizing if the code dialog appears; otherwise return only fixed Last stage,
+Category and Response status fields. If 403 persists, inspect app status, public
+identity and owner/invited-user access privately, then stop for review. No codes,
+registration screenshots, raw logs, tokens or profile paths are needed. See the
+[retry sequence](development-device-test.md#retry-after-the-0176-candidate-is-published).

@@ -1,6 +1,7 @@
 """Exercise HTTPS framing with in-memory sockets; never use a service account."""
 import http.client
 import io
+import json
 import socket
 import ssl
 import sys
@@ -80,6 +81,59 @@ HEADERS = {"Authorization": "Bearer synthetic-access", "trakt-api-key": "synthet
 
 
 class TransportTests(unittest.TestCase):
+    def test_all_oauth_requests_send_required_public_headers_without_bearer_or_secret(self):
+        cases = [('/oauth/device/code', {'client_id': 'synthetic-client'}),
+                 ('/oauth/device/token', {'client_id': 'synthetic-poll-client', 'code': 'private-device-fixture'}),
+                 ('/oauth/token', {'client_id': 'synthetic-refresh-client', 'redirect_uri': 'urn:synthetic',
+                                  'grant_type': 'refresh_token', 'refresh_token': 'private-refresh-fixture'})]
+        factory = Connections([wire() for _ in cases])
+        transport = Transport(connection_factory=factory)
+        for index, (path, body) in enumerate(cases):
+            with self.subTest(path=path):
+                transport.oauth_request('POST', path, body)
+                head, payload = b''.join(factory.sockets[index].sent).split(b'\r\n\r\n', 1)
+                lines = head.split(b'\r\n')[1:]
+                pairs = [line.split(b': ', 1) for line in lines]
+                headers = {key.lower(): value for key, value in pairs}
+                self.assertEqual(len(pairs), len(headers))
+                self.assertEqual(headers[b'host'], b'auth.trakt.tv')
+                self.assertEqual(headers[b'trakt-api-key'], body['client_id'].encode())
+                self.assertEqual(headers[b'trakt-api-version'], b'2')
+                self.assertEqual(headers[b'content-type'], b'application/json')
+                self.assertEqual(headers[b'user-agent'], b'HomeFX (+https://github.com/susanto-dev/homefx)')
+                self.assertNotIn(b'authorization', headers)
+                self.assertNotIn(b'private-device-fixture', head)
+                self.assertNotIn(b'private-refresh-fixture', head)
+                self.assertNotIn(b'client_secret', head + payload)
+                self.assertEqual(json.loads(payload), body)
+                self.assertEqual(factory.calls[index][0], 'auth.trakt.tv')
+                self.assertTrue(factory.calls[index][1]['context'].check_hostname)
+                self.assertEqual(factory.calls[index][1]['context'].verify_mode, ssl.CERT_REQUIRED)
+                self.assertTrue(factory.sockets[index].closed)
+        self.assertEqual(len(factory.calls), 3)
+
+    def test_api_adds_fixed_user_agent_without_mutating_or_accepting_caller_overrides(self):
+        factory = Connections([wire()])
+        headers = dict(HEADERS)
+        transport = Transport(connection_factory=factory)
+        transport.api_request('GET', '/users/settings', headers)
+        sent = b''.join(factory.sockets[0].sent)
+        self.assertIn(b'User-Agent: HomeFX (+https://github.com/susanto-dev/homefx)\r\n', sent)
+        self.assertEqual(headers, HEADERS)
+        with self.assertRaises(TransportError):
+            transport.api_request('GET', '/users/settings', dict(headers, **{'User-Agent': 'other-app'}))
+        self.assertEqual(len(factory.calls), 1)
+
+    def test_forbidden_device_request_returns_once_without_reading_private_error_body(self):
+        factory = Connections([wire(b'private-error-body', status=403)])
+        result = Transport(connection_factory=factory).oauth_request(
+            'POST', '/oauth/device/code', {'client_id': 'synthetic-client'})
+        self.assertEqual(result.status, 403)
+        self.assertIsNone(result.body)
+        self.assertNotIn('private-error-body', repr(result))
+        self.assertEqual(len(factory.calls), 1)
+        self.assertTrue(factory.sockets[0].closed)
+
     def test_detail_and_calendar_paths_use_fixed_host_and_exact_extended_query(self):
         factory = Connections([wire(b'{"ids":{"trakt":9},"title":"Movie"}'),
             wire(b'{"ids":{"trakt":30},"title":null,"season":0,"number":1}'), wire(b'[]')])
@@ -424,6 +478,8 @@ class MutationTransportTests(unittest.TestCase):
         self.assertTrue(factory.calls[0][1]['context'].check_hostname)
         self.assertTrue(factory.sockets[0].closed)
         self.assertIn(b'POST /users/me/lists/7/items HTTP/1.1', b''.join(factory.sockets[0].sent))
+        self.assertIn(b'User-Agent: HomeFX (+https://github.com/susanto-dev/homefx)\r\n',
+                      b''.join(factory.sockets[0].sent))
 
     def test_only_single_explicit_history_or_owned_list_post_can_connect(self):
         factory = Connections([])

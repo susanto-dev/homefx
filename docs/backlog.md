@@ -124,7 +124,7 @@ see the published 0.17.4 checkpoint below. No path, token or private account dat
 
 ## Next checkpoint: bounded Development account test
 
-Video 0.17.4 and repository 0.2.0 are the published preview. Start with the
+Video 0.17.5 and repository 0.2.0 are the published preview. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
 evidence from the later, explicitly authorized Development account test.
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
@@ -202,19 +202,38 @@ file → HomeFX**, then passed its own permissions, directory, SQLite and cleanu
 checks. Local status disconnected was the expected pre-login result. Connecting
 failed before any code appeared; the remaining account tests were not run.
 
-## Candidate 0.17.5: activation-address compatibility and safe diagnostics
+## Published 0.17.5: activation-address compatibility and safe diagnostics
 
 The current Trakt documentation names `https://auth.trakt.tv/activate`, which the
 earlier parser/dialog rejected. A fabricated response reproduces that bug. The
-candidate accepts that exact address and the legacy exact address, without broader
-URL trust. This plausibly explains the TV result but does not prove its cause.
+repair accepts that exact address and the legacy exact address, without broader
+URL trust. This fixes a reproduced compatibility bug. The later TV result is a 403 request
+rejection before activation-address validation.
 The separate test now reports fixed Last stage, Category and Response status on failure;
 no response body, code, token or exception text is exposed.
 
-Shared runtime changes require a new 0.17.5 video archive. Repository 0.2.0 and all
-18 prior archive records/bytes remain unchanged; 0.17.4 remains the verified hosted
-preview until the normal merged publication passes. The script keeps harness
+PR #33 merged and post-merge validation, security and publication passed for video
+0.17.5. Repository 0.2.0 and all 18 prior archive records/bytes were preserved. The script keeps harness
 version 0.1.0 with a new checksum filename. Reinstall it directly from the HomeFX
 source after verification; it is not automatically updated. The first bounded retry
 is code display followed by cancellation before authorization, or fixed failure
 categories if it still fails. No live list, playback or provider scope is added.
+
+## Candidate 0.17.6: required Trakt request headers
+
+The latest Development attempt reports device response validation, request status
+rejected, response 403. No code appeared, and the owner stopped. The local limiter
+only generates 429, so this rejection came from the HTTP response path; successful
+authorization remains unverified.
+
+Current Trakt documentation requires headers missing from earlier OAuth requests.
+The candidate adds the request's own public client ID as API key, API version 2 and
+an identifying HomeFX user agent; existing API helpers gain the same user agent.
+No secret, foreign identity, endpoint change, retry or TLS relaxation is introduced.
+The confirmed contract mismatch is not yet a proven diagnosis of the TV's 403.
+
+Prepare video 0.17.6 and preserve all 19 prior records/archives, including 0.17.5;
+repository 0.2.0 remains unchanged. Reinstall the new Development ZIP after normal
+publication and perform one [bounded retry](development-device-test.md#retry-after-the-0176-candidate-is-published).
+Persistent 403 requires private app/status/allowed-user inspection and review, not
+repeated retries or automatic Production activation. No list/playback scope is added.

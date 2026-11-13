@@ -447,7 +447,7 @@ synthetic storage check. Connection failed before any authorization code appeare
 successful delivery and storage are not login acceptance.
 
 
-## 0.17.5 activation-address compatibility candidate
+## Published 0.17.5 activation-address compatibility repair
 
 The shared parser and dialog now accept the exact current Trakt activation address
 `https://auth.trakt.tv/activate` as well as legacy `https://trakt.tv/activate`.
@@ -457,14 +457,37 @@ stages/categories and a bounded response status to support a safe rerun.
 
 Because shared packaged runtime bytes change, prepare a new video **0.17.5** archive.
 Do not overwrite 0.17.4. Repository **0.2.0**, all 18 prior inventory records and their
-archive bytes remain unchanged. Version 0.17.4 remains the verified published
-preview until this candidate merges and normal publication passes. The existing
-Pages workflow then advertises 0.17.5 and builds a new content-addressed Development
+archive bytes remain unchanged. PR #33 subsequently merged and its post-merge validation, security and publication
+passed. The existing Pages workflow advertises 0.17.5 and builds a new content-addressed Development
 script ZIP with harness version 0.1.0. No independent deployment is required.
 
 The test ZIP is not in the repository auto-update channel. Reinstall the newly
 listed script ZIP from the existing source and fully restart Kodi before the
-[bounded retry](development-device-test.md#retry-after-the-0175-candidate-is-published).
+[bounded retry](development-device-test.md#retry-after-the-0176-candidate-is-published).
 No registration changes, client secret, TLS relaxation, live preview activation,
 list access, playback or new dependency is included. Device authorization,
 persistence and refresh remain acceptance gates.
+
+## 0.17.6 request-header candidate
+
+The latest TV attempt received status 403 before code display. Current official
+Trakt guidance requires a public API key header, API version 2 and User-Agent in
+addition to JSON Content-Type; earlier HomeFX OAuth requests omitted the first
+three. This candidate corrects the header contract using HomeFX's own public
+identity and an honest user agent. It does not establish that the omission caused
+the observed rejection or that login will succeed.
+
+Shared transport bytes require a new video **0.17.6** archive. Preserve all 19 prior
+inventory records and archive bytes, including **0.17.5**; repository **0.2.0** is
+unchanged. Version 0.17.5 remains published until this candidate merges and normal
+publication checks pass. The checked Pages workflow will advertise 0.17.6 and build
+a new content-addressed Development script ZIP with harness version 0.1.0. Reinstall
+that script from the same HomeFX source; updating the video preview does not update
+this separate program add-on.
+
+No client secret, bearer token for device-code issuance, foreign application key,
+new runtime dependency, provider login from CI, independent deployment or public
+live-route activation is included. OAuth remains on the documented fixed host with
+TLS verification, bounded requests and no automatic retry. Run one deliberate TV
+retry after publication; if 403 persists, inspect app/access status privately and
+stop for review. Successful login, persistence and refresh remain device gates.
