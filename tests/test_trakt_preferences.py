@@ -410,6 +410,111 @@ class PreferencesTests(unittest.TestCase):
                 elif replacement == 'file-mode':
                     self.assertEqual(stat.S_IMODE(main.stat().st_mode), 0o644)
 
+    def test_reopen_accepts_journal_unlinked_by_real_sqlite_commit_after_open(self):
+        with tempfile.TemporaryDirectory() as profile:
+            store = AccountPreferences(profile)
+            store.save('synthetic-a', ['trakt-list:1'])
+            main = Path(profile) / 'trakt/preferences.sqlite3'
+            journal = Path(str(main) + '-journal')
+            writer = sqlite3.connect(str(main))
+            self.addCleanup(writer.close)
+            writer.execute('BEGIN IMMEDIATE')
+            writer.execute("UPDATE selections SET selected='[\"trakt-list:2\"]'")
+            self.assertTrue(journal.is_file())
+            real_open = os.open
+            opened_links = []
+
+            def commit_after_open(path, flags, *args, **kwargs):
+                descriptor = real_open(path, flags, *args, **kwargs)
+                if Path(path) == journal:
+                    writer.commit()
+                    opened_links.append(os.fstat(descriptor).st_nlink)
+                    self.assertFalse(journal.exists())
+                return descriptor
+
+            with mock.patch('resources.lib.trakt_preferences.os.open', side_effect=commit_after_open):
+                reopened = AccountPreferences(profile)
+            self.assertEqual(opened_links, [0])
+            self.assertEqual(reopened.load('synthetic-a'), ['trakt-list:2'])
+
+    def test_transient_sidecar_recreation_keeps_descriptor_safety_checks(self):
+        for suffix in ('-journal', '-wal', '-shm'):
+            for replacement in ('safe', 'no-nofollow', 'symlink', 'hardlink', 'fifo', 'mode', 'size'):
+                with self.subTest(suffix=suffix, replacement=replacement), tempfile.TemporaryDirectory() as profile:
+                    store = AccountPreferences(profile)
+                    main = Path(profile) / 'trakt/preferences.sqlite3'
+                    sidecar = Path(str(main) + suffix)
+                    sidecar.touch(mode=0o600)
+                    original_inode = sidecar.stat().st_ino
+                    retired = Path(profile) / 'retired'
+                    target = Path(profile) / 'synthetic-external'
+                    target.write_bytes(b'synthetic')
+                    target.chmod(0o600)
+                    real_open = os.open
+                    changed = []
+
+                    def replace_before_open(path, flags, *args, **kwargs):
+                        if Path(path) == sidecar and not changed:
+                            changed.append(True)
+                            sidecar.rename(retired)  # Keep old inode allocated deterministically.
+                            if replacement == 'symlink':
+                                sidecar.symlink_to(target)
+                            elif replacement == 'hardlink':
+                                os.link(str(target), str(sidecar))
+                            elif replacement == 'fifo':
+                                os.mkfifo(str(sidecar), 0o600)
+                            else:
+                                sidecar.touch(mode=0o600)
+                                if replacement == 'mode':
+                                    sidecar.chmod(0o644)
+                                elif replacement == 'size':
+                                    with sidecar.open('wb') as stream:
+                                        stream.truncate(1024 * 1024 + 1)
+                        return real_open(path, flags, *args, **kwargs)
+
+                    nofollow = 0 if replacement == 'no-nofollow' else getattr(os, 'O_NOFOLLOW', 0)
+                    with mock.patch('resources.lib.trakt_preferences.os.open', side_effect=replace_before_open), \
+                            mock.patch('resources.lib.trakt_preferences.os.O_NOFOLLOW', nofollow, create=True):
+                        if replacement == 'safe':
+                            store._safe_paths()
+                        else:
+                            with self.assertRaises(OSError):
+                                store._safe_paths()
+                    self.assertEqual(changed, [True])
+                    self.assertNotEqual(sidecar.lstat().st_ino, original_inode)
+                    self.assertEqual(target.read_bytes(), b'synthetic')
+                    self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+
+    def test_mandatory_database_unlink_or_replacement_during_open_is_rejected(self):
+        for replacement in ('unlink', 'replace'):
+            with self.subTest(replacement=replacement), tempfile.TemporaryDirectory() as profile:
+                store = AccountPreferences(profile)
+                main = Path(profile) / 'trakt/preferences.sqlite3'
+                retired = Path(profile) / 'retired'
+                real_open = os.open
+                changed = []
+
+                def change_main(path, flags, *args, **kwargs):
+                    if Path(path) == main and not changed:
+                        changed.append(True)
+                        if replacement == 'replace':
+                            main.rename(retired)
+                            main.touch(mode=0o600)
+                        descriptor = real_open(path, flags, *args, **kwargs)
+                        if replacement == 'unlink':
+                            main.unlink()
+                        return descriptor
+                    return real_open(path, flags, *args, **kwargs)
+
+                with mock.patch('resources.lib.trakt_preferences.os.open', side_effect=change_main), \
+                        mock.patch('resources.lib.trakt_preferences.sqlite3.connect') as connect:
+                    with self.assertRaisesRegex(PreferencesError, '^preferences_unavailable$'):
+                        store.load('synthetic-a')
+                    connect.assert_not_called()
+                self.assertEqual(changed, [True])
+                if replacement == 'unlink':
+                    self.assertFalse(main.exists())
+
     def test_connection_initialization_failure_closes_connection_and_sanitizes_error(self):
         with tempfile.TemporaryDirectory() as profile:
             store = AccountPreferences(profile)

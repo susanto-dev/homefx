@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This batch prepares `plugin.video.homefx` 0.14.0 alongside
+This repair prepares `plugin.video.homefx` 0.14.1 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -142,5 +142,21 @@ validation batch also changes no package versions or retained archive bytes.
 The dependency/manifest batch deployed unchanged video 0.13.0/repository 0.2.0
 packages from `a7fb4fbe1639a32de4f56f3dbc57b77e552ca234`.
 [Publication run 43356354268](https://github.com/susanto-dev/homefx/actions/runs/43356354268)
-passed build, deployment and hosted-byte verification. Video 0.14.0 awaits this
-batch's merge and publication; all seven prior archive records are preserved.
+passed build, deployment and hosted-byte verification. The subsequent 0.14.0 merge
+`e33edc02e72dbc52df058a7ac76bc0948baa2a5f` failed its Python 3.12 validation
+[run](https://github.com/susanto-dev/homefx/actions/runs/43359581622) and preview
+[build](https://github.com/susanto-dev/homefx/actions/runs/43359581727) in the same
+concurrent preferences test. Deployment and hosted-byte verification were skipped.
+
+Direct HTTPS inspection on 2026-11-13 found the index still advertising video
+0.13.0/repository 0.2.0. The root 0.13.0 ZIP matches its retained SHA-256; root and
+repository 0.14.0 ZIP URLs returned 404. This does not assert that every hosted file
+was checked. Failure-report artifacts were listed but downloading them was blocked;
+the complete failed-step logs and aggregate test counts were inspected instead.
+
+The repair publishes video 0.14.1 as the current update target, with unchanged
+repository 0.2.0. All eight records already merged into history remain byte-for-byte
+unchanged, including the superseded 0.14.0 archive. The repository will retain that
+archive at its versioned path, but will not advertise it as the current version.
+No existing version is rebuilt with different bytes. Publication occurs only after
+the maintainer merges and the ordinary preview workflow succeeds.
