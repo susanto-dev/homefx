@@ -34,6 +34,118 @@ class PackageTests(unittest.TestCase):
                                  {"plugin.video.homefx/" + x for x in p.FILES})
                 self.assertIsNone(archive.testzip())
 
+    def test_existing_identical_pair_is_preserved_and_differing_version_bytes_refused(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src, out = root / "source", root / "out"
+            shutil.copytree(p.ADDON, src)
+            archive = p.build(src, out)
+            checksum = archive.with_suffix(".zip.sha256")
+            before = {path: (path.read_bytes(), path.stat().st_mtime_ns)
+                      for path in (archive, checksum)}
+            self.assertEqual(p.build(src, out), archive)
+            self.assertEqual(before, {path: (path.read_bytes(), path.stat().st_mtime_ns)
+                                      for path in before})
+            with (src / "default.py").open("a") as stream:
+                stream.write("\n# Synthetic changed source.\n")
+            with self.assertRaisesRegex(ValueError, "Package output differs"):
+                p.build(src, out)
+            self.assertEqual(before, {path: (path.read_bytes(), path.stat().st_mtime_ns)
+                                      for path in before})
+            self.assertEqual(set(out.iterdir()), {archive, checksum})
+
+    def test_incomplete_or_mismatched_pair_is_not_repaired(self):
+        for damage in ("missing archive", "missing checksum", "different checksum"):
+            with self.subTest(damage=damage), tempfile.TemporaryDirectory() as temp:
+                out = Path(temp)
+                archive = p.build(output=out)
+                checksum = archive.with_suffix(".zip.sha256")
+                if damage == "missing archive":
+                    archive.unlink()
+                elif damage == "missing checksum":
+                    checksum.unlink()
+                else:
+                    checksum.write_bytes(b"synthetic mismatched checksum")
+                before = {path.name: path.read_bytes() for path in out.iterdir()}
+                with self.assertRaises(ValueError):
+                    p.build(output=out)
+                self.assertEqual(before, {path.name: path.read_bytes() for path in out.iterdir()})
+
+    def test_output_links_and_special_entries_never_modify_targets(self):
+        for entry in ("archive", "checksum", "output", "ancestor", "directory", "fifo"):
+            with self.subTest(entry=entry), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                out = root / "out"
+                out.mkdir()
+                outside = root / "outside"
+                outside.write_bytes(b"synthetic unrelated file")
+                archive = out / ("plugin.video.homefx-" + p.validate() + ".zip")
+                checksum = archive.with_suffix(".zip.sha256")
+                if entry in ("archive", "checksum"):
+                    (archive if entry == "archive" else checksum).symlink_to(outside)
+                elif entry in ("output", "ancestor"):
+                    alias = root / "alias"
+                    alias.symlink_to(out, target_is_directory=True)
+                    out = alias if entry == "output" else alias / "nested"
+                elif entry == "directory":
+                    archive.mkdir()
+                else:
+                    p.os.mkfifo(archive)
+                with self.assertRaises(ValueError):
+                    p.build(output=out)
+                self.assertEqual(outside.read_bytes(), b"synthetic unrelated file")
+                if entry in ("output", "ancestor"):
+                    self.assertEqual(list((root / "out").iterdir()), [])
+                else:
+                    self.assertEqual(len(list(out.iterdir())), 1)
+
+    def test_source_root_and_nested_directory_links_are_rejected(self):
+        for location in ("root", "nested"):
+            with self.subTest(location=location), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                src = root / "source"
+                shutil.copytree(p.ADDON, src)
+                if location == "root":
+                    alias = root / "alias"
+                    alias.symlink_to(src, target_is_directory=True)
+                    src = alias
+                else:
+                    outside = root / "resources"
+                    (src / "resources").rename(outside)
+                    (src / "resources").symlink_to(outside, target_is_directory=True)
+                with self.assertRaises(ValueError):
+                    p.build(src, root / "out")
+                self.assertFalse((root / "out").exists())
+
+    def test_validation_failure_leaves_no_final_archive_or_checksum(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(
+                p.ZipFile, "testzip", return_value="synthetic bad member"):
+            out = Path(temp)
+            unrelated = out / "unrelated.txt"
+            unrelated.write_bytes(b"synthetic unrelated")
+            with self.assertRaisesRegex(ValueError, "Corrupt package"):
+                p.build(output=out)
+            self.assertEqual(list(out.iterdir()), [unrelated])
+            self.assertEqual(unrelated.read_bytes(), b"synthetic unrelated")
+
+    def test_failed_checksum_publication_rolls_back_only_new_archive(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp)
+            unrelated = out / "unrelated.txt"
+            unrelated.write_bytes(b"synthetic unrelated")
+            real_link = p.os.link
+
+            def fail_checksum(source, target):
+                if str(target).endswith(".sha256"):
+                    raise OSError("synthetic publication failure")
+                return real_link(source, target)
+
+            with patch.object(p.os, "link", side_effect=fail_checksum):
+                with self.assertRaisesRegex(OSError, "synthetic publication failure"):
+                    p.build(output=out)
+            self.assertEqual(list(out.iterdir()), [unrelated])
+            self.assertEqual(unrelated.read_bytes(), b"synthetic unrelated")
+
     def test_validator_rejects_actual_manifest_defects(self):
         mutations = [('version="' + p.validate() + '"', 'version="invalid"'),
                      ('version="3.0.1"', 'version="9.0.0"'),

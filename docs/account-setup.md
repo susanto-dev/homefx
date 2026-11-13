@@ -1,6 +1,6 @@
 # Preparing a Trakt development connection
 
-The 0.17.0 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.17.1 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.

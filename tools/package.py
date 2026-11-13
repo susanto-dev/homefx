@@ -1,7 +1,10 @@
 """Validate and reproducibly package only reviewed runtime files."""
 import ast
 import hashlib
+import os
 import re
+import stat
+import tempfile
 from defusedxml import ElementTree as ET
 from pathlib import Path
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
@@ -34,10 +37,24 @@ def parse_manifest(data):
     return ET.fromstring(data, forbid_dtd=True, forbid_entities=True, forbid_external=True)
 
 
+def _no_symlinks(path):
+    if any(item.is_symlink() for item in (path,) + tuple(path.parents)):
+        raise ValueError("Unsafe package path")
+
+
+def _regular_source(path):
+    _no_symlinks(path)
+    if not stat.S_ISREG(path.stat().st_mode):
+        raise ValueError("Unsafe packaged source file")
+
+
 def validate(source=ADDON):
+    source = Path(source).absolute()
+    _no_symlinks(source)
     manifest_path = source / "addon.xml"
     if manifest_path.is_symlink() or not manifest_path.is_file():
         raise ValueError("Missing or unsafe packaged manifest")
+    _regular_source(manifest_path)
     with manifest_path.open("rb") as stream:
         manifest = parse_manifest(stream.read(1024 * 1024 + 1))
     if manifest.tag != "addon" or manifest.get("id") != "plugin.video.homefx":
@@ -86,6 +103,7 @@ def validate(source=ADDON):
         file = source / path
         if file.is_symlink() or not file.is_file():
             raise ValueError("Missing or unsafe packaged file: " + path)
+        _regular_source(file)
         if path.endswith(".py"):
             ast.parse(file.read_text(encoding="utf-8"), feature_version=(3, 8))
     for asset in manifest.findall("./extension[@point='xbmc.addon.metadata']/assets/*"):
@@ -97,25 +115,64 @@ def validate(source=ADDON):
 
 
 def build(source=ADDON, output=None):
+    """Stage a validated ZIP/checksum pair; accept only fresh or identical output.
+
+    Source and destination trees must be quiescent. Exclusive links prevent an
+    existing target from being overwritten; ordinary publication errors roll back
+    newly linked files. A process crash can leave an incomplete pair, which a later
+    build rejects rather than repairing or replacing it automatically.
+    """
+    source = Path(source).absolute()
     version = validate(source)
-    output = Path(output) if output else ROOT / "dist"
+    output = (Path(output) if output is not None else ROOT / "dist").absolute()
+    _no_symlinks(output)
     output.mkdir(parents=True, exist_ok=True)
     dest = output / ("plugin.video.homefx-" + version + ".zip")
-    with ZipFile(dest, "w", compression=ZIP_DEFLATED) as archive:
-        for path in sorted(FILES):
-            entry = ZipInfo("plugin.video.homefx/" + path, date_time=(2026, 1, 1, 0, 0, 0))
-            entry.compress_type = ZIP_DEFLATED
-            entry.create_system = 3
-            entry.external_attr = 0o100644 << 16
-            archive.writestr(entry, (source / path).read_bytes())
-    with ZipFile(dest) as archive:
-        if archive.testzip() is not None:
-            raise ValueError("Corrupt package")
-        packed = parse_manifest(archive.read("plugin.video.homefx/addon.xml"))
-        if packed.get("version") != version:
-            raise ValueError("ZIP/manifest version mismatch")
-    digest = hashlib.sha256(dest.read_bytes()).hexdigest()
-    dest.with_suffix(".zip.sha256").write_text(digest + "  " + dest.name + "\n")
+    checksum = dest.with_suffix(".zip.sha256")
+    with tempfile.TemporaryDirectory(prefix=".homefx-package-", dir=str(output)) as temporary:
+        staged = Path(temporary) / dest.name
+        staged_checksum = staged.with_suffix(".zip.sha256")
+        with ZipFile(staged, "w", compression=ZIP_DEFLATED) as archive:
+            for path in sorted(FILES):
+                entry = ZipInfo("plugin.video.homefx/" + path, date_time=(2026, 1, 1, 0, 0, 0))
+                entry.compress_type = ZIP_DEFLATED
+                entry.create_system = 3
+                entry.external_attr = 0o100644 << 16
+                archive.writestr(entry, (source / path).read_bytes())
+        with ZipFile(staged) as archive:
+            if archive.testzip() is not None:
+                raise ValueError("Corrupt package")
+            packed = parse_manifest(archive.read("plugin.video.homefx/addon.xml"))
+            if packed.get("version") != version:
+                raise ValueError("ZIP/manifest version mismatch")
+        archive_bytes = staged.read_bytes()
+        digest = hashlib.sha256(archive_bytes).hexdigest()
+        checksum_bytes = (digest + "  " + dest.name + "\n").encode("ascii")
+        staged_checksum.write_bytes(checksum_bytes)
+        exists = []
+        for path, expected in ((dest, archive_bytes), (checksum, checksum_bytes)):
+            _no_symlinks(path)
+            present = path.exists()
+            exists.append(present)
+            if present:
+                if not stat.S_ISREG(path.stat().st_mode):
+                    raise ValueError("Unsafe package output")
+                with path.open("rb") as stream:
+                    if stream.read(len(expected) + 1) != expected:
+                        raise ValueError("Package output differs; use a fresh output directory")
+        if any(exists):
+            if not all(exists):
+                raise ValueError("Incomplete package output; use a fresh output directory")
+            return dest
+        created = []
+        try:
+            for prepared, target in ((staged, dest), (staged_checksum, checksum)):
+                os.link(str(prepared), str(target))
+                created.append(target)
+        except Exception:
+            for target in reversed(created):
+                target.unlink()
+            raise
     return dest
 
 

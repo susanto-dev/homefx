@@ -73,13 +73,26 @@ verification and an explicitly authorized development-device read-only connectio
 see [required owner input](account-setup.md#owner-input-for-the-read-only-milestone).
 No playback, writes, Real-Debrid or skin replacement is part of that milestone.
 
+## 0.17.1 repair acceptance — after verified publication
+
+The 0.17.1 repair is a candidate until merged and published. Update through the
+repository, retaining saved widget routes and demo selections. While opening the
+root, a selected-list folder and a season folder, press Back/cancel during loading.
+Expected: no error modal, no continued row production after Kodi rejects submission,
+and the listing is not reported as successfully complete. Reopen each folder and
+check all expected titles return, then check focus, Back and return position in the
+existing skin. Fast synthetic folders may finish before cancellation: record **not
+exercised** rather than pass in that case. Do not infer that previously submitted
+rows disappear atomically. Repeat the timing protocol above without claiming speed
+improvement from cloud tests. All live-account activation gates remain unchanged.
+
 ## Detailed preview checks
 
 1. After the reviewed Pages deployment and HTTP check, use Kodi Settings → File
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install version 0.17.0.
+   Preview Repository → Video add-ons → HomeFX Preview to install the currently published version (0.17.1 only after its publication is verified).
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks
@@ -161,7 +174,7 @@ or starting media. Existing movie/episode clicks must still show demo informatio
 There is no real account login or source input field to test in this version.
 Follow the separate [playback plan](playback-plan.md) before any future live experiment.
 
-## Experimental repository acceptance (0.2.0 repository / 0.17.0 video)
+## Experimental repository acceptance (0.2.0 repository / current video)
 
 Status: NOT RUN. Record the deployed revision, exact ZIP checksums and the HTTP-check
 result separately from device observations. Confirm Kodi can browse the source URL,

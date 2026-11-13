@@ -92,6 +92,40 @@ class AdapterTests(unittest.TestCase):
             spec.loader.exec_module(module)
             module.main()
 
+    def test_cancelled_directory_stops_row_preparation_without_error_dialog(self):
+        for route, params, stop_after in [
+                ('home', {}, 2), ('widgets', {}, 2),
+                ('list', {'id': 'weekend'}, 2), ('show', {'id': 's1'}, 2),
+                ('seasons', {'id': 's1'}, 1)]:
+            with self.subTest(route=route):
+                prepared, submitted, sorted_methods = [], [], []
+                def make_item(label):
+                    prepared.append(label)
+                    return ListItem(label)
+                def submit(handle, url, item, folder):
+                    submitted.append(url)
+                    return len(submitted) < stop_after
+                self.modules['xbmcgui'].ListItem = make_item
+                self.modules['xbmcplugin'].addDirectoryItem = submit
+                self.modules['xbmcplugin'].addSortMethod = lambda *args: sorted_methods.append(args)
+                self.run_route(route, **params)
+                self.assertEqual(len(prepared), stop_after)
+                self.assertEqual(len(submitted), stop_after)
+                self.assertEqual(self.ends, [{'succeeded': False, 'cacheToDisc': False}])
+                self.assertEqual((self.messages, self.commands, sorted_methods), ([], [], []))
+                self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_accepted_directory_rows_finish_successfully(self):
+        submitted = []
+        def submit(handle, url, item, folder):
+            submitted.append(url)
+            return True
+        self.modules['xbmcplugin'].addDirectoryItem = submit
+        self.run_route('list', id='weekend')
+        self.assertEqual(len(submitted), 4)
+        self.assertEqual(self.ends, [{'succeeded': True, 'cacheToDisc': False}])
+        self.assertEqual(self.messages, [])
+
     def test_storage_check_cancel_does_not_access_profile_or_probe(self):
         self.confirm = False
         self.modules['xbmcvfs'].translatePath = lambda value: self.fail('Profile translation forbidden')
