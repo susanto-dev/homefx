@@ -1,6 +1,6 @@
 # Preparing a Trakt development connection
 
-The 0.17.2 Kodi preview still uses synthetic data. Its **Trakt connection setup**
+The 0.17.4 Kodi preview still uses synthetic data. Its **Trakt connection setup**
 menu only explains the current state; it does not collect credentials or contact
 Trakt. Transport/session code is included for development and offline tests, but
 no live connection route is enabled. Do not paste tokens into plugin URLs or source.
@@ -8,11 +8,18 @@ no live connection route is enabled. Do not paste tokens into plugin URLs or sou
 Use the [short activation handoff checklist](activation-checklist.md) to track the
 next evidence and owner input. It summarizes these gates without enabling live routes.
 
+The owner has now confirmed that the Development public ID and registered redirect
+match the GitHub variables, and supplied a passing 0.17.4 synthetic storage report.
+A [separate Development device-test add-on](development-device-test.md) prepares
+explicit on-TV login/refresh checks. Public preview routes stay inactive; no actual
+TLS, login, token persistence or refresh success follows from those confirmations.
+
 ## Owner input for the read-only milestone
 
-Live access remains blocked until the registered **public client ID** and **exact
-registered redirect URI** are verified for the selected application environment,
-then the owner authorizes a bounded device test after the gates below. These public configuration
+Public live account routes remain blocked by the gates below. For the separate
+bounded Development test, the owner has confirmed the registered **public client
+ID** and **exact registered redirect URI** match the configured values. Reconfirm
+that match if the application or configuration changes. These public configuration
 values do not prove registration validity by themselves. No real-account test belongs
 in CI. Do not send a client secret, token, device code, private list/history export,
 profile path, or application screenshot containing secret fields.
@@ -51,7 +58,11 @@ GitHub's resolved `vars` context cannot prove which scope supplied a value; conf
 the variable placement in repository settings when diagnosing configuration.
 
 This separate workflow does not inject environment values into ZIPs or the Pages
-build. PR tests use fabricated values and never bind to these environments. Public
+build. The separately named **Build Development device test** workflow is a manual,
+main-only exception for its isolated test artifact: it embeds only Development
+public configuration after explicit readiness confirmation. It cannot select
+Production or deploy Pages. See its [build and privacy instructions](development-device-test.md).
+PR tests use fabricated values and never bind to these environments. Public
 packages remain deterministic and live routes stay inactive. A failed configuration
 check is actionable but does not alter or bypass package/publication checks; missing
 variables fail without falling back to another environment or inventing a redirect.

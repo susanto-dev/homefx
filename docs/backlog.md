@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status checked on 13 November 2026: published **video 0.17.3 / repository 0.2.0**.
+Status checked on 13 November 2026: published **video 0.17.4 / repository 0.2.0**.
 The installation guide is merged in PR #27; its post-merge publication workflow
 passed. **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
@@ -12,7 +12,7 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | Broader device acceptance pending; private-storage check failed on 0.17.2 |
+| B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
 | B02 | Multiple selected list widgets and folder browsing | Implemented in demo; mixed-list reads and inactive account-bound widget rendering added (0.16) | Gated public dispatch, activation and widget-title click behavior need TV verification |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; inactive opaque episode filters and season/progress display added (0.17) | Live episode identity/status and refresh behavior |
 | B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
@@ -38,8 +38,8 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner reports registration and environment-scoped public IDs/shared redirect configured; Development offline configuration preflight passed again after PR #27; actual registration/login/refresh and TV storage/TLS verification pending |
-| T02 | Account connect/cancel/switch/disconnect UI | Controller and injected dialog adapter inactive (0.12); setup guidance implemented | Wire UI only after activation gates; verify revocation/privacy wording and recovery on TV |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner confirms registered Development ID/redirect match GitHub variables; 0.17.4 synthetic storage passed; separate Development device test prepared, actual login/refresh/persistence/TLS acceptance pending |
+| T02 | Account connect/cancel/switch/disconnect UI | Controller/dialog adapter implemented; separate explicit Development test prepared | Public preview UI stays inactive; test consent, cancellation, restart, disconnect/revocation and recovery on TV |
 | T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
 | T05 | Live Trakt read views | Pending | Enable after registration, transport and device checks |
@@ -73,13 +73,13 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.3 publication and HTTP integrity verified | TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.3 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.4 publication and HTTP integrity verified | TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.4 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
-| Q04 | Device readiness and sanitized test checklist | Implemented; partial TV evidence received on 0.17.2 | Permissions failed, SQLite not run, cleanup passed; 0.17.3 rerun stopped at directory permissions; 0.17.4 candidate explicitly sets and strictly checks the synthetic directory mode |
+| Q04 | Device readiness and sanitized test checklist | Implemented; 0.17.4 synthetic storage passed on TV | Actual test-addon account-store persistence, TLS and live authorization remain separate checks |
 | G01 | Original-code licence | Decision | Existing MIT remains; final owner preference still unconfirmed |
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
@@ -120,11 +120,11 @@ still missing. The precise storage failure cause remains unknown.
 Version 0.17.3 added scrollable diagnostics and a fixed **Failure stage** label.
 Its subsequent TV storage report identified **directory permissions**, with SQLite
 not run and cleanup passed. The underlying filesystem cause remains unknown;
-see the 0.17.4 candidate below. No path, token or private account data is required.
+see the published 0.17.4 checkpoint below. No path, token or private account data is required.
 
-## Next checkpoint: diagnose the TV storage blocker
+## Next checkpoint: bounded Development account test
 
-Video 0.17.2 and repository 0.2.0 are the published candidate. Start with the
+Video 0.17.4 and repository 0.2.0 are the published preview. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
 evidence from the later, explicitly authorized Development account test.
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
@@ -135,9 +135,9 @@ before the [bounded TV checklist](testing-on-tv.md).
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|
-| 1 | R01–R03, Q04, B10 | Storage failed at directory permissions on 0.17.3; after 0.17.4 publication, collect directory-check/failure-stage/cleanup results; installation path, navigation and restart acceptance remain open |
+| 1 | R01–R03, Q04, B10 | 0.17.4 synthetic storage passed; installation/update path, navigation and restart acceptance remain open |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Development configuration preflight passed; Production not run; registered identity/redirect verification and bounded device authorization still required before live wiring |
+| 3 | T01–T03, T05 | Owner confirms Development identity/redirect match; separate manually built device test prepared; real TLS, grant, restart persistence and refresh still unverified; Production not run |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
 | Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
 | Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |
@@ -148,11 +148,12 @@ remains maintainer-merged after independent review and successful checks.
 
 ## External inputs and decisions
 
-The next useful device evidence is the readiness report and existing widget/navigation
-checklist, followed by service-registration details (public IDs only). Real lists/views,
+The next useful device evidence is the bounded Development login/refresh test,
+plus the existing widget/navigation checklist. Registered Development values are
+owner-confirmed; no app values need to be posted. Real lists/views,
 movie release region/type, first playback path, source-provider choice, scrobbling
 ownership, final original-code licence and TV acceptance of repository updates/rollback remain open.
-Registration and device evidence block read-only activation. Playback, movie-region and licence decisions do not require another demo-feature batch; completed independent work does not satisfy the activation gates. Never send secrets,
+Actual authentication and read-only device evidence still block public live activation. Playback, movie-region and licence decisions do not require another demo-feature batch; completed independent work does not satisfy the activation gates. Never send secrets,
 account exports, watch history or a full Kodi backup.
 
 NBA, a separate Android app and an always-on server are outside scope. A new skin is
@@ -160,11 +161,11 @@ a conditional future option, not a required component. See [playback plan](playb
 [account gates](account-setup.md), [handoff evidence](umbrella-feasibility.md),
 [metadata contracts](metadata-contract.md) and [TV checklist](testing-on-tv.md).
 
-## 0.17.4 candidate: directory setup and update recovery
+## Published 0.17.4: directory setup and update recovery
 
 The owner reported 0.17.3 stopping at **directory permissions**, SQLite **not run**,
 cleanup **passed**, overall **not passed**. The complete storage report is now
-visible. The underlying filesystem cause is not established. This candidate
+visible. The underlying filesystem cause is not established. Version 0.17.4
 explicitly sets and strictly verifies permissions on only the probe's fresh
 synthetic directory, matching private-store setup, and adds a fixed initial
 `Directory check` result. It does not activate accounts or weaken permissions.
@@ -173,5 +174,21 @@ The hosted 0.17.3/repository 0.2.0 index and SHA-256/package paths were verified
 No repository format defect was found. Kodi refresh timing, update settings and
 manual ZIP origin are separate from publication: use the documented repository
 refresh/version-selection steps. Auto-update on the TV remains unverified.
-After 0.17.4 merge/publication, rerun storage and return fixed stage/directory/cleanup
-results. No source-provider, playback, scrobbling or custom-skin expansion is included.
+The owner subsequently reported all 0.17.4 synthetic storage checks passed, including
+cleanup, with failure stage none. This does not establish live account acceptance. No source-provider, playback, scrobbling or custom-skin expansion is included.
+
+## Prepared: isolated Development device-test artifact
+
+The owner confirmed the registered Development ID and redirect match GitHub variables.
+A separate **HomeFX Development Test** program add-on is prepared for explicit
+storage, local status, device authorization, one refresh rotation and disconnect
+checks. Its manually requested main-only workflow embeds public configuration in a
+content-addressed artifact; it does not publish a Kodi repository package or activate
+HomeFX Preview. See the [bounded test instructions](development-device-test.md).
+
+The test uses its own profile, scoped by public app identity. Tokens never enter CI,
+artifacts, logs or public reports. No list/account API reads, remote history/list
+writes, playback, Real-Debrid or scrobbling are enabled. A reviewed implementation
+and fabricated tests are not real login, TLS, refresh or TV evidence. After those
+results, plan the smallest real read-only list/widget integration; do not add more
+demo-only features to substitute for that acceptance.

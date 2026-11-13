@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="script.homefx.development" name="HomeFX Development Test" version="0.1.0" provider-name="susanto-dev">
+  <requires><import addon="xbmc.python" version="3.0.1"/></requires>
+  <extension point="xbmc.python.script" library="default.py"><provides>executable</provides></extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Explicit Development Trakt device test</summary>
+    <description lang="en_GB">Separately installed Development test. Login and refresh require confirmation. No lists, watch-history writes, playback or public preview activation.</description>
+    <platform>all</platform><license>MIT</license>
+    <source>https://github.com/susanto-dev/homefx</source>
+    <assets><icon>resources/art/icon.png</icon></assets>
+  </extension>
+</addon>

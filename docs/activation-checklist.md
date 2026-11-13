@@ -1,6 +1,6 @@
 # From the preview to a real Trakt widget
 
-**Live connection and account-bound routes remain inactive.** This handoff groups
+**Public preview live connection and account-bound routes remain inactive.** This handoff groups
 existing requirements; it does not authorize login, replace the
 [account activation gates](account-setup.md#activation-gates), or turn cloud tests
 into TV evidence. No real account belongs in CI.
@@ -8,13 +8,11 @@ into TV evidence. No real account belongs in CI.
 ## 1. Try the published demo on TV
 
 Follow the [installation guide](install.md) on Kodi 21.2 with the existing skin.
-The verified published candidate is HomeFX Preview 0.17.3 and repository 0.2.0.
-The TV previously confirmed Kodi 21.2 / Python 3.11.7. Its 0.17.3 storage rerun
-stopped at **directory permissions**: SQLite not run, cleanup passed, overall not
-passed. The complete storage result is visible; the filesystem cause is unknown.
-The **0.17.4 candidate is not yet published or tested on TV**. It explicitly sets
-private mode on only its fresh synthetic directory, then verifies it; see the
-[storage rerun below](#next-storage-rerun-after-0174-publication).
+The verified published candidate is HomeFX Preview 0.17.4 and repository 0.2.0.
+The TV previously confirmed Kodi 21.2 / Python 3.11.7. The owner supplied a passing
+0.17.4 synthetic storage report: private permissions, directory check, SQLite
+commit/rollback, cleanup and overall passed; failure stage was none. This clears
+the observed synthetic-probe blocker, not all account-store or network acceptance.
 
 - Fully restart Kodi after installation/update. Open **Device readiness** and record
   the displayed versions and fixed capability results, including unavailable results.
@@ -31,18 +29,16 @@ private mode on only its fresh synthetic directory, then verifies it; see the
   responsiveness; these synthetic results do not measure live network/cache behavior.
 
 **Return only:** versions, fixed result/error categories, cleanup status,
-success/failure/not-run observations and timings. The observed 0.17.2 storage
-failure is **not a pass**; the 0.17.3 rerun also failed. Navigation/timing and the
-0.17.4 rerun remain untested. A storage/readiness pass does not prove
-TLS, Trakt authorization, refresh or playback works.
+success/failure/not-run observations and timings. Navigation/timing and actual
+account-store persistence remain unverified. A storage/readiness pass does not
+prove TLS, Trakt authorization, refresh or playback works.
 
 ## 2. Verify registration before planning login
 
-The owner already reports creating the Trakt application and configuring public
-values. Confirm, within the owner-managed Trakt registration and GitHub settings,
-that the **Development** client ID identifies that registered application and the
-shared redirect URI exactly matches its registration. The repository variable
-names are documented in [configuration environments](account-setup.md#github-configuration-environments).
+The owner has confirmed that the **Development** client ID and registered redirect
+exactly match the GitHub configuration. This is owner confirmation, not a provider
+login test. Reconfirm locally if either value or application changes. Variable
+placement is documented in [configuration environments](account-setup.md#github-configuration-environments).
 No values, screenshots or secrets need to be pasted into this checklist or an issue.
 
 The Development preflight checks presence/syntax only. It does not verify registration,
@@ -54,10 +50,11 @@ new application or accept changed service terms as part of this handoff.
 
 ## 3. Explicitly authorize a bounded Development device test
 
-This is a **later gated test**, not an instruction to start login in the current
-preview. After reviewing steps 1–2, agree on the small Development test scope before
-any live flow is enabled. Keep public live routes inactive until the account gates
-are satisfied and the implementation has passed review.
+Use the [separately installed Development device test](development-device-test.md)
+after its implementation is reviewed and merged. Its workflow must be manually
+requested on main with readiness confirmed; building it initiates no login. Each
+on-TV action requires consent. It tests only its own profile and does not wire
+public live routes or real-list widgets into HomeFX Preview.
 
 The test must establish actual Android TLS trust and bounded slow/offline/cancellation
 behavior, device authorization/denial/expiry/cancellation, single-use refresh rotation
@@ -89,11 +86,9 @@ unredacted logs or full Kodi backups. No screenshot is required. Return only the
 categories and observations above; retain private application/account details locally.
 See [security](security.md) and the [complete backlog](backlog.md) for the wider scope.
 
-## Next storage rerun after 0.17.4 publication
+## Completed synthetic storage checkpoint
 
-The 0.17.3 TV result stops at directory permissions before SQLite; cleanup passed.
-After the 0.17.4 candidate is merged and its publication verified, update through
-the HomeFX repository, restart Kodi and rerun Test private storage. Return the
-fixed **Directory check**, **Failure stage**, **Temporary cleanup** and **Overall**
-results. Mode changes affect only a fresh synthetic test directory. No account
-activation is implied even if the check passes; the remaining gates above apply.
+The 0.17.4 TV result passed private permissions, directory check, SQLite transaction
+and cleanup checks, with failure stage none. The separate test add-on must test its
+own storage scope before live connect/refresh; the preview pass is not transferred
+as blanket permission for a different path or for live account access.

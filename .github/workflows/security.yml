@@ -93,6 +93,8 @@ jobs:
         run: python -m unittest discover -s tests -p test_action_audit.py -v
       - name: Test Trakt workflow boundaries
         run: python -m unittest discover -s tests -p test_trakt_config_workflow.py -v
+      - name: Test Development artifact boundaries
+        run: python -m unittest discover -s tests -p test_development_workflow.py -v
       - name: Check local pins
         run: python tools/action_audit.py
       - name: Inspect nested pins and available releases

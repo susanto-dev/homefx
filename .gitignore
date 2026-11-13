@@ -9,3 +9,6 @@ dist/
 *.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm
+
+# Generated only in the separate Development artifact; never source configuration.
+addons/script.homefx.development/resources/development.json
