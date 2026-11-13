@@ -123,7 +123,7 @@ see the published 0.17.4 checkpoint below. No path, token or private account dat
 
 ## Next checkpoint: bounded Development account test
 
-Video 0.17.6 and repository 0.2.0 are the published preview. Start with the
+Video 0.17.7 and repository 0.2.0 are the published preview. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
 evidence from the later, explicitly authorized Development account test.
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
@@ -259,7 +259,7 @@ Do not migrate its tokens into the video profile or add more demo features to av
 these acceptance steps. Follow the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
 Writes, playback, Real-Debrid and scrobbling remain outside this milestone.
 
-## Current implementation batch: joined video entry
+## Completed in PR #36: joined video entry
 
 The authentication implementation is already shared: the Development ZIP bundles
 modules from the video add-on source. The missing adapter joins those modules with
@@ -268,10 +268,10 @@ adds that adapter and process-interruption recovery regressions with synthetic t
 It does not activate the public preview, import program credentials, add a provider,
 or change stable demo/widget routes. No repeated successful owner test is required.
 
-Next release proposal: video 0.17.7, repository 0.2.0 unchanged, all 20 previous
-archive records preserved. The next integration decision is how to deliver reviewed
-public Development configuration to the video package without changing a published
-version's bytes. Existing GitHub variables configure only the separate program ZIP.
+Published video 0.17.7 kept repository 0.2.0 unchanged and preserved all 20 prior
+archive records. The following candidate resolves Development configuration delivery
+with a distinct video ID and immutable checksum-named download; it does not replace
+a published package. Existing variables supply only public Development configuration.
 A general public connection must not presume Production approval from owner tests.
 
 ## Current candidate: one real list in Development Video

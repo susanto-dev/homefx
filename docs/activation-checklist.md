@@ -8,7 +8,7 @@ into TV evidence. No real account belongs in CI.
 ## 1. Try the published demo on TV
 
 Follow the [installation guide](install.md) on Kodi 21.2 with the existing skin.
-Published HomeFX Preview is 0.17.6 with repository 0.2.0; PR #34 post-merge
+Published HomeFX Preview is 0.17.7 with repository 0.2.0; PR #36 post-merge
 validation and publication passed.
 The TV previously confirmed Kodi 21.2 / Python 3.11.7. The owner supplied a passing
 0.17.4 synthetic storage report: private permissions, directory check, SQLite
@@ -118,5 +118,7 @@ read-only list journey, subject to the remaining gates, without importing test t
 Failure evidence is divided explicitly between automated synthetic cases and TV
 observations in [account setup](account-setup.md#evidence-required-without-destructive-account-tests).
 A controlled process-interruption test uses synthetic stores; no destructive live
-refresh experiment is requested. The remaining integration work is the video entry
-and immutable configuration delivery, then one deliberately enabled read-only TV journey.
+refresh experiment is requested. Video entry and immutable Development configuration delivery are prepared in the
+[separate video candidate](development-video.md). After its reviewed publication,
+the next owner step is its own-profile storage/login and one read-only list/widget
+journey; the public Preview remains inactive.
