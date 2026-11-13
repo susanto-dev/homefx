@@ -16,7 +16,7 @@ For the next device and account checkpoint, use the
 [activation handoff checklist](docs/activation-checklist.md). It separates safe demo
 observations from the gates required before any live connection.
 
-For the separately installed, manually built test add-on, see the
+For the separately installed test add-on and its HomeFX source installation steps, see the
 [bounded Development device test](docs/development-device-test.md). It does not
 activate live routes in HomeFX Preview or join the public repository channel.
 
@@ -30,8 +30,9 @@ persistence, TLS, login, refresh or playback. Live preview accounts remain inact
 
 The owner also confirmed that the registered Development public client ID and
 redirect match the configured variables. This is not service-side verification.
-The separate Development device-test source is a candidate for a manually built
-artifact after merge; it has not been published or tested on the TV.
+The separate Development device-test build succeeded. Direct installation from the
+existing HomeFX source is prepared for the next checked Pages publication; its hosted
+ZIP and TV installation have not yet been verified. This does not enable public live routes.
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

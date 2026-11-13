@@ -190,22 +190,24 @@ README → Pages guide and landing page → guide → downloads navigation. The 
 full suite includes these checks. External HTTP availability is checked separately
 after publication; offline link checks do not establish hosted or TV acceptance.
 
-## Separate Development device-test artifact
+## Separate Development device-test download
 
-The [device-test guide](development-device-test.md) describes the manual main-only
-Development workflow. It is not the normal preview build: only that explicitly
-selected job embeds the public application ID/redirect into a separately installed
-Kodi script ZIP. No secret is accepted; no provider request runs in CI. The public
-preview's runtime, packages and repository index remain unchanged.
+The [device-test guide](development-device-test.md) describes direct ZIP installation
+from the existing HomeFX File manager source. The main-only Pages build selects
+Development and explicitly embeds its public ID/redirect only in the separate script
+ZIP. No secret is accepted; no provider request runs in CI. The public preview's
+runtime, video/repository packages and repository index remain unchanged. The manual
+Development artifact workflow remains an optional fallback, not a second publisher.
 
 Builder/runner tests use fabricated public configuration and isolated temporary
 profiles. Run `python tools/run_tests.py --pattern 'test_development_*.py'` with the
-build dependencies installed; workflow structure coverage additionally uses the
-existing security-tool environment. Security CI runs that check explicitly when
-the ordinary matrix lacks PyYAML. The full suite includes all available tests.
+build dependencies installed; workflow structure coverage also requires PyYAML and
+runs in the security job. PR checks do not use real environment values.
 
-Development artifacts use content-addressed ZIP filenames and a checksum sidecar.
-Their workflow artifact name includes source revision and run ID. They are not
-immutable repository releases, are not retained in releases/inventory.json, and
-have no automatic update channel. Never add generated application configuration,
-credentials, device codes or test profiles to source or release archives.
+Development downloads use content-addressed ZIP filenames and a checksum sidecar.
+They are current experimental candidates outside the retained release inventory;
+older test URLs may disappear after a later merge, but a digest filename never
+receives different bytes. Existing recorded video/repository archives remain
+immutable and retained. No test profile, database or generated configuration belongs
+in source control. Actual-device installation, TLS, login, refresh and persistence
+remain separate from fabricated tests and HTTP byte verification.

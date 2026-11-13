@@ -422,3 +422,26 @@ preserved, including repository **0.2.0**. Merging uses the normal checked Pages
 workflow to advertise 0.17.4 and update the guide; prior indexed video archives
 remain available. No independent deployment, new dependency, account activation,
 profile migration or storage-permission exemption is included.
+
+## Development test ZIP in the existing source
+
+The source-install candidate adds the separate `script.homefx.development` ZIP and
+checksum to the existing Pages root listing, labeled Development test. It does not
+add the script to `addons.xml`, provide repository auto-updates or activate live
+routes in HomeFX Preview. The normal checked main-merge Pages workflow is the only
+publisher; no separate deployment is required. Its build selects Development and
+embeds only the public client ID/redirect in this test ZIP. Both become publicly
+downloadable by design; no secret, credential or provider request belongs in the build.
+
+Video 0.17.4, repository 0.2.0 and all 18 recorded archive bytes remain unchanged.
+The extra test ZIP uses a full SHA-256 filename: different bytes require a different
+URL. It is a current experimental candidate outside `releases/inventory.json`, so
+older Development test URLs may disappear on a later merge. This does not relax
+retention of any recorded video/repository release. Existing site validation,
+bounded artifact staging and exact postdeployment byte comparison include the test
+download pair and fail on partial, malformed or mismatched content.
+
+The ZIP is not yet verified at the hosted source or on TV. After merge, verify the
+normal publication run and every expected hosted byte before claiming availability.
+The [device-test guide](development-device-test.md) then starts with the test add-on's
+own synthetic private-storage check; successful delivery is not login acceptance.

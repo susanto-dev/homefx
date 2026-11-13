@@ -1,9 +1,12 @@
 """Compare two isolated local builds without publishing or contacting services."""
 import argparse
+import os
 from pathlib import Path
 import tempfile
 
 import build_site
+import check_published
+import development_download
 import package
 import repository
 import verify_repository
@@ -38,12 +41,15 @@ def _snapshot(root):
     return files, directories
 
 
-def _build(root):
+def _build(root, development_environment=None):
     site = root / "site"
     candidate = root / "repository"
     inventory = package.ROOT / "releases/inventory.json"
     retained = inventory if inventory.exists() or inventory.is_symlink() else None
-    build_site.build_site(site, package_output=root / "package", retain_manifest=retained)
+    options = {"package_output": root / "package", "retain_manifest": retained}
+    if development_environment is not None:
+        options["development_environment"] = development_environment
+    build_site.build_site(site, **options)
     repository.build(candidate, retain_manifest=retained)
     verified = verify_repository.verify(candidate)
     public_verified = verify_repository.verify(site / "repository", channel="preview")
@@ -56,6 +62,12 @@ def _build(root):
     expected_files = {"repository/" + name for name in public_files}
     expected_files.update({archive, archive + ".sha256", bootstrap, bootstrap + ".sha256",
                            "LICENSE.txt", "index.html", "install.html"})
+    development_archive = development_download.verify(site_files)
+    if (development_environment is None) != (development_archive is None):
+        raise ReproducibilityError("invalid Development output")
+    if development_archive is not None:
+        expected_files.update({development_archive, development_archive + ".sha256"})
+        check_published._expected(site)
     expected_dirs = {"repository"} | {"repository/" + name for name in public_dirs}
     if set(site_files) != expected_files or site_dirs != expected_dirs:
         raise ReproducibilityError("invalid preview output")
@@ -75,7 +87,7 @@ def _build(root):
             "repository": (repository_files, repository_dirs)}, verified
 
 
-def check():
+def check(development_environment=None):
     """Compare exact output bytes twice for the current source and local toolchain.
 
     This is repeatability within one environment, not cross-platform reproducibility,
@@ -85,8 +97,12 @@ def check():
     try:
         with tempfile.TemporaryDirectory(prefix="homefx-repeatability-") as temporary:
             root = Path(temporary)
-            first, first_verified = _build(root / "first")
-            second, second_verified = _build(root / "second")
+            if development_environment is None:
+                first, first_verified = _build(root / "first")
+                second, second_verified = _build(root / "second")
+            else:
+                first, first_verified = _build(root / "first", development_environment)
+                second, second_verified = _build(root / "second", development_environment)
             if first != second or first_verified != second_verified:
                 raise ReproducibilityError("build outputs differ")
             return {"site_files": len(first["site"][0]),
@@ -98,11 +114,14 @@ def check():
         raise ReproducibilityError("build or verification failed") from None
 
 
-def main():
+def main(argv=None, environment=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
+    parser.add_argument("--development", action="store_true",
+                        help="Check the explicitly configured Development download too")
+    args = parser.parse_args(argv)
+    configured = (os.environ if environment is None else environment) if args.development else None
     try:
-        result = check()
+        result = check(development_environment=configured)
     except ReproducibilityError as error:
         parser.exit(1, "Reproducibility check failed: " + str(error) + "\n")
     print("Two isolated builds match: {site_files} site files, "

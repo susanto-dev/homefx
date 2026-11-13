@@ -51,9 +51,10 @@ new application or accept changed service terms as part of this handoff.
 ## 3. Explicitly authorize a bounded Development device test
 
 Use the [separately installed Development device test](development-device-test.md)
-after its implementation is reviewed and merged. Its workflow must be manually
-requested on main with readiness confirmed; building it initiates no login. Each
-on-TV action requires consent. It tests only its own profile and does not wire
+after the source-install change is reviewed, merged and its Pages publication is
+verified. Install its script ZIP directly from **Install from zip file → HomeFX**;
+a manual artifact workflow or file transfer is not required. Building or installing
+it initiates no login. Each on-TV action requires consent. It tests only its own profile and does not wire
 public live routes or real-list widgets into HomeFX Preview.
 
 The test must establish actual Android TLS trust and bounded slow/offline/cancellation

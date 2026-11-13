@@ -14,6 +14,8 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
+    environment: Development
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -68,12 +70,20 @@ jobs:
           path: dist/tests/summary.json
           retention-days: 7
           if-no-files-found: warn
-      - name: Build download site
-        run: python3 tools/build_site.py
+      - name: Build download site with separate Development test ZIP
+        env:
+          HOMEFX_TRAKT_ENVIRONMENT: Development
+          TRAKT_CLIENT_ID: ${{ vars.TRAKT_CLIENT_ID }}
+          TRAKT_REDIRECT_URI: ${{ vars.TRAKT_REDIRECT_URI }}
+        run: python3 tools/build_site.py --development
       - name: Verify embedded preview repository
         run: python3 tools/verify_repository.py dist/site/repository --channel preview
       - name: Check reproducible release output
-        run: python3 tools/check_reproducibility.py
+        env:
+          HOMEFX_TRAKT_ENVIRONMENT: Development
+          TRAKT_CLIENT_ID: ${{ vars.TRAKT_CLIENT_ID }}
+          TRAKT_REDIRECT_URI: ${{ vars.TRAKT_REDIRECT_URI }}
+        run: python3 tools/check_reproducibility.py --development
       - name: Archive Pages content
         run: tar -cf "$RUNNER_TEMP/artifact.tar" -C dist/site .
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
