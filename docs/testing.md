@@ -220,3 +220,25 @@ quiet widget refresh, disabled disk caching and failure during staging/submissio
 Repeated migration/concurrency checks supplement deterministic cases. No actual
 Kodi GUI, private account or service traffic is exercised; failed Kodi completion
 is not evidence of atomic removal from a real skin's display.
+
+## Whole read-only journey integration
+
+`test_trakt_journey_integration.py` joins the actual `build_trakt` factory, fixed-host
+transport, private stores, AccountUI/AccountFlow, TraktListUI and WidgetDirectoryUI.
+Network responses, socket/connection objects, clocks and Kodi UI objects are
+fabricated; Library, Session and the factory are not replaced with canned results. Tests use fresh factories/UI objects
+for restart, so invocation cache state cannot establish persistence by itself.
+
+The same active UI cancellation probe is supplied to the transport and its caller.
+The journey checks explicit device authorization, personal/liked selection, opaque
+source/list/season/detail navigation, refresh and restart, and guarded local
+disconnect. Failure paths must not become empty success or silently use another
+account's data. Credentials, device prompts and service bodies are synthetic;
+external connections are forbidden. No real-account tests belong in CI.
+
+Passing these tests proves component cooperation under fabricated framing, not TLS
+handshake, actual authorization/refresh acceptance, Kodi rendering, skin-held row
+clearing, TV performance or account registration validity. Those gates remain in
+[account setup](account-setup.md) and [TV acceptance](testing-on-tv.md). The discovered cancellation regression is repaired in video 0.16.1 without
+enabling public service routes. Cancellation is preserved before closing the
+progress dialog; cleanup failures still report failure rather than success.

@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This widget preparation batch prepares `plugin.video.homefx` 0.16.0 alongside
+This journey integration repair prepares `plugin.video.homefx` 0.16.1 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -214,3 +214,19 @@ reject that newer schema: retained ZIP availability does not imply a safe downgr
 of a migrated profile. Installing the public preview does not itself open the real
 account store. Never delete private storage or restore a backup merely to make a
 downgrade pass; use a separate test profile for older releases.
+
+## Verified 0.16.0 publication and journey validation
+
+The 0.16.0 preparation merged at `df2ce7a36157e4ab90b360e78047b27d069007a8`.
+[Validation 43371278475](https://github.com/susanto-dev/homefx/actions/runs/43371278475)
+and [publication 43371278409](https://github.com/susanto-dev/homefx/actions/runs/43371278409)
+passed, including build, deployment and deployed-byte verification. Direct HTTPS
+checks confirmed video 0.16.0/repository 0.2.0 in the index and both video ZIP paths
+with SHA-256 `2eaac9f49b747577e1b8f14d01382b56d4f4c3c7ceeb48ec6b45158db49bdca9`.
+
+The whole-journey validation exposed lost cancellation state during renderer
+cleanup. The small runtime correction requires video 0.16.1; published 0.16.0
+remains unchanged. All twelve earlier archive records and bytes are retained,
+with repository 0.2.0 unchanged. Only the ordinary successful post-merge Pages
+workflow would advertise 0.16.1. This validation is not real-account, network/TLS
+or TV acceptance.

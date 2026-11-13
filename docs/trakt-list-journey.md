@@ -53,3 +53,12 @@ The [account gates](account-setup.md) and [staged TV checks](testing-on-tv.md) r
 mandatory before live login or routes. No private list names, history, credentials
 or backups are needed in project discussions. Actual-device rendering, focus,
 return position, cold/warm times, TLS, login and refresh remain untested.
+
+## Integrated automated evidence
+
+The whole-journey suite now joins the actual service factory and fixed-host transport
+with account/list/widget interaction, using fabricated HTTP responses and private
+temporary stores. New factory/UI instances test restart independently of invocation
+cache reuse. This exposed a renderer cancellation bug repaired in 0.16.1; public
+routes remain unchanged. See [testing](testing.md); actual registration and TV
+gates remain open.
