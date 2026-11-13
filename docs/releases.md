@@ -468,26 +468,30 @@ No registration changes, client secret, TLS relaxation, live preview activation,
 list access, playback or new dependency is included. Device authorization,
 persistence and refresh remain acceptance gates.
 
-## 0.17.6 request-header candidate
+## Verified 0.17.6 publication and device follow-up
 
-The latest TV attempt received status 403 before code display. Current official
-Trakt guidance requires a public API key header, API version 2 and User-Agent in
-addition to JSON Content-Type; earlier HomeFX OAuth requests omitted the first
-three. This candidate corrects the header contract using HomeFX's own public
-identity and an honest user agent. It does not establish that the omission caused
-the observed rejection or that login will succeed.
+PR #34 merged as `e860684c06551de7fd203096f9e4f0816fe0a531`.
+[Publish preview run 43485800643](https://github.com/susanto-dev/homefx/actions/runs/43485800643)
+passed build, deployment and verification of deployed bytes against its uploaded
+artifact. Post-merge Validation, Security and Development configuration preflight
+also passed. The hosted index advertises video **0.17.6** and repository **0.2.0**.
 
-Shared transport bytes require a new video **0.17.6** archive. Preserve all 19 prior
-inventory records and archive bytes, including **0.17.5**; repository **0.2.0** is
-unchanged. Version 0.17.5 remains published until this candidate merges and normal
-publication checks pass. The checked Pages workflow will advertise 0.17.6 and build
-a new content-addressed Development script ZIP with harness version 0.1.0. Reinstall
-that script from the same HomeFX source; updating the video preview does not update
-this separate program add-on.
+A fresh hosted check matched the video and repository root ZIPs to the recorded
+archives and their hosted checksums, and the Development ZIP to its checksum filename.
+A local attempt to download the Pages run artifact was denied by its storage host;
+the complete deployed-artifact comparison is evidenced by the successful workflow
+step above, not a repeated local full-site check.
 
-No client secret, bearer token for device-code issuance, foreign application key,
-new runtime dependency, provider login from CI, independent deployment or public
-live-route activation is included. OAuth remains on the documented fixed host with
-TLS verification, bounded requests and no automatic retry. Run one deliberate TV
-retry after publication; if 403 persists, inspect app/access status privately and
-stop for review. Successful login, persistence and refresh remain device gates.
+The release adds the required OAuth API-key/version and identifying user-agent
+headers without changing TLS, fixed hosts or retry policy. All 19 preceding archive
+records/bytes were preserved. The owner subsequently reported **Connection test:
+authorized** and **Refresh rotation: passed** in the separate Development program
+add-on. No list/history request was made by the refresh test; this is not video
+live activation or proof of restart persistence and all failure paths.
+
+The follow-up documentation batch changes no manifest, runtime, inventory or archive.
+Merge will refresh the Pages installation guide through the existing checked
+workflow. Video 0.17.6, repository 0.2.0 and the Development script bytes remain
+unchanged for unchanged public configuration. No new ZIP installation is required
+for the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
+No independent dispatch/deployment is needed.

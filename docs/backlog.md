@@ -38,7 +38,7 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner confirms registered Development ID/redirect match GitHub variables; 0.17.4 synthetic storage passed; separate Development device test prepared, actual login/refresh/persistence/TLS acceptance pending |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner confirms registered Development ID/redirect match GitHub variables; 0.17.4 synthetic storage passed; separate Development device test prepared, Development authorization and one refresh rotation passed on TV; restart persistence and failure-path acceptance pending |
 | T02 | Account connect/cancel/switch/disconnect UI | Controller/dialog adapter implemented; separate explicit Development test prepared | Public preview UI stays inactive; test consent, cancellation, restart, disconnect/revocation and recovery on TV |
 | T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
@@ -124,7 +124,7 @@ see the published 0.17.4 checkpoint below. No path, token or private account dat
 
 ## Next checkpoint: bounded Development account test
 
-Video 0.17.5 and repository 0.2.0 are the published preview. Start with the
+Video 0.17.6 and repository 0.2.0 are the published preview. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
 evidence from the later, explicitly authorized Development account test.
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
@@ -137,7 +137,7 @@ before the [bounded TV checklist](testing-on-tv.md).
 |---|---|---|
 | 1 | R01–R03, Q04, B10 | 0.17.4 synthetic storage passed; installation/update path, navigation and restart acceptance remain open |
 | 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Owner confirms Development identity/redirect match; separate device test built; direct source installation prepared; real TLS, grant, restart persistence and refresh still unverified; Production not run |
+| 3 | T01–T03, T05 | Development identity/redirect confirmed; source installation, authorization and refresh passed on TV; restart and failure-path acceptance still unverified; Production not run |
 | 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
 | Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
 | Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |
@@ -148,12 +148,12 @@ remains maintainer-merged after independent review and successful checks.
 
 ## External inputs and decisions
 
-The next useful device evidence is the bounded Development login/refresh test,
-plus the existing widget/navigation checklist. Registered Development values are
+The next useful device evidence is restart persistence, then the remaining
+Development cancellation/disconnect and failure-path checks, plus widget/navigation. Registered Development values are
 owner-confirmed; no app values need to be posted. Real lists/views,
 movie release region/type, first playback path, source-provider choice, scrobbling
 ownership, final original-code licence and TV acceptance of repository updates/rollback remain open.
-Actual authentication and read-only device evidence still block public live activation. Playback, movie-region and licence decisions do not require another demo-feature batch; completed independent work does not satisfy the activation gates. Never send secrets,
+Remaining account-lifecycle and read-only device evidence still block public live activation. Playback, movie-region and licence decisions do not require another demo-feature batch; completed independent work does not satisfy the activation gates. Never send secrets,
 account exports, watch history or a full Kodi backup.
 
 NBA, a separate Android app and an always-on server are outside scope. A new skin is
@@ -219,12 +219,12 @@ source after verification; it is not automatically updated. The first bounded re
 is code display followed by cancellation before authorization, or fixed failure
 categories if it still fails. No live list, playback or provider scope is added.
 
-## Candidate 0.17.6: required Trakt request headers
+## Published 0.17.6: required Trakt request headers (historical repair)
 
-The latest Development attempt reports device response validation, request status
+Before the header repair, the Development attempt reported device response validation, request status
 rejected, response 403. No code appeared, and the owner stopped. The local limiter
 only generates 429, so this rejection came from the HTTP response path; successful
-authorization remains unverified.
+authorization was unverified at that checkpoint.
 
 Current Trakt documentation requires headers missing from earlier OAuth requests.
 The candidate adds the request's own public client ID as API key, API version 2 and
@@ -232,8 +232,28 @@ an identifying HomeFX user agent; existing API helpers gain the same user agent.
 No secret, foreign identity, endpoint change, retry or TLS relaxation is introduced.
 The confirmed contract mismatch is not yet a proven diagnosis of the TV's 403.
 
-Prepare video 0.17.6 and preserve all 19 prior records/archives, including 0.17.5;
-repository 0.2.0 remains unchanged. Reinstall the new Development ZIP after normal
-publication and perform one [bounded retry](development-device-test.md#retry-after-the-0176-candidate-is-published).
-Persistent 403 requires private app/status/allowed-user inspection and review, not
-repeated retries or automatic Production activation. No list/playback scope is added.
+The release preserved all 19 prior records/archives, including 0.17.5, and kept
+repository 0.2.0 unchanged. Its original retry checklist is superseded by the
+post-login checks below. No list/playback scope was added.
+
+## Current checkpoint: Development authorization and refresh passed
+
+PR #34 merged as `e860684c06551de7fd203096f9e4f0816fe0a531`. Validation,
+Security, configuration preflight and Pages publication/deployed-byte checks passed.
+Video 0.17.6 and repository 0.2.0 are published; all 19 preceding archive records
+were preserved. The owner supplied successful authorization and refresh-rotation
+reports from the separately installed program add-on; the refresh made no list/history request.
+
+| Next bounded item | Status | Evidence still needed |
+|---|---|---|
+| Development login and one refresh | Passed on target TV | Broader failure paths remain separate |
+| Restart persistence | Not run; owner reinstalled without restarting Kodi | Full restart followed by fixed local status |
+| Local disconnect and code-dialog cancellation | Not reported | Disconnected/cancelled fixed outcomes; no code screenshots |
+| Denial/expiry, slow/offline and interrupted-refresh recovery | Not reported on TV | Existing gates; fabricated tests are not live evidence |
+| Read-only connection/list/widget in the video add-on | Prepared assemblies; live wiring inactive | Gate review, own-profile login/storage, one list and restart acceptance |
+| Live performance and skin navigation | Not measured | Cold/warm, multiple rows, focus/Back/return position |
+
+The program is a temporary authentication test, not the intended product interface.
+Do not migrate its tokens into the video profile or add more demo features to avoid
+these acceptance steps. Follow the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
+Writes, playback, Real-Debrid and scrobbling remain outside this milestone.
