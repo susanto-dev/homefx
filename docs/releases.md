@@ -158,5 +158,5 @@ The repair publishes video 0.14.1 as the current update target, with unchanged
 repository 0.2.0. All eight records already merged into history remain byte-for-byte
 unchanged, including the superseded 0.14.0 archive. The repository will retain that
 archive at its versioned path, but will not advertise it as the current version.
-No existing version is rebuilt with different bytes. Publication occurs only after
+No merged or published version is rebuilt with different bytes. Publication occurs only after
 the maintainer merges and the ordinary preview workflow succeeds.

@@ -437,6 +437,39 @@ class PreferencesTests(unittest.TestCase):
             self.assertEqual(opened_links, [0])
             self.assertEqual(reopened.load('synthetic-a'), ['trakt-list:2'])
 
+    def test_reopen_accepts_journal_unlinked_during_initial_path_inspection(self):
+        with tempfile.TemporaryDirectory() as profile:
+            store = AccountPreferences(profile)
+            store.save('synthetic-a', ['trakt-list:1'])
+            main = Path(profile) / 'trakt/preferences.sqlite3'
+            journal = Path(str(main) + '-journal')
+            writer = sqlite3.connect(str(main))
+            self.addCleanup(writer.close)
+            writer.execute('BEGIN IMMEDIATE')
+            writer.execute("UPDATE selections SET selected='[\"trakt-list:2\"]'")
+            real_lstat = Path.lstat
+            inspected = []
+
+            def commit_during_stat(path):
+                if path == journal and not inspected:
+                    # A kernel path lookup can retain the inode across unlink
+                    # before filling stat fields. Supply that real inode's stat.
+                    descriptor = os.open(str(journal), os.O_RDONLY)
+                    try:
+                        writer.commit()
+                        info = os.fstat(descriptor)
+                    finally:
+                        os.close(descriptor)
+                    inspected.append(info.st_nlink)
+                    return info
+                return real_lstat(path)
+
+            with mock.patch.object(Path, 'lstat', commit_during_stat):
+                reopened = AccountPreferences(profile)
+            self.assertEqual(inspected, [0])
+            self.assertFalse(journal.exists())
+            self.assertEqual(reopened.load('synthetic-a'), ['trakt-list:2'])
+
     def test_transient_sidecar_recreation_keeps_descriptor_safety_checks(self):
         for suffix in ('-journal', '-wal', '-shm'):
             for replacement in ('safe', 'no-nofollow', 'symlink', 'hardlink', 'fifo', 'mode', 'size'):

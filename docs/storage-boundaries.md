@@ -68,13 +68,13 @@ SQLite DELETE journals are transient: a normal commit can unlink an already open
 file, and the next transaction can recreate its pathname with a new inode. The
 preference guard previously treated these normal transitions as database-path
 replacement and rejected valid concurrent operations. Only sidecars now accept an
-unlinked open descriptor or a safely reopened inode. The descriptor must still be
+unlinked inode during path or descriptor inspection, or a safely reopened inode. The descriptor must still be
 a bounded private regular file with no multiple hardlinks; nonblocking/no-follow
 opening remains in place. Without no-follow support, inode changes remain rejected.
 The mandatory database retains its strict inode and single-link checks. No retries,
 sleep changes, corruption resets or storage/isolation checks are removed.
 
-A deterministic regression commits a real SQLite write after the journal is opened
-but before the descriptor is inspected. Additional cases test safe recreation,
+Deterministic regressions commit real SQLite writes during initial path inspection
+and after journal open but before descriptor inspection. Additional cases test safe recreation,
 unsafe replacement descriptors and mandatory-database unlink/replacement. These
 reproduce the guard failure without relying on scheduler timing.

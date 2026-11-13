@@ -178,7 +178,7 @@ credentials, clocks and responses remain fabricated; real authorization and Kodi
 playback are outside automated acceptance.
 
 The 0.14.1 repair reproduces normal journal unlink with a real SQLite commit at
-the open/descriptor boundary, and checks recreated sidecars against unsafe
+the path/descriptor boundaries, and checks recreated sidecars against unsafe
 symlink, hardlink, FIFO, permission and size replacements. Mandatory database
 identity and missing-file rejection remain asserted. Existing concurrent account
 retention tests remain unchanged; repeated runs supplement deterministic cases.

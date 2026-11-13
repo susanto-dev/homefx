@@ -164,7 +164,7 @@ class AccountPreferences:
             if missing:
                 return
             raise
-        self._file_info(before, private)
+        self._file_info(before, private, allow_unlinked=transient)
         try:
             descriptor = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK | getattr(os, 'O_NOFOLLOW', 0))
         except FileNotFoundError:
