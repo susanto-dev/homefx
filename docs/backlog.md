@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.13 development batch (video add-on 0.13.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the test-quality batch after 0.13 (video add-on 0.13.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -61,10 +61,10 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.12 publication and HTTP integrity verified | 0.13 publication follows merge; cloud checks do not prove TV installation |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.12 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.13 publication and HTTP integrity verified | No package change in this batch; cloud checks do not prove TV installation |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.13 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
-| Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented | Continue regression coverage; cloud tests never replace TV tests |
+| Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
 | Q04 | Device readiness and sanitized test checklist | Implemented; optional synthetic private-storage check added (0.12); TV results pending | Provide safe version fields and observations; no full backup or secrets needed |
@@ -72,23 +72,21 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current combined batch: 0.13
+## Current combined batch: test quality after 0.13
 
-Parallel scope: harden the existing Trakt credential and preference stores, protect
-demo state reads and atomic saves from unsafe filesystem targets, and test the
-assembled services against legacy stores and subsequent filesystem changes.
-Valid saved credentials and list selections remain compatible. Malformed private
-stores fail without automatic reset, deletion or a network fallback. See
-[storage boundaries](storage-boundaries.md) for guarantees and limitations.
-No real account, playback, scrobbling or persistent metadata cache is enabled;
-Trakt mutation requests remain disabled in the assembly.
+Parallel scope: focused browsing, account and playback boundary regressions, a
+standard-library unittest runner, and aggregate CI reports that distinguish passed,
+skipped and failed outcomes. Tests continue to use synthetic data. The runner
+fails on test errors, unexpected successes and empty discovery; report generation
+cannot convert a failed suite into a successful job. See [testing](testing.md).
 
-Video 0.12.0 and repository 0.2.0 deployed from merge commit
-`4fbc5b3a34bfb76c5aac3fce5646814b82f7a7b0`. The
-[publication run](https://github.com/susanto-dev/homefx/actions/runs/43349117123)
-passed build, deployment and public-byte verification. HTTP checks never establish
-Kodi installation or upgrade acceptance. This batch prepares video 0.13.0 and
-preserves all six prior archive records and bytes.
+No runtime or package version changes are needed for this batch. Video 0.13.0 and
+repository 0.2.0 deployed from merge commit
+`66ad23d0b43ba2fa3be2a00a5036e0ffadc7a669`. The
+[publication run](https://github.com/susanto-dev/homefx/actions/runs/43353289076)
+passed build, deployment and public-byte verification. All seven existing archive
+records and bytes remain unchanged. HTTP checks never establish Kodi installation
+or upgrade acceptance. Live accounts, playback and scrobbling remain inactive.
 
 ## External inputs and decisions
 

@@ -10,7 +10,7 @@ third-party Python packages. Ruff 0.17.4 provides a pinned, read-only correctnes
 python3 -m pip install --require-hashes -r tools/build-requirements.txt
 python3 -m pip install --require-hashes --only-binary=:all: -r tools/quality-requirements.txt
 python3 tools/check_quality.py
-python3 -m unittest discover -s tests -v
+python3 tools/run_tests.py --summary dist/tests/summary.json
 python3 tools/package.py
 python3 tools/repository.py
 python3 tools/verify_repository.py dist/repository
@@ -123,3 +123,7 @@ See [service runtime](service-runtime.md), [shared interaction](provider-account
 and [dialog contract](account-ui.md). Supply the same cancellation probe throughout;
 no constructor should contact providers. The optional on-device storage self-check is
 separate from account assembly and uses only synthetic data after confirmation.
+
+Use the [test runner](testing.md) for aggregate local/CI results. Focused runs are
+useful during development, but do not replace full discovery before review. A
+report of passing tests is not a measurement of source-line or branch coverage.

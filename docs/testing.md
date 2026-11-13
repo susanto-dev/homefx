@@ -1,6 +1,31 @@
 # Testing
 
-Install `tools/build-requirements.txt` first. Run `python3 -m unittest discover -s tests -v` from the repository root.
+Install `tools/build-requirements.txt` first. Run from the repository root:
+
+```sh
+python3 tools/run_tests.py --summary dist/tests/summary.json
+```
+
+The standard-library runner discovers the same unittest suite as
+`python3 -m unittest discover -s tests -v`, which remains supported. For a focused
+run, add `--pattern 'test_trakt_tokens.py'`. The JSON report contains aggregate
+counts only, never test names, failure messages, paths, account values or skip
+reasons. Verbose console output remains available for diagnosing synthetic tests.
+A passing suite with skipped tests is not a full pass of those skipped checks.
+Empty discovery, errors, failures, unexpected successes and report-writing failures
+return a nonzero exit code. Expected failures and skipped tests remain visible;
+counts are not a code-coverage percentage or device acceptance result. Passed
+counts come from successful test cases directly, not subtraction. Failed subtests
+and fixture errors can produce multiple outcomes per test, so outcome totals need
+not equal the number run.
+
+Validation runs the complete suite on Python 3.8 and 3.12. Each job publishes the
+aggregate JSON in its job summary and as a seven-day artifact, including after
+test failure when a report exists. Publication uses the same runner before building
+the preview. A missing report is explicitly reported as unavailable, never as a
+pass. Existing failure gates, immutable Action pins and read-only PR permissions
+remain in place; no new test dependency or hosted service is required.
+
 Tests cover explicit synthetic expected orders/dates, episode identity, calendar
 boundaries, watch-state overrides, search, related-title order, continuation choices,
 URL encoding and malformed routes, local state recovery, reproducible ZIP bytes,
@@ -129,3 +154,11 @@ SQLite sidecars, malformed schemas and records, integer exhaustion, and a refres
 claim expiring while waiting for a write lock. Assembly tests preserve baseline
 credentials and list selections across refresh and reject unsafe later operations.
 All account values are synthetic; platform-specific TV behavior is still untested.
+
+The post-0.13 regression batch covers competing unfinished items, later-episode
+resume priority, exact UTC air boundaries, watched precedence over paused metadata,
+and retained routes for deselected lists. Account tests cover cancellation after
+confirmation, malformed UI callbacks, issuance deadlines and atomic rate-limit
+rollback. Playback contract tests use synthetic player callbacks and account
+generations; they do not establish a real Kodi adapter connection. Runner tests
+exercise failed/skipped/expected-failure outcomes and redacted aggregate reporting.
