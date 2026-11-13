@@ -1,7 +1,8 @@
 # HomeFX
 
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
-home-screen widgets and standard folder browsing.
+home-screen widgets and standard folder browsing. The Python target follows the
+official Kodi 21.2 Android build (Python 3.11); development checks also cover 3.12.
 
 ## Current preview: 0.17.2
 

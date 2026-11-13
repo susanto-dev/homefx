@@ -248,3 +248,18 @@ malformed state. Preserve supported preference migrations and ordered selections
 Validate stored integers before mutation and refresh deadlines after lock acquisition.
 Demo data retains default recovery on reads, while unsafe writes fail. See
 [storage boundaries](storage-boundaries.md) for the filesystem assumptions.
+
+## 2026-11-13 — Target Kodi 21.2's Python line
+
+Use Python 3.11 as the current source/runtime minimum, based on the official Kodi
+21.2 Android dependency pin (3.11.7) and the owner's accepted target. This replaces
+the earlier conservative 3.8 support policy without rewriting historical test
+results. Keep 3.12 as the newer-runtime and development-tooling check; duplicating
+one version in both jobs would add no compatibility coverage. Do not bundle or
+attempt to upgrade Kodi's embedded interpreter through the add-on.
+
+Align CI, Ruff and current package syntax validation. Preserve the 3.8 syntax
+contract for video archives through 0.17.2 and use 3.11 for later releases. Do not
+change published bytes, the Kodi Python API dependency, live-activation gates or
+claim TV acceptance from cloud tests. [Evidence and check names](development.md)
+are recorded in ordinary development guidance.

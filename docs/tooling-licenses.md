@@ -12,7 +12,7 @@ this change does not purchase a service or change HomeFX's source licence.
 [exact release metadata](https://pypi.org/pypi/ruff/0.17.4/json) identify its
 licence and artifacts. Its declared Python requirement is Python 3.7 or later.
 HomeFX runs its `F` (Pyflakes) rules over `addons` and `tools`, targeting Python
-3.8. This catches errors such as undefined names and unused imports without
+3.11. This catches errors such as undefined names and unused imports without
 introducing automatic formatting. `--isolated` makes the selected rules
 independent of incidental local configuration. The gate never modifies source.
 This is a focused correctness check, not proof of Kodi compatibility or a
@@ -44,7 +44,7 @@ Hashes verify the downloaded bytes against the recorded release; they do not
 prove publisher identity, safety, licence compatibility or absence of advisories.
 
 ```sh
-# Build/XML checks: Python 3.8 and 3.12.
+# Build/XML checks: Python 3.11 and 3.12.
 python -m pip install --require-hashes --only-binary=:all: -r tools/build-requirements.txt
 # Security tools: Python 3.12, separate from the Kodi runtime requirement.
 python -m pip install --require-hashes --only-binary=:all: -r tools/security-requirements.txt

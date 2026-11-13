@@ -20,8 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: '3.8'
-            runner: ubuntu-22.04
+          - python: '3.11'
+            runner: ubuntu-24.04
           - python: '3.12'
             runner: ubuntu-24.04
     steps:
