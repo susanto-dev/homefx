@@ -84,6 +84,18 @@ class ReproducibilityTests(unittest.TestCase):
             with self.assertRaisesRegex(checker.ReproducibilityError, "^invalid preview output$"):
                 checker.check()
 
+    def test_missing_required_guide_is_rejected_even_if_repeated(self):
+        original = checker.build_site.build_site
+
+        def build(output, **kwargs):
+            site = original(output, **kwargs)
+            (site / 'install.html').unlink()
+            return site
+
+        with patch.object(checker.build_site, 'build_site', side_effect=build):
+            with self.assertRaisesRegex(checker.ReproducibilityError, '^invalid preview output$'):
+                checker.check()
+
     def test_bootstrap_mismatch_is_rejected_even_if_repeated(self):
         original = checker.build_site.build_site
 

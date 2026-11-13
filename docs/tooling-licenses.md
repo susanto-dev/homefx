@@ -101,3 +101,22 @@ HomeFX instead strengthens its own current source-manifest contract, with mutati
 tests for required metadata, duplicate/unknown extensions and unexpected dependency
 imports. This adds no checker code or dependencies and changes no published bytes.
 It remains a focused project gate, not official checker acceptance.
+
+## Installation guide rendering
+
+The build renders original `docs/install.md` into a static HTML guide using
+[markdown-it-py 4.3.0](https://pypi.org/project/markdown-it-py/4.3.0/) and
+[mdurl 0.1.2](https://pypi.org/project/mdurl/0.1.2/). Both already appear in the
+security tooling lock; their identical pins and SHA-256 hashes are now explicit in
+the build lock so ordinary validation can render the guide independently.
+
+Checked the exact wheel artifacts against their
+[markdown-it-py release metadata](https://pypi.org/pypi/markdown-it-py/4.3.0/json)
+and [mdurl release metadata](https://pypi.org/pypi/mdurl/0.1.2/json) on 2026-11-13.
+The wheel licence files contain MIT grants: markdown-it-py's ExecutableBookProject
+notice and upstream markdown-it notice, and mdurl's Vitaly Puzrin/Alex Kocharin,
+Taneli Hukkinen and Joyent/Node contributor notices. The installed distributions
+retain those notices. No dependency source or third-party artwork is copied into
+the repository, generated guide or Kodi ZIPs. This is development-only rendering;
+no paid licence, runtime dependency or new service is introduced. HomeFX's existing
+licence notices remain unchanged.

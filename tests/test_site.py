@@ -24,12 +24,14 @@ class SiteBoundaryTests(unittest.TestCase):
             bootstrap = 'repository.homefx-' + verified['current']['repository.homefx'] + '.zip'
             self.assertEqual({p.name for p in site.iterdir()},
                              {video, video + '.sha256', bootstrap, bootstrap + '.sha256',
-                              'repository', 'index.html', 'LICENSE.txt'})
+                              'repository', 'index.html', 'install.html', 'LICENSE.txt'})
             for ident, name in (('plugin.video.homefx', video), ('repository.homefx', bootstrap)):
                 for suffix in ('', '.sha256'):
                     self.assertEqual((site / (name + suffix)).read_bytes(),
                                      (site / 'repository' / ident / (name + suffix)).read_bytes())
             page = (site / 'index.html').read_text()
+            self.assertIn('href="install.html"', page)
+            self.assertIn('Device readiness', (site / 'install.html').read_text())
             self.assertIn('No Trakt login', page)
             self.assertIn('Experimental repository', page)
             self.assertIn('https://susanto-dev.github.io/homefx/', page)
@@ -97,6 +99,15 @@ class SiteBoundaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             site = Path(temporary) / 'site'
             with patch.object(build_site.verify_repository, 'verify', side_effect=ValueError('bad')):
+                with self.assertRaises(ValueError):
+                    build_site.build_site(site)
+            self.assertFalse(site.exists())
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
+    def test_guide_render_failure_does_not_promote_partial_site(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            site = Path(temporary) / 'site'
+            with patch.object(build_site.guide_page, 'build', side_effect=ValueError('invalid guide')):
                 with self.assertRaises(ValueError):
                     build_site.build_site(site)
             self.assertFalse(site.exists())

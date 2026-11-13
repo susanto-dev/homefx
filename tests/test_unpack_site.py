@@ -48,6 +48,13 @@ class UnpackSiteTests(unittest.TestCase):
             unpack_site.unpack(self.archive, self.output)
         self.assertEqual(unpack_site.check_published._expected(self.output), expected)
 
+    def test_artifact_without_required_guide_is_not_promoted(self):
+        site = build_site.build_site(self.root / 'source')
+        (site / 'install.html').unlink()
+        with tarfile.open(self.archive, 'w') as bundle:
+            bundle.add(site, arcname='.')
+        self.reject()
+
     def test_links_special_files_and_unsafe_paths_never_write_outside(self):
         entries = [(name, tarfile.REGTYPE, b'private') for name in
                    ('../outside', '/outside', '././outside', 'a/../outside',

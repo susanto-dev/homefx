@@ -11,6 +11,7 @@ from urllib.parse import quote
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 import package
+import guide_page
 import verify_repository
 
 BASE_URL = "https://susanto-dev.github.io/homefx/"
@@ -45,7 +46,7 @@ def _fetch(url, limit, timeout):
 def _expected(site):
     result = verify_repository.verify(Path(site) / "repository", channel="preview")
     files, directories = verify_repository._snapshot(site)
-    roots = {"index.html", "LICENSE.txt"}
+    roots = {"index.html", "install.html", "LICENSE.txt"}
     for ident, version in result["current"].items():
         name = ident + "-" + version + ".zip"
         for suffix in ("", ".sha256"):
@@ -59,6 +60,7 @@ def _expected(site):
              "local site topology")
     _require(files["LICENSE.txt"] == (package.ROOT / "LICENSE").read_bytes(), "local site licence")
     _require(bool(files["index.html"]), "local site page")
+    _require(0 < len(files["install.html"]) <= guide_page.MAX_PAGE_BYTES, "local guide bounds")
     return files
 
 
