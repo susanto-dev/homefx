@@ -1,7 +1,7 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx 0.10.0 supplies the synthetic preview. repository.homefx 0.2.0
+plugin.video.homefx 0.11.0 supplies the synthetic preview. repository.homefx 0.2.0
 provides the experimental repository-first installation contract. The 0.9 publication and hosted-byte verification passed. Each later release must
 pass its own publication checks; TV installation/update behavior remains a separate
 acceptance gate. A separate skin component is deferred
@@ -174,3 +174,20 @@ memory. It requires AV start before accepting progress and makes no completion,
 scrobbling or auto-next decision. Neither it nor the Trakt series library is wired
 into live Kodi playback/accounts. The actual preview adds only safe setup guidance
 and repository-version diagnostics to help the device acceptance process.
+
+
+## Resume metadata and personal calendars (0.11)
+
+Continue-watching enrichment is an explicit bounded join, separate from the existing
+conservative pause-only view. Details provide release metadata; watched snapshots
+override stale pauses. Neither dates nor progress supply playable sources. Account
+generation and mutation revision must remain stable across the compound read.
+
+The personal upcoming calendar is a separate metadata view. Its optional show filter
+is an intersection with the provider's personal-calendar coverage, not a complete
+schedule for every selected list. It never infers watched status or enables playback.
+No persistent metadata cache or background polling is introduced.
+
+
+Detailed contracts: [resume enrichment](continue-contract.md),
+[personal calendars](calendar-contract.md), and [release proposals](release-preparation.md).

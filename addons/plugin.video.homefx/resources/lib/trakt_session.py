@@ -8,7 +8,7 @@ import time
 from threading import Lock
 
 from .trakt_auth import AuthError, DeviceLogin, _number, _text, refresh_tokens
-from .trakt_client import search_arguments, metadata_id, progress_arguments, season_arguments, ApiError, Client
+from .trakt_client import search_arguments, metadata_id, progress_arguments, season_arguments, episode_arguments, calendar_arguments, ApiError, Client
 from .trakt_actions import ActionResult, MutationClient, prepare
 
 
@@ -20,7 +20,7 @@ class Session:
     must still cancel outstanding network I/O through their transport callback.
     """
     READS = frozenset(("lists", "list_items", "paused", "show_progress",
-                       "season_episodes", "show_seasons", "settings", "watched_movies", "search_titles", "related_movies"))
+                       "season_episodes", "show_seasons", "settings", "watched_movies", "search_titles", "related_movies", "movie_details", "episode_details", "calendar_shows"))
 
     def __init__(self, store, oauth_request, api_request, client_id, redirect_uri,
                  clock=time.time, monotonic=time.monotonic, refresh_margin=60,
@@ -193,12 +193,16 @@ class Session:
             raise ApiError("unsupported_operation")
         if operation == "search_titles":
             search_arguments(*args)
-        elif operation in {"related_movies", "show_seasons"}:
+        elif operation in {"related_movies", "show_seasons", "movie_details"}:
             metadata_id(*args)
         elif operation == "show_progress":
             progress_arguments(*args)
         elif operation == "season_episodes":
             season_arguments(*args)
+        if operation == "episode_details":
+            episode_arguments(*args)
+        elif operation == "calendar_shows":
+            calendar_arguments(*args)
         snapshot = self._ready()
         generation = snapshot.generation
 

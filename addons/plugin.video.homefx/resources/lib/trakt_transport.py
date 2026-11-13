@@ -15,7 +15,7 @@ import time
 import unicodedata
 from urllib.parse import parse_qsl, urlsplit
 
-from .trakt_client import ApiError, Response
+from .trakt_client import ApiError, Response, calendar_arguments
 from .trakt_actions import validate_request
 
 
@@ -233,7 +233,10 @@ class Transport:
                    r"/sync/playback", r"/shows/[1-9][0-9]{0,19}/progress/watched",
                    r"/shows/[1-9][0-9]{0,19}/seasons/[0-9]{1,5}",
                    r"/shows/[1-9][0-9]{0,19}/seasons",
-                   r"/search/(?:movie|show)", r"/movies/[1-9][0-9]{0,19}/related")
+                   r"/search/(?:movie|show)", r"/movies/[1-9][0-9]{0,19}/related",
+                   r"/movies/[1-9][0-9]{0,19}",
+                   r"/shows/[1-9][0-9]{0,19}/seasons/[0-9]{1,5}/episodes/[1-9][0-9]{0,4}",
+                   r"/calendars/my/shows/[0-9]{4}-[0-9]{2}-[0-9]{2}/[1-9][0-9]?")
         if not any(re.fullmatch(pattern, parsed.path) for pattern in allowed):
             raise TransportError("invalid_request")
         searching = parsed.path in {"/search/movie", "/search/show"}
@@ -257,6 +260,16 @@ class Transport:
                           or any(unicodedata.category(c).startswith("C") for c in fields["query"])):
             raise TransportError("invalid_request")
         if related and set(fields) != {"page", "limit"}:
+            raise TransportError("invalid_request")
+        calendar = parsed.path.startswith("/calendars/")
+        details = bool(re.fullmatch(r"/movies/[1-9][0-9]{0,19}", parsed.path)
+                       or "/episodes/" in parsed.path)
+        if calendar:
+            try:
+                calendar_arguments(parsed.path.split("/")[-2], int(parsed.path.split("/")[-1]))
+            except (ApiError, ValueError):
+                raise TransportError("invalid_request") from None
+        if (calendar or details) and fields != {"extended": "full"}:
             raise TransportError("invalid_request")
         seasons = bool(re.fullmatch(r"/shows/[1-9][0-9]{0,19}/seasons", parsed.path))
         progress = bool(re.fullmatch(r"/shows/[1-9][0-9]{0,19}/progress/watched", parsed.path))

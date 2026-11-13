@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.10 development batch (video add-on 0.10.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.11 development batch (video add-on 0.11.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -13,13 +13,14 @@ provider or release choice. The current public add-on remains synthetic.
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented | Actual Android/Google TV compatibility pending |
 | B02 | Multiple selected list widgets and folder browsing | Implemented in demo | Choose actual personal/liked lists; live wiring and widget-title click behavior need TV verification |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; complete-series/season summaries mocked (0.10) | Live episode identity/status and refresh behavior |
-| B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins and continuation candidates mocked (0.10) | Live metadata, resume reconciliation and performance |
+| B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
 | B07 | Title search | Demo implemented; Trakt title-search contracts mocked/inactive (0.9) | Live literal-query behavior, entitlement, keyboard/context-menu UI and TV integration |
 | B08 | Similar movies | Demo implemented; Trakt related-movie contracts mocked/inactive (0.9) | Live relevance and UI integration; results establish neither watch state nor playable sources |
 | B09 | Release dates and sorting | Provisional rules implemented | Choose movie region/release type and confirm ordering; dates never prove source availability |
 | B10 | Skin and home layout | Existing skin retained | TV navigation/focus/widget headers; separate skin only if demonstrated necessary |
+| B11 | Upcoming personal episode calendar | Mocked/inactive (0.11) | Confirm live personal-calendar coverage and entitlement; a selected-show filter is only an intersection, not a complete selected-list schedule |
 
 ## Trakt and account data
 
@@ -60,9 +61,9 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.9 publication and HTTP integrity verified | 0.10 publication follows merge; cloud checks do not prove TV installation |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.9 deployed-byte verification passed; clean repository-first install still needs TV evidence |
-| R03 | Repository hosting, upgrades and rollback | Experimental Pages channel and immutable release history implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.10 publication and HTTP integrity verified | 0.11 publication follows merge; cloud checks do not prove TV installation |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.10 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
@@ -71,20 +72,20 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current combined batch: 0.10
+## Current combined batch: 0.11
 
-Parallel scope: complete-series Trakt metadata and watched-state views, bounded
-playback event observation without scrobbling or automatic playback, and on-device
-widget/repository setup guidance. These foundations remain inactive for real accounts;
-the Kodi preview continues using synthetic browsing data.
+Parallel scope: bounded metadata enrichment and watched-state reconciliation for
+continue-watching, personal upcoming-episode calendar contracts, and local verified
+release preparation. Service code remains inactive; no Kodi login, source resolution,
+player, scrobbling or persistent metadata cache is enabled.
 
-The 0.9 release and repository 0.2.0 deployed successfully at merge commit
-`5a53a26ffec91178d491c5f27b1b354459755ae5`. The
-[publication run](https://github.com/susanto-dev/homefx/actions/runs/43336830315)
-passed build, deployment and comparison of public bytes against the uploaded artifact.
-That is HTTP distribution evidence, not a Kodi installation or upgrade test.
-This batch prepares video 0.10.0 for the same experimental channel, retaining previous
-archives. The repository bootstrap version remains 0.2.0.
+Video 0.10.0 and repository 0.2.0 deployed successfully at merge commit
+`8ed762417e3573b29629896b35b0fcdcf694244b`. The
+[publication run](https://github.com/susanto-dev/homefx/actions/runs/43338722387)
+passed build, deployment and public-byte comparison against the uploaded artifact.
+This is HTTP distribution evidence, not a Kodi installation or upgrade pass.
+This batch prepares video 0.11.0 while retaining all published archives; the
+repository bootstrap remains 0.2.0. Existing skins remain separate.
 
 ## External inputs and decisions
 
