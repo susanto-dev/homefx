@@ -1,31 +1,73 @@
 # Bounded Development Trakt test on Kodi
 
 **This is a separate experimental test add-on, not live mode for HomeFX Preview.**
-HomeFX Preview 0.17.5 and repository 0.2.0 are published; PR #33 post-merge
-validation and publication passed. The 0.17.6 candidate corrects request headers; public preview live routes
-remain inactive. The test adds no list
-widgets, account-data reads, history/list writes, playback, Real-Debrid or scrobbling.
-It is a Kodi program add-on, not a new Android app or server.
+HomeFX Preview 0.17.6 and repository 0.2.0 are published. PR #34 merged as
+`e860684c06551de7fd203096f9e4f0816fe0a531`; its validation, security, publication
+and deployed-byte verification passed. The owner installed the program add-on from
+the HomeFX source and reported its private storage checks passing.
 
-The owner has confirmed that the registered Development client ID and redirect
-match the GitHub variables, and supplied a passing synthetic storage report on
-0.17.4: permissions, directory check, SQLite commit/rollback and cleanup passed;
-failure stage was none. These observations do not establish real TLS, token-store
-persistence, login, refresh rotation or account entitlement. Those remain device
-tests, not cloud results.
+The latest TV reports show **Connection test: authorized** and **Refresh rotation:
+passed**. These establish successful authorization and one refresh rotation in the
+separate test scope. The refresh report explicitly says no list or history request
+was made. The owner confirmed the add-on was reinstalled without restarting Kodi,
+so restart persistence has not been tested. Cancellation/disconnect, failure recovery
+and actual list/widget behavior are not established by these screenshots.
+
+## Why a program add-on
+
+The program add-on is a temporary, explicitly invoked authentication test. Its own
+profile and app-identity scope keep experimental credentials separate from the
+repository-installed video preview and its stable demo widgets. Installing or
+opening it does not start login. It is not another Android application or server.
+
+The intended everyday product remains the **video add-on**: connect there, choose
+lists there, then assign widget rows separately in the existing skin. A future
+reviewed video integration will require its own login and private storage checks;
+it must not copy test tokens, settings or databases across profiles. The program
+add-on is not a permanent requirement for using the eventual video experience.
+
+## After successful authorization and refresh
+
+Do not repeat a successful grant just to produce another screenshot. Keep the
+matching test ZIP installed for now; no new package is required for these checks.
+
+1. Fully close and restart Kodi. Open **HomeFX Development Test → Local connection
+   status (no network)**. Report the fixed status only. Expect credentials stored;
+   an explicit refresh/login-required state is a separate outcome, not a pass.
+   If this was already done before refresh, report that sequence instead of repeating it.
+2. When ready to end this test session, choose **Disconnect this test locally** and
+   confirm. Reopen local status; expect **disconnected**. This removes local test
+   credentials, not service-side authorization or backups.
+3. On a later deliberate connection attempt, cancel at the code dialog **before**
+   authorizing. Expect cancellation and local status disconnected. Never share the code.
+   Do this after disconnect so a replacement attempt does not discard a session
+   you intended to keep. Do not authorize again solely for this cancellation check.
+
+Return only the fixed statuses and whether Kodi was fully restarted. Do not send
+raw logs, tokens, device codes, profile paths, private lists/history or backups.
+Denial/expiry, slow/offline behavior and interrupted-refresh recovery remain
+separate [activation gates](account-setup.md#activation-gates); mark unexercised
+cases **not run**. Do not corrupt a live token store or repeatedly refresh to test failures.
+
+## Next milestone: one real list in the video add-on
+
+After the remaining gates are reviewed, the smallest integration is an explicit,
+read-only video account connection, one real personal or liked list, a stable widget
+route, title/season browsing and selections surviving restart. Existing inactive
+account/list assemblies are the starting point; another demo subsystem is unnecessary.
+Selecting a list in HomeFX does not create a skin row. Keep a full-list folder route
+where the skin heading is not clickable, and handle loading, empty, offline and
+authorization-needed states without silently substituting demo content.
+
+This milestone needs separate device acceptance for account isolation, focus/Back,
+return position, cancellation, cold/warm loading and multiple rows. It does not
+activate Production access, list/history writes, playback, Real-Debrid or scrobbling.
+Continue Watching, Next aired and Upcoming remain distinct; dates are not source availability.
 
 ## Install directly from the HomeFX source
 
-PR #32 merged and its publication checks passed. The hosted Development ZIP and
-checksum were verified, and the owner installed it from the HomeFX source on the TV.
-Its own storage permissions, directory check, SQLite transaction and cleanup all
-passed. Local status reported **disconnected**, which is expected before login.
-**Connect Development Trakt failed before any code appeared**; the owner stopped.
-After the activation-address repair, the latest report identifies **Last stage:
-device response validation**, **Category: request status rejected**, **Response
-status: 403**. This is an HTTP rejection, not the local limiter, which only returns
-429. It does not establish whether Trakt or an upstream gateway rejected the request.
-This does not establish TLS, login, persistence or refresh acceptance.
+The hosted test ZIP/checksum and source-install path have been verified. The owner
+installed it on the target TV. Other installations still need their own acceptance.
 
 The installation path is:
 
@@ -57,8 +99,8 @@ still a direct ZIP installation.
 After a reviewed main merge, the existing **Publish preview** workflow builds the
 separate script ZIP using the **Development** environment and adds it to the same
 Pages source. It does not contact Trakt, obtain credentials or start login. No
-additional manual workflow is needed for this installation path. The 0.17.5
-candidate requires a new video archive because shared authentication bytes change;
+additional manual workflow is needed for this installation path. The 0.17.6
+release added a new video archive because shared authentication bytes changed;
 repository 0.2.0 and every previously recorded archive remain unchanged.
 
 The script ZIP embeds the **public** Development client ID and registered redirect
@@ -139,44 +181,27 @@ that were not exercised as **not run**; do not manufacture a pass from the happy
 
 ## Retry after the 0.17.6 candidate is published
 
+Historical repair context; see the completed outcome below.
+
 The current activation address and legacy exact address are already supported.
-The latest failure is earlier: the device-code request received status 403.
+The earlier failure was: the device-code request received status 403.
 Official Trakt guidance requires an API key header containing the app's public
 client ID, API version 2 and a User-Agent, as well as JSON Content-Type. Earlier
-HomeFX OAuth requests omitted the first three headers. The candidate supplies
+HomeFX OAuth requests omitted the first three headers. The 0.17.6 release supplies
 HomeFX's own public identity and user agent, without a client secret or bearer
 token for device-code issuance. OAuth remains on `https://auth.trakt.tv` with
 unchanged TLS, redirect and retry protections.
 
 The documentation associates 403 with an invalid API key or unapproved app.
-Correcting the missing headers addresses a verified contract mismatch, not a
-confirmed diagnosis of the TV's response. App/access restrictions or an upstream
-gateway remain possible; successful login is still unverified.
+The earlier TV rejection occurred before code display. After the header repair was
+published, the owner reported authorization and refresh success. This is evidence
+that the updated flow works on that device, not proof of the upstream reason for
+the earlier 403 or acceptance of every failure path.
 
-After the repair merges and its normal publication and hosted-byte checks pass:
-
-1. Reopen **Install from zip file → HomeFX** and install the newly listed
-   `script.homefx.development-0.1.0-<SHA-256>.zip`. Its checksum filename changes;
-   this separate test does not receive repository auto-updates. Updating HomeFX
-   Preview alone does not update the program add-on.
-2. Fully restart Kodi and reopen **HomeFX Development Test**. Run its private
-   storage check first; proceed only if all results, including cleanup, pass.
-3. Choose **Connect Development Trakt** once. If a code appears, cancel **before**
-   authorizing for this first rerun. Expect a cancelled outcome, then local status
-   disconnected. Report that observation without the code or a code screenshot.
-4. If it still fails, stop and report only the fixed **Last stage**, **Category** and
-   **Response status** fields. Only 429 may be generated by the local request
-   limiter; a 403 is from the HTTP response path. A generic request failure still
-   does not identify TLS specifically. Do not retry repeatedly or proceed to refresh.
-   No response body, exception text, profile path or credential is needed.
-5. If 403 persists, privately inspect the registered app's status, its public client
-   ID and whether the signing-in account is the owner or an invited Development
-   user. Do not paste values, registration screenshots or private account details
-   into chat or GitHub. Do not switch to Production, buy a plan, add a client secret
-   or bypass TLS as a troubleshooting shortcut.
-
-A successful code/cancellation rerun is not successful authorization or refresh.
-Review that result before resuming the remaining account tests above.
+The repair is now published; the old retry sequence is superseded by
+[the post-login checks](#after-successful-authorization-and-refresh). If another
+connection fails, stop and return fixed Last stage, Category and Response status
+only. Do not add a secret, bypass TLS or buy a plan as a troubleshooting shortcut.
 
 ## Storage and privacy limits
 

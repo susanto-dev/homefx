@@ -8,7 +8,7 @@ into TV evidence. No real account belongs in CI.
 ## 1. Try the published demo on TV
 
 Follow the [installation guide](install.md) on Kodi 21.2 with the existing skin.
-Published HomeFX Preview is 0.17.5 with repository 0.2.0; PR #33 post-merge
+Published HomeFX Preview is 0.17.6 with repository 0.2.0; PR #34 post-merge
 validation and publication passed.
 The TV previously confirmed Kodi 21.2 / Python 3.11.7. The owner supplied a passing
 0.17.4 synthetic storage report: private permissions, directory check, SQLite
@@ -96,22 +96,19 @@ own storage scope before live connect/refresh; the preview pass is not transferr
 as blanket permission for a different path or for live account access. The owner
 subsequently passed that separate test's own storage check and correctly saw local
 status disconnected. Connecting then failed before any code appeared, so the
-remaining account tests were not run. The latest diagnostic report identifies a
+remaining account tests were not run. That diagnostic report identified a
 403 response rejection before code display; the local limiter only generates 429.
 
-## Current bounded retry
+## Current checkpoint: authorization and refresh passed
 
-The 0.17.6 candidate corrects missing documented OAuth headers: the public client
-ID as API key, API version 2 and an honest HomeFX user agent. The current and legacy
-exact activation addresses remain supported. A 403 can indicate an invalid key or
-unapproved app, but the actual cause remains unverified; no successful login is
-established. Keep 0.17.5 as the published preview until normal candidate publication
-passes.
+After PR #34 publication, the owner supplied **Connection test: authorized** and
+**Refresh rotation: passed** reports from the separate Development program add-on.
+The refresh test made no list or history request. These clear the observed happy-path
+login/refresh blocker; they do not establish restart persistence, cancellation,
+disconnect, failure recovery or real list/widget acceptance.
 
-Then reinstall the newly listed Development script ZIP from the existing HomeFX
-source, restart Kodi, check storage and attempt connection once. Cancel before
-authorizing if the code dialog appears; otherwise return only fixed Last stage,
-Category and Response status fields. If 403 persists, inspect app status, public
-identity and owner/invited-user access privately, then stop for review. No codes,
-registration screenshots, raw logs, tokens or profile paths are needed. See the
-[retry sequence](development-device-test.md#retry-after-the-0176-candidate-is-published).
+Use the short [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh)
+for restart status, local disconnect and a later cancellation check. No new test ZIP
+or repeat authorization is needed just to record these outcomes. Leave unexercised
+gates as not run. The next implementation target is the existing video add-on's
+read-only list journey, subject to the remaining gates, without importing test tokens.

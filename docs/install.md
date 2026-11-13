@@ -99,11 +99,11 @@ see [release and integrity details](https://github.com/susanto-dev/homefx/blob/m
 
 HomeFX Preview remains synthetic. The separate **HomeFX Development Test** is only
 for the bounded account test after its readiness gates are met; it is not needed to
-install the preview or use demo widgets. The source-install change is awaiting its
-normal checked publication; this test ZIP has not yet been verified in the hosted
-source or installed on TV.
+install the preview or use demo widgets. The hosted source ZIP and installation path have been verified, and the owner
+reported authorization and refresh success in this separate test. These results
+do not activate real lists in the video preview.
 
-After publication is verified, choose **Add-ons → Install from zip file → HomeFX →
+Choose **Add-ons → Install from zip file → HomeFX →
 script.homefx.development-0.1.0-<SHA-256>.zip**, then open **Program add-ons → HomeFX
 Development Test**. No download to a phone or transfer to the TV is required. Start
 with **Test this add-on's private storage**. Follow the
@@ -111,6 +111,9 @@ with **Test this add-on's private storage**. Follow the
 for the exact current filename, privacy limits and remaining steps. This direct ZIP
 is separate from the repository index and does not receive repository auto-updates.
 Installing it does not start login or enable live features in HomeFX Preview.
+Already connected? Follow the [post-login checklist](https://github.com/susanto-dev/homefx/blob/main/docs/development-device-test.md#after-successful-authorization-and-refresh).
+The separate program is a temporary validation tool; the intended everyday
+list/widget experience belongs in the video add-on, with its own account storage.
 
 ## 4. Restart Kodi fully
 

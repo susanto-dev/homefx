@@ -1,9 +1,10 @@
 # Trakt authentication feasibility
 
-Rechecked 2026-11-13. Status: supported by current documented contracts; no live
-login, token refresh or account access has succeeded. The target TV passed the
-Development test storage check; the latest connection attempt received HTTP status
-403 before a code appeared. Successful authorization remains unverified.
+Rechecked 2026-11-13. After PR #34 publication, the owner reported successful
+Development authorization and one refresh rotation on the target TV. These are
+observed outcomes for the separate program test, not public video activation.
+Restart persistence, failure-path acceptance and real lists remain unverified.
+See the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
 
 ## Proposed path
 
@@ -21,7 +22,8 @@ before calling this integration complete. Do not invent a URI or assume omission
 works. The device-code flow itself does not require a callback server.
 
 The owner confirmed the registered Development public client ID and redirect match
-the configured variables; service-side registration and grant acceptance remain unverified. Current
+the configured variables; the separate Development test subsequently completed authorization and refresh.
+This does not establish Production approval or general public access. Current
 registration guidance requires a verified GitHub account, allows the owner and up
 to 16 invited users in Development, and allows any redirect URI for Development
 testing. The actual configured redirect must still be supplied and verified. Personal
@@ -41,7 +43,7 @@ call with a fabricated successful response using the current address failed befo
 code display. This is a reproduced compatibility bug. The later TV report shows a separate
 403 request rejection before an activation URL could be validated.
 
-Published 0.17.5 shares an exact allowlist between response validation and the
+Since 0.17.5, the implementation shares an exact allowlist between response validation and the
 code dialog: `https://auth.trakt.tv/activate` and `https://trakt.tv/activate`. It
 preserves the accepted URL and rejects lookalikes, arbitrary paths, query strings,
 fragments, user information and explicit ports. No redirect following, TLS bypass
@@ -60,7 +62,7 @@ The current [required-header guidance](https://github.com/trakt/trakt-api/blob/2
 and [authentication guidance](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/developer/src/lib/guides/authentication-oauth.md)
 require JSON Content-Type, a User-Agent, `trakt-api-key` containing the app's public
 client ID, and `trakt-api-version: 2`. Earlier HomeFX OAuth requests sent only
-Content-Type and Accept. The 0.17.6 candidate adds the missing headers across device
+Content-Type and Accept. The published 0.17.6 release adds the missing headers across device
 issuance, token polling and refresh. Existing API requests also gain the fixed,
 honest user agent `HomeFX (+https://github.com/susanto-dev/homefx)`.
 
@@ -79,15 +81,15 @@ reject requests. Do not infer that a paid plan, Production registration, alterna
 endpoint or foreign application identity is required. Current
 [registration guidance](https://github.com/trakt/trakt-api/blob/226f4fc5a5d90b6d3810b60f1ec6fe7e48e86e6c/projects/developer/src/lib/guides/create-an-app.md)
 permits the owner and up to 16 invited users in Development; personal/small-group
-use can remain there. Follow the [bounded retry](development-device-test.md#retry-after-the-0176-candidate-is-published).
+use can remain there. Follow the [post-login checklist](development-device-test.md#after-successful-authorization-and-refresh).
 
 ## Implemented mocked foundations
 
-The 0.4.0 candidate retains caller-driven device polling, terminal/cancellation
-states, token validation, and refresh orchestration with injected responses only.
+The foundations introduced in 0.4.0 retain caller-driven device polling, terminal/cancellation
+states, token validation, and refresh orchestration. Automated tests use injected responses only.
 The caller supplies the public client ID and registered redirect URI; neither is
 preconfigured. There is no client-secret parameter. A fixed-host HTTPS transport
-is implemented but not wired to Kodi account actions; the new setup menu provides
+is used by the separate Development test; the public video setup menu still provides
 information only. Tests never supply a real application identity or contact Trakt.
 
 Token state uses a dedicated SQLite file below a supplied private profile directory.
@@ -97,7 +99,8 @@ new pair. Another invocation returns busy rather than retrying the old refresh
 token. Failed, timed-out or abandoned refresh requires login again. Disconnect or
 a new login invalidates an old in-flight completion. This conservative behavior can
 require another login after a temporary network fault; it avoids replaying a
-single-use refresh token. SQLite/permissions support on the actual TV is unverified.
+single-use refresh token. The TV passed synthetic SQLite/permissions checks and
+one real refresh; restart persistence and interrupted-refresh recovery remain unverified.
 
 Read API foundations cover personal/liked lists, list items, episode metadata,
 show progress, paused playback and account settings. They enforce bounded results
