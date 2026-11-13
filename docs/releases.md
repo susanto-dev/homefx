@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This episode-browsing batch prepares `plugin.video.homefx` 0.17.0 alongside
+This navigation and packaging repair prepares `plugin.video.homefx` 0.17.1 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -267,3 +267,28 @@ All thirteen earlier archive records and ZIP bytes remain unchanged; repository
 Pages workflow would advertise the new version. Public preview routes remain
 synthetic, and existing saved URLs retain their default All-episodes behavior.
 No paid service, new dependency, remote write or playback action is added.
+
+## Navigation and standalone packaging repair (0.17.1)
+
+The public adapter now stops adding rows when Kodi rejects a directory item and
+finishes the listing unsuccessfully with disk caching disabled. It does not show an
+error dialog for that interruption. Successful root, list and season routes remain
+unchanged. Kodi's [21.2 directory API](https://github.com/xbmc/xbmc/blob/21.2-Omega/xbmc/interfaces/legacy/ModuleXbmcplugin.h)
+returns submission success; rejecting a row must not be reported as a complete list.
+This does not establish that Kodi removes already submitted rows or preserves focus:
+Back, cancellation and return position still need actual-device checks.
+
+Standalone package creation also refuses conflicting existing package/checksum bytes
+and unsafe filesystem paths. A failed build must preserve prior outputs. This closes
+a local tooling gap; it is not evidence of past hosted archive replacement. Existing
+repository and site verification remain required. Source and destination trees must
+remain quiescent during builds; this is not protection against an active filesystem
+attacker or a multi-file filesystem transaction. Packaging requires filesystem
+hard-link support and fails safely if unavailable. A process crash can leave an
+incomplete ZIP/checksum pair; use a fresh output directory rather than expecting
+a later build to repair that pair.
+
+0.17.0 is already published and remains immutable. After review and main merge,
+the normal workflow would publish video 0.17.1 with repository 0.2.0 unchanged,
+retaining all previous archives. No live provider routes, credentials, remote writes,
+playback or skin changes are introduced. The official checker limitations remain.

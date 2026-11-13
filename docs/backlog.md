@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status after verified 0.17.0 publication (video add-on 0.17.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status during 0.17.1 navigation/packaging repair (published video 0.17.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -21,6 +21,17 @@ provider or release choice. The current public add-on remains synthetic.
 | B09 | Release dates and sorting | Provisional rules implemented | Choose movie region/release type and confirm ordering; dates never prove source availability |
 | B10 | Skin and home layout | Existing skin retained | TV navigation/focus/widget headers; separate skin only if demonstrated necessary |
 | B11 | Upcoming personal episode calendar | Mocked/inactive (0.11) | Confirm live personal-calendar coverage and entitlement; a selected-show filter is only an intersection, not a complete selected-list schedule |
+
+### Known local demo persistence limitation
+
+Concurrent local mutations can overwrite unrelated changes: a list-selection dialog
+loads the full demo state before opening, and saving its selection after another
+invocation marks a title watched or saves a movie replaces that newer state. This
+was reproduced with fabricated adapter callbacks. A subsequent focused repair needs
+serialized, field-scoped updates against the latest state; a reload alone is not a
+complete concurrency fix. Until then, finish one local edit before starting another.
+This concerns demo JSON only, not the private account SQLite stores. The 0.17.1
+cancellation/packaging repair does not claim to resolve it.
 
 ## Trakt and account data
 
@@ -71,6 +82,14 @@ provider or release choice. The current public add-on remains synthetic.
 | G01 | Original-code licence | Decision | Existing MIT remains; final owner preference still unconfirmed |
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
+
+## Current repair: navigation cancellation and immutable local packaging
+
+0.17.1 prepares a correction for ignored Kodi directory-submission failures and
+standalone package overwrites. Focused regression tests cover interruption and
+preservation of existing package outputs. These are correctness repairs, not new
+demo features or performance claims. Review, merge, publication and TV acceptance
+remain separate. All real-account gates and existing capabilities are preserved.
 
 ## Next checkpoint: the published candidate on TV
 

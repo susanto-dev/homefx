@@ -10,6 +10,10 @@ import xbmcvfs
 from resources.lib import catalogue as model, state, routes, readiness, storage_probe
 
 
+class _DirectoryCancelled(Exception):
+    """Kodi declined a directory row; stop preparing further results."""
+
+
 def main():
     addon = xbmcaddon.Addon()
     handle = int(sys.argv[1])
@@ -92,7 +96,8 @@ def main():
         target_params = dict(route_params)
         if key:
             target_params["id"] = key
-        xbmcplugin.addDirectoryItem(handle, routes.url(route, **target_params), li, folder)
+        if xbmcplugin.addDirectoryItem(handle, routes.url(route, **target_params), li, folder) is False:
+            raise _DirectoryCancelled()
 
     try:
         route, params = routes.parse(sys.argv[2] if len(sys.argv) > 2 else "")
@@ -274,6 +279,9 @@ def main():
                     item["kind"] == "tvshow", item["id"], item)
         xbmcplugin.addSortMethod(handle, xbmcplugin.SORT_METHOD_NONE)
         xbmcplugin.endOfDirectory(handle, succeeded=True, cacheToDisc=False)
+    except _DirectoryCancelled:
+        if handle >= 0:
+            xbmcplugin.endOfDirectory(handle, succeeded=False, cacheToDisc=False)
     except (ValueError, OSError):
         message("Unable to complete the demo action. Check the selected view or local profile access.")
         if handle >= 0:
