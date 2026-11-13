@@ -148,3 +148,58 @@ class ViewTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SeriesHelpersTests(unittest.TestCase):
+    def rows(self):
+        source = [episode(1), episode(2), episode(3, "2026-11-10T00:00:00Z"),
+                  episode(4, "2027-01-01T00:00:00Z"), episode(5, None), episode(6)]
+        source[2].update(season=2, number=1)
+        watched = {"show_id": 10, "progress": {"seasons": [
+            {"number": 1, "episodes": [{"number": 1, "completed": False},
+                {"number": 2, "completed": True}, {"number": 4, "completed": False},
+                {"number": 5, "completed": False}]},
+            {"number": 2, "episodes": [{"number": 1, "completed": False}]}]}}
+        return views.episodes({"show_id": 10, "episodes": source}, watched, [pause(101)], NOW)
+
+    def test_filtered_order_and_summary_preserve_unknown_evidence(self):
+        rows = self.rows()
+        self.assertEqual([r["trakt_id"] for r in views.episode_filter(rows, "aired_unwatched")], [101, 103])
+        self.assertEqual([r["trakt_id"] for r in views.episode_filter(rows)], [101, 102, 104, 105, 106, 103])
+        self.assertEqual(views.season_summaries(rows), [
+            dict(season=1, total=5, watched=1, unwatched=3, unknown_watched=1,
+                 aired_unwatched=1, upcoming=1, unknown_date=1),
+            dict(season=2, total=1, watched=0, unwatched=1, unknown_watched=0,
+                 aired_unwatched=1, upcoming=0, unknown_date=0)])
+
+    def test_continuation_crosses_season_and_does_not_infer_unknown_is_unwatched(self):
+        rows = self.rows()
+        immediate, unwatched = views.continuation(rows, 101)
+        self.assertEqual(immediate["trakt_id"], 102)
+        self.assertTrue(immediate["watched"])
+        self.assertEqual(unwatched["trakt_id"], 103)
+        immediate, unwatched = views.continuation(rows, 102)
+        self.assertEqual(immediate["trakt_id"], 106)
+        self.assertIsNone(immediate["watched"])
+        self.assertEqual(unwatched["trakt_id"], 103)
+        immediate["title"] = "Changed copy"
+        self.assertNotEqual(rows[-2]["title"], "Changed copy")
+        self.assertEqual(views.continuation(rows, 103), (None, None))
+
+    def test_specials_scope_is_explicit_and_bad_series_rejected(self):
+        rows = self.rows()
+        special = dict(rows[0], season=0, trakt_id=999, id="trakt:episode:999")
+        rows.insert(0, special)
+        with self.assertRaisesRegex(ApiError, "episode_not_in_scope"):
+            views.continuation(rows, 999)
+        self.assertEqual(views.continuation(rows, 999, include_specials=True)[0]["trakt_id"], 101)
+        for replacement in (dict(rows[1], show_id=20), dict(rows[1], episode=0),
+                            dict(rows[1], release_status=[])):
+            with self.subTest(replacement=replacement):
+                with self.assertRaises(ApiError):
+                    views.season_summaries([rows[0], replacement])
+        with self.assertRaisesRegex(ApiError, "duplicate_metadata"):
+            views.continuation([rows[1], dict(rows[1])], 101)
+        for bad in (True, 0, "101"):
+            with self.assertRaises(ApiError):
+                views.continuation(rows, bad)

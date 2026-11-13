@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-The current experimental channel contains `plugin.video.homefx` 0.9.0 and
+This change prepares `plugin.video.homefx` 0.10.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -101,3 +101,14 @@ video installation, upgrade, offline behavior, checksum rejection and rollback r
 pending on the actual device; follow [TV testing](testing-on-tv.md). Account activation,
 playback, subtitles, resume and scrobbling require separate evidence and are not enabled
 by publishing this synthetic channel.
+
+
+## Observed repository publication
+
+Video 0.9.0 and repository 0.2.0 were deployed from merge commit
+`5a53a26ffec91178d491c5f27b1b354459755ae5`.
+[Publish preview run 43336830315](https://github.com/susanto-dev/homefx/actions/runs/43336830315)
+passed build, deployment, safe artifact staging and public-byte verification.
+Validation and security runs also passed at that merge. This is not evidence of
+Kodi installation, updates or playback. Version 0.10.0 remains pending its own merge
+and publication; previously indexed archives remain immutable.

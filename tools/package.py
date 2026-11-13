@@ -18,7 +18,7 @@ FILES = ("LICENSE", "addon.xml", "default.py", "resources/__init__.py",
          "resources/lib/trakt_preferences.py", "resources/lib/trakt_actions.py",
          "resources/lib/readiness.py", "resources/lib/account_flow.py",
          "resources/lib/debrid_auth.py", "resources/lib/debrid_client.py",
-         "resources/lib/playback.py", "resources/lib/debrid_store.py",
+         "resources/lib/playback.py", "resources/lib/playback_events.py", "resources/lib/debrid_store.py",
          "resources/lib/debrid_transport.py", "resources/lib/debrid_session.py",
          "resources/art/icon.png", "resources/art/poster.png", "resources/art/fanart.png")
 

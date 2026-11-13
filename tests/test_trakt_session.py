@@ -48,6 +48,24 @@ class SessionTests(unittest.TestCase):
     def install(self, expires=5000):
         self.store.install(TokenSet("synthetic-access-old", "synthetic-refresh-old", expires))
 
+    def test_series_validation_precedes_refresh_and_reads_reject_account_change(self):
+        self.install(expires=1001)
+        for operation, args in (("show_seasons", (True,)), ("show_progress", (7, "true")),
+                                ("season_episodes", (7, True)), ("season_episodes", (2 ** 63, 1))):
+            with self.assertRaises(ApiError):
+                self.session.read(operation, *args)
+        self.assertEqual(self.oauth_calls, [])
+        self.assertEqual(self.api_calls, [])
+        self.install()
+        self.api_reply = lambda: Response(200, body=[])
+        self.assertEqual(self.session.read("show_seasons", 7), {"show_id": 7, "seasons": []})
+        def replace_account():
+            self.install()
+            return Response(200, body=[])
+        self.api_reply = replace_account
+        with self.assertRaisesRegex(AuthError, "session_changed"):
+            self.session.read("show_seasons", 7)
+
     def test_metadata_operations_are_guarded_reads(self):
         self.install()
         self.api_reply = lambda: Response(200, body=[])

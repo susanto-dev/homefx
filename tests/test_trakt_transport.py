@@ -80,6 +80,27 @@ HEADERS = {"Authorization": "Bearer synthetic-access", "trakt-api-key": "synthet
 
 
 class TransportTests(unittest.TestCase):
+    def test_series_contract_uses_exact_routes_and_explicit_special_scope(self):
+        factory = Connections([wire(b'[{"number":0,"ids":{"trakt":9}}]'),
+                               wire(b'{"seasons":[]}')])
+        client = Client(Transport(connection_factory=factory).api_request, "id", "token")
+        self.assertEqual(client.show_seasons(7)["seasons"][0]["number"], 0)
+        self.assertEqual(client.show_progress(7, True)["show_id"], 7)
+        self.assertEqual([call[0] for call in factory.calls], ["api.trakt.tv"] * 2)
+        sent = [b"".join(sock.sent).split(b"\r\n", 1)[0] for sock in factory.sockets]
+        self.assertEqual(sent, [b"GET /shows/7/seasons?extended=full HTTP/1.1",
+            b"GET /shows/7/progress/watched?hidden=false&specials=true HTTP/1.1"])
+        empty = Connections([])
+        transport = Transport(connection_factory=empty)
+        for path in ("/shows/7/seasons", "/shows/7/seasons?extended=episodes",
+                     "/shows/7/seasons?extended=full&page=1", "/shows/7/progress/watched?specials=true",
+                     "/shows/7/progress/watched?hidden=true&specials=true",
+                     "/shows/7/progress/watched?hidden=false&specials=true&count_specials=false",
+                     "/shows/7/progress/watched?hidden=false&specials=1"):
+            with self.subTest(path=path), self.assertRaises(TransportError):
+                transport.api_request("GET", path, HEADERS)
+        self.assertEqual(empty.calls, [])
+
     def test_shared_limits_observe_429_and_block_without_socket(self):
         from resources.lib.request_limits import RequestLimits
         now = [1000]

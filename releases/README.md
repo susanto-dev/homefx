@@ -15,3 +15,7 @@ All packages contain the existing original-code MIT notice. No upstream add-on,
 skin or artwork has been incorporated. No profile, credentials or live account data
 belongs in this directory. See [release policy](../docs/releases.md) for bounds,
 publication, device acceptance and recovery; retaining a ZIP does not trigger a downgrade.
+
+Video 0.10.0 adds its reviewed current archive while retaining all three initial
+records unchanged. Repository 0.2.0 is reused byte-for-byte; a new repository package
+is unnecessary when only the indexed video add-on changes.

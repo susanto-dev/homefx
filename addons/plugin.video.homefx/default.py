@@ -15,6 +15,14 @@ def main():
     handle = int(sys.argv[1])
     dialog = xbmcgui.Dialog()
 
+    def repository_version():
+        installed = xbmc.getCondVisibility("System.HasAddon(repository.homefx)")
+        if installed is False:
+            return None
+        if installed is not True:
+            raise ValueError("Repository status unavailable")
+        return xbmcaddon.Addon("repository.homefx").getAddonInfo("version")
+
     def message(text):
         dialog.ok("HomeFX Preview — demo only", text)
 
@@ -93,7 +101,23 @@ def main():
             dialog.ok("HomeFX — Device readiness", readiness.report(
                 lambda: addon.getAddonInfo("version"),
                 lambda: xbmc.getInfoLabel("System.BuildVersion"),
-                lambda: xbmcaddon.Addon("plugin.video.umbrella").getAddonInfo("version")))
+                lambda: xbmcaddon.Addon("plugin.video.umbrella").getAddonInfo("version"),
+                repository_version=repository_version))
+            return
+        if route == "widget_setup":
+            dialog.ok("HomeFX — Widget setup",
+                      "1. Open Select demo widget lists in HomeFX.\n"
+                      "2. In your skin's home-menu/widget settings, browse Video add-ons → "
+                      "HomeFX Preview → Widget sources. Choose one list folder per row.\n"
+                      "3. Repeat for Continue watching, Next aired unwatched or Upcoming. "
+                      "Menu names depend on your skin.")
+            dialog.ok("HomeFX — Using widgets",
+                      "Open a title thumbnail for demo information; no media will play. "
+                      "Use its context menu for local watched changes, search and similar movies.\n"
+                      "To browse a full list, open its folder in HomeFX or add a menu shortcut. "
+                      "Clickable widget headings depend on your skin.\n"
+                      "Use Device readiness to check add-on and repository versions. "
+                      "No accounts or sources are connected.")
             return
         if route == "playback_setup":
             message("Titles, lists and release dates are metadata, not playable sources.\n"
@@ -196,6 +220,7 @@ def main():
                 add("Widget sources (demo)", "widgets")
                 add("Search demo titles…", "search")
                 add("Select demo widget lists…", "select", False)
+                add("Widget setup…", "widget_setup", False)
                 add("Trakt connection setup…", "setup", False)
                 add("Playback and Real-Debrid setup…", "playback_setup", False)
                 add("Device readiness", "readiness", False)

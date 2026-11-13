@@ -33,6 +33,67 @@ def item(ident, name="Example list"):
 
 
 class ClientTests(unittest.TestCase):
+    def test_show_seasons_project_bounded_metadata_without_watch_claims(self):
+        source = [{"number": 2, "ids": {"trakt": 22, "tmdb": 99},
+                   "title": "Second", "episode_count": 12, "aired_episodes": 4,
+                   "first_aired": "2026-01-01T00:00:00Z", "images": {"unused": True}},
+                  {"number": 0, "ids": {"trakt": 20}}]
+        request = Transport(response(source))
+        result = Client(request, "id", "token").show_seasons(7)
+        self.assertEqual(request.calls[0][1], "/shows/7/seasons?extended=full")
+        self.assertEqual(result, {"show_id": 7, "seasons": [
+            {"number": 2, "ids": {"trakt": 22}, "title": "Second",
+             "episode_count": 12, "aired_episodes": 4, "first_aired": "2026-01-01T00:00:00Z"},
+            {"number": 0, "ids": {"trakt": 20}, "title": None,
+             "episode_count": None, "aired_episodes": None, "first_aired": None}]})
+        result["seasons"][0]["ids"]["trakt"] = 999
+        self.assertEqual(source[0]["ids"]["trakt"], 22)
+
+    def test_show_seasons_rejects_bad_rows_duplicates_and_incomplete_responses(self):
+        row = {"number": 1, "ids": {"trakt": 11}}
+        for bad in (None, {}, {"number": True, "ids": {"trakt": 11}},
+                    dict(row, number=-1), dict(row, ids={"trakt": True}),
+                    dict(row, episode_count=-1), dict(row, aired_episodes=True),
+                    dict(row, first_aired=[]), dict(row, title="bad\n")):
+            with self.subTest(bad=bad), self.assertRaises(ApiError):
+                Client(Transport(response([bad])), "id", "token").show_seasons(7)
+        for rows in ([row, row], [row, dict(row, ids={"trakt": 12})],
+                     [row, dict(row, number=2)]):
+            with self.assertRaises(ApiError):
+                Client(Transport(response(rows)), "id", "token").show_seasons(7)
+        with self.assertRaises(ApiError):
+            Client(Transport(response([row, dict(row, number=2, ids={"trakt": 12})])),
+                   "id", "token", max_items=1).show_seasons(7)
+        with self.assertRaisesRegex(ApiError, "invalid_pagination"):
+            Client(Transport(response([row], pages=2)), "id", "token").show_seasons(7)
+        self.assertEqual(Client(Transport(response([])), "id", "token").show_seasons(7),
+                         {"show_id": 7, "seasons": []})
+
+    def test_season_episode_collection_rejects_pagination_metadata(self):
+        for headers in ({"X-Pagination-Page-Count": "2"}, {"x-pagination-page": "1"},
+                        {"x-pagination-item-count": "100"}):
+            with self.assertRaisesRegex(ApiError, "invalid_pagination"):
+                Client(Transport(Response(200, headers, [])), "id", "token").season_episodes(7, 1)
+
+    def test_series_input_validation_and_explicit_specials_scope(self):
+        request = Transport(response({"seasons": []}), response({"seasons": []}))
+        client = Client(request, "id", "token")
+        for bad in (0, -1, True, "7", 2 ** 63):
+            for operation in (lambda: client.show_seasons(bad),
+                              lambda: client.show_progress(bad),
+                              lambda: client.season_episodes(bad, 1)):
+                with self.assertRaises(ApiError):
+                    operation()
+        for bad in (0, 1, None, "true", []):
+            with self.assertRaises(ApiError):
+                client.show_progress(7, bad)
+        self.assertEqual(request.calls, [])
+        self.assertEqual(client.show_progress(7), {"show_id": 7, "progress": {"seasons": []}})
+        client.show_progress(7, True)
+        self.assertEqual([call[1] for call in request.calls], [
+            "/shows/7/progress/watched?hidden=false&specials=false",
+            "/shows/7/progress/watched?hidden=false&specials=true"])
+
     def test_title_search_literal_encoding_and_basic_projection(self):
         from urllib.parse import urlsplit, parse_qs
         from resources.lib.trakt_client import metadata_rows

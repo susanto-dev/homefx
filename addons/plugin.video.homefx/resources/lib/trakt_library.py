@@ -240,6 +240,91 @@ class Library:
             raise
 
 
+    def series_view(self, show_id, now=None, episode_filter="all", include_specials=False):
+        """Enumerate bounded season metadata under one account/revision guard.
+
+        Regular seasons are the default; specials require an explicit opt-in for
+        both metadata and watched progress. This is a metadata view, never a
+        source catalogue. Responses are not truncated to fit the request budget.
+        """
+        show_id = metadata_id(show_id)
+        if (type(include_specials) is not bool or not isinstance(episode_filter, str)
+                or episode_filter not in {"all", "aired_unwatched"}):
+            raise ApiError("invalid_filter")
+        # Validate time before an account refresh or any authenticated read.
+        now = trakt_views._now(now)
+        try:
+            generation = self._session.cache_key()
+            revision = self._data_revision()
+
+            def read(operation, *args):
+                return self._read(operation, *args, expected_generation=generation,
+                                  expected_revision=revision)
+
+            snapshot = read("show_seasons", show_id)
+            if (not isinstance(snapshot, dict) or snapshot.get("show_id") != show_id
+                    or not isinstance(snapshot.get("seasons"), list)
+                    or len(snapshot["seasons"]) > 1000):
+                raise ApiError("invalid_metadata")
+            seasons, numbers, identifiers, counts = [], set(), set(), {}
+            for season in snapshot["seasons"]:
+                if not isinstance(season, dict):
+                    raise ApiError("invalid_metadata")
+                number = season.get("number")
+                ident = trakt_views._id(season)
+                if (type(number) is not int or not 0 <= number <= 10000
+                        or ident is None or number in numbers or ident in identifiers):
+                    raise ApiError("invalid_metadata")
+                numbers.add(number)
+                identifiers.add(ident)
+                count = season.get("episode_count")
+                if count is not None and (type(count) is not int or not 0 <= count <= 10000):
+                    raise ApiError("invalid_metadata")
+                if number != 0 or include_specials:
+                    seasons.append(number)
+                    counts[number] = count
+            if len(seasons) > 50 or sum(count or 0 for count in counts.values()) > 5000:
+                raise ApiError("series_limit_exceeded")
+            episodes = []
+            for season in sorted(seasons):
+                response = read("season_episodes", show_id, season)
+                if (not isinstance(response, dict) or response.get("show_id") != show_id
+                        or not isinstance(response.get("episodes"), list)):
+                    raise ApiError("invalid_metadata")
+                entries = response["episodes"]
+                if counts[season] is not None and len(entries) != counts[season]:
+                    # Metadata can change between requests. Do not present a
+                    # truncated or inconsistent enumeration as a complete view.
+                    raise ApiError("incomplete_series")
+                if len(episodes) + len(entries) > 5000:
+                    raise ApiError("series_limit_exceeded")
+                if any(not isinstance(row, dict) or type(row.get("season")) is not int
+                       or row["season"] != season for row in entries):
+                    raise ApiError("mismatched_season")
+                episodes.extend(entries)
+            progress = read("show_progress", show_id, include_specials)
+            pauses = read("paused")
+            rows = trakt_views.episodes({"show_id": show_id, "episodes": episodes},
+                                        progress, pauses, now)
+            result = trakt_views.episode_filter(rows, episode_filter)
+            self._assert_view(generation, revision)
+            return result
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def series_seasons(self, show_id, now=None, include_specials=False):
+        """Counts from enumerated episode rows, not from guessed watched totals."""
+        try:
+            rows = self.series_view(show_id, now=now, include_specials=include_specials)
+            generation, revision = self._generation, self._revision
+            result = trakt_views.season_summaries(rows)
+            self._assert_view(generation, revision)
+            return result
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
     def movie_view(self, key, now=None, movie_filter="all"):
         """Join list metadata, complete watched IDs and pauses for one account.
 

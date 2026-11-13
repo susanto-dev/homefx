@@ -32,7 +32,7 @@ def _stamp(value, date_only=False):
 
 
 def _now(value):
-    value = value or datetime.now(UTC)
+    value = datetime.now(UTC) if value is None else value
     if not isinstance(value, datetime) or value.tzinfo is None:
         raise ApiError("invalid_clock")
     return value.astimezone(UTC)
@@ -110,7 +110,7 @@ numbers alone. Watched progress takes precedence over stale pause records.
     result, identifiers, numbers = [], set(), set()
     for item in source:
         if (not isinstance(item, dict) or type(item.get("season")) is not int or
-                type(item.get("number")) is not int or item["season"] < 0 or item["number"] < 0):
+                type(item.get("number")) is not int or not 0 <= item["season"] <= 10000 or not 1 <= item["number"] <= 10000):
             raise ApiError("invalid_metadata")
         key, ident = (item["season"], item["number"]), _id(item)
         if ident in identifiers or key in numbers:
@@ -121,6 +121,82 @@ numbers alone. Watched progress takes precedence over stale pause records.
         row.update(show_id=show_id, season=key[0], episode=key[1])
         result.append(row)
     return sorted(result, key=lambda row: (row["season"], row["episode"]))
+
+
+def episode_filter(rows, selection="all"):
+    """Narrative browsing or unfinished-first aired/unwatched widget ordering."""
+    if not isinstance(selection, str) or selection not in {"all", "aired_unwatched"}:
+        raise ApiError("invalid_filter")
+    if selection == "all":
+        return sorted(rows, key=lambda row: (row["season"], row["episode"]))
+    return widget_order([row for row in rows if row["aired_unwatched"]])
+
+
+def _series_rows(rows):
+    """Validate the identity boundary of normalized rows for one series."""
+    if not isinstance(rows, list) or len(rows) > 5000:
+        raise ApiError("invalid_metadata")
+    show_id, identifiers, numbers = None, set(), set()
+    for row in rows:
+        if (not isinstance(row, dict) or row.get("kind") != "episode"
+                or type(row.get("show_id")) is not int or row["show_id"] <= 0
+                or type(row.get("trakt_id")) is not int or row["trakt_id"] <= 0
+                or type(row.get("season")) is not int or not 0 <= row["season"] <= 10000
+                or type(row.get("episode")) is not int or not 1 <= row["episode"] <= 10000
+                or not (row.get("watched") is None or type(row["watched"]) is bool)
+                or not isinstance(row.get("release_status"), str)
+                or row["release_status"] not in {"aired", "upcoming", "unknown_date"}):
+            raise ApiError("invalid_metadata")
+        if show_id is not None and row["show_id"] != show_id:
+            raise ApiError("mismatched_show")
+        show_id = row["show_id"]
+        number = (row["season"], row["episode"])
+        if row["trakt_id"] in identifiers or number in numbers:
+            raise ApiError("duplicate_metadata")
+        identifiers.add(row["trakt_id"])
+        numbers.add(number)
+    return rows
+
+
+def season_summaries(rows):
+    """Count actual normalized rows, preserving unknown watched/date evidence."""
+    seasons = {}
+    for row in _series_rows(rows):
+        number = row["season"]
+        summary = seasons.setdefault(number, dict(season=number, total=0, watched=0,
+            unwatched=0, unknown_watched=0, aired_unwatched=0, upcoming=0, unknown_date=0))
+        summary["total"] += 1
+        state = row["watched"]
+        summary["watched" if state is True else "unwatched" if state is False else "unknown_watched"] += 1
+        status = row["release_status"]
+        if status in {"upcoming", "unknown_date"}:
+            summary[status] += 1
+        elif state is False:
+            summary["aired_unwatched"] += 1
+    return [seasons[number] for number in sorted(seasons)]
+
+
+def continuation(rows, current_id, include_specials=False):
+    """Return immediate aired and next known-unwatched candidates, never play.
+
+    Narrative season/episode order defines successors, including cross-season
+    boundaries. Specials are excluded unless explicitly requested. An immediate
+    candidate with unknown watched state remains unknown: callers must not infer
+    automatic-play permission or a watched result from its presence.
+    """
+    if (type(current_id) is not int or not 1 <= current_id <= 2 ** 63 - 1
+            or type(include_specials) is not bool):
+        raise ApiError("invalid_identifier")
+    source = _series_rows(rows)
+    ordered = sorted((row for row in source if include_specials or row["season"] != 0),
+                     key=lambda row: (row["season"], row["episode"]))
+    matches = [index for index, row in enumerate(ordered) if row["trakt_id"] == current_id]
+    if not matches:
+        raise ApiError("episode_not_in_scope")
+    following = [row for row in ordered[matches[0] + 1:] if row["release_status"] == "aired"]
+    immediate = dict(following[0]) if following else None
+    unwatched = next((dict(row) for row in following if row["watched"] is False), None)
+    return immediate, unwatched
 
 
 def movies(metadata, watched_ids=None, paused=(), now=None):

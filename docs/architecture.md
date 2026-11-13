@@ -1,10 +1,10 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx 0.9.0 supplies the synthetic preview. repository.homefx 0.2.0
-provides the experimental repository-first installation contract. The 0.9 batch
-prepares its Pages publication on merge; successful deployment and TV install/update
-behavior remain separate acceptance gates. A separate skin component is deferred
+plugin.video.homefx 0.10.0 supplies the synthetic preview. repository.homefx 0.2.0
+provides the experimental repository-first installation contract. The 0.9 publication and hosted-byte verification passed. Each later release must
+pass its own publication checks; TV installation/update behavior remains a separate
+acceptance gate. A separate skin component is deferred
 until a demonstrated limitation requires one.
 
 The preview boundary is: Kodi adapter → pure route/catalogue logic → invented data.
@@ -161,3 +161,16 @@ The [Umbrella investigation](umbrella-feasibility.md) identifies source-observed
 candidate routes and GPLv3 evidence without importing implementation or assets.
 No playback adapter or installed-version compatibility claim follows from that
 inspection. Resume, next-episode behavior and scrobbling still need explicit ownership.
+
+## Complete-series reads and event observations (0.10)
+
+The inactive library enumerates bounded season metadata before joining progress and
+pauses under one account/revision guard. It rejects known count mismatch rather than
+returning a successful partial series. See [series contracts](series-contract.md) for
+limits, unknown-state handling, ordering, specials and continuation candidates.
+
+The separate [playback observer](playback-events.md) records correlated events in
+memory. It requires AV start before accepting progress and makes no completion,
+scrobbling or auto-next decision. Neither it nor the Trakt series library is wired
+into live Kodi playback/accounts. The actual preview adds only safe setup guidance
+and repository-version diagnostics to help the device acceptance process.

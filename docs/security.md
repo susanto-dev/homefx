@@ -219,3 +219,17 @@ requests or extend cooldowns; no sleeps, queues or automatic retries are introdu
 Retry-After values are bounded; invalid clocks, storage corruption and unsafe paths
 fail closed. This unencrypted state is not a defence against code running as Kodi or
 restored profile backups. Android storage and clock behavior require device validation.
+
+
+## Series reads and playback observations
+
+Complete-series joins are bounded and fail closed on incomplete or conflicting
+metadata. Their watched/progress snapshots must belong to the same account generation
+and data revision; errors cannot silently classify missing history as unwatched.
+No persistent metadata cache is introduced.
+
+The playback observer accepts correlated in-memory events only. It stores no media
+URL or account token, performs no writes to services, and never concludes a title is
+watched from an end callback. A future Kodi adapter must supply reliable attempt
+identity and serialize callbacks; this module does not establish device behavior.
+Widget setup and repository-version probes run before local profile loading.
