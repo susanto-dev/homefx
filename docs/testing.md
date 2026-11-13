@@ -19,7 +19,7 @@ counts come from successful test cases directly, not subtraction. Failed subtest
 and fixture errors can produce multiple outcomes per test, so outcome totals need
 not equal the number run.
 
-Validation runs the complete suite on Python 3.8 and 3.12. Each job publishes the
+Validation runs the complete suite on Python 3.11 and 3.12. Each job publishes the
 aggregate JSON in its job summary and as a seven-day artifact, including after
 test failure when a report exists. Publication uses the same runner before building
 the preview. A missing report is explicitly reported as unavailable, never as a

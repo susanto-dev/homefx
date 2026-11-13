@@ -128,7 +128,7 @@ provisioned. Development tooling is separate from the standard-library-only add-
 `python tools/check_reproducibility.py` creates two isolated complete site/candidate
 builds using the reviewed inventory. It verifies both repository channel types,
 compares all paths and bytes, and confirms root bootstrap/video archives and sidecars
-match the repository packages. Validation runs under Python 3.8 and 3.12 independently;
+match the repository packages. Validation runs under Python 3.11 and 3.12 independently;
 it does not establish cross-toolchain byte identity, signatures or provenance.
 
 The official Kodi add-on checker remains an explicit coverage gap; project manifest,
@@ -337,3 +337,18 @@ keep repository 0.2.0 unchanged, and retain all older archives. Never replace th
 already published 0.17.1 ZIP. Restart Kodi after upgrading so old invocations that
 do not participate in the lock cannot write concurrently. A downgrade to older
 code does not preserve this concurrency guarantee.
+
+## Kodi 21.2 Python target alignment
+
+Current source validation and Ruff target Python 3.11, matching the official Kodi
+21.2 Android dependency line; CI covers 3.11 and 3.12. Retained video archives through
+0.17.2 keep their original Python 3.8 syntax contract. Later video versions use the
+3.11 syntax contract, and future syntax above 3.11 remains rejected. Historical
+archive shape, hashes and contents are unchanged; this policy does not repackage
+old releases or imply their device acceptance.
+
+This tooling/documentation change does not modify runtime files, manifests or
+release inventory. The normal merge-triggered publication rebuilds identical video
+0.17.2 / repository 0.2.0 packages; no new Kodi update or live activation is created.
+The runtime minimum is a project support policy, not a change to the `xbmc.python`
+API requirement. See [development policy](development.md) for exact upstream evidence.

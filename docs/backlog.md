@@ -74,7 +74,7 @@ This repair does not alter private account stores or enable live services.
 | R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.1 publication and HTTP integrity verified | TV acceptance pending |
 | R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
-| Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
+| Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
 | Q04 | Device readiness and sanitized test checklist | Implemented; optional synthetic private-storage check added (0.12); TV results pending | Provide safe version fields and observations; no full backup or secrets needed |
@@ -82,7 +82,15 @@ This repair does not alter private account stores or enable live services.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current repair: retain concurrent local edits
+## Current batch: align Python support with Kodi 21.2
+
+The owner accepted the official Kodi 21.2 Android Python 3.11 dependency as the
+runtime target. Replace conservative Python 3.8 CI coverage with 3.11, keep 3.12 as
+the newer-runtime/tooling check, and align source syntax/lint policy. Retained
+archives keep their historical syntax contract. Runtime files and package bytes
+remain unchanged; live account/device gates are separate.
+
+## Previous repair: retain concurrent local edits
 
 0.17.2 prepares the known demo-state lost-update correction across the backend,
 Kodi actions and acceptance checks. PR #24 merged as

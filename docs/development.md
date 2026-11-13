@@ -1,8 +1,12 @@
 # Development
 
-Start with Python 3.8-compatible syntax, the standard library, and a virtual
-environment if desired. The inspected cloud host runs Python 3.12; the TV's exact
-embedded interpreter must still be recorded. Build tools require defusedxml 0.7.1
+Use Python 3.11-compatible syntax and standard-library APIs for the Kodi add-on.
+The target is the official Kodi 21.2 Android build, whose dependency source pins
+Python 3.11.7. CI tests the maintained 3.11 patch line and Python 3.12; developers
+can use either. This supersedes the earlier conservative 3.8 policy. It does not
+establish device navigation, storage, TLS or performance acceptance.
+
+Build tools require defusedxml 0.7.1
 to reject unsafe XML. It is development-only; the Kodi add-on still uses no
 third-party Python packages. Ruff 0.17.4 provides a pinned, read-only correctness check; it is also development-only.
 
@@ -18,10 +22,10 @@ python3 tools/verify_repository.py dist/repository
 ```
 
 The package command parses XML, checks the entry point/API dependency/assets/licence,
-checks Python syntax against the 3.8 grammar, and creates an allowlisted ZIP with
+checks Python syntax against the 3.11 grammar, and creates an allowlisted ZIP with
 fixed timestamps plus a SHA-256 sidecar. It is a focused project validator, not the
 full Kodi add-on checker. The official Kodi add-on checker remains an explicit coverage gap. Ruff checks
-Pyflakes F rules in addons and tools with a Python 3.8 target; it does not validate Kodi APIs.
+Pyflakes F rules in addons and tools with a Python 3.11 target; it does not validate Kodi APIs.
 
 Pure catalogue/routing logic lives under resources/lib; only default.py imports
 Kodi modules. Tests use the standard-library unittest runner and synthetic fixtures.
@@ -40,18 +44,28 @@ changes; see security.md for coverage, manual triage and report retention.
 Secret scanning and repository security settings remain maintainer-managed.
 
 The Validation workflow runs the complete available unittest suite and builds the
-package/site on PRs and main pushes with Python 3.8 and 3.12. Build, quality and security dependencies are installed from pinned, hash-locked
+package/site on PRs and main pushes with Python 3.11 and 3.12. Build, quality and security dependencies are installed from pinned, hash-locked
 requirement files in their respective jobs. The Action-audit suite runs in Security
 scans with its audited tool environment. All new Actions use the existing reviewed
 commit pins. Validation has read-only permissions and does not deploy or create PRs.
-Python 3.8 is a compatibility floor, not a recommendation for a new desktop install;
-use a supported interpreter for development. Android/Kodi runtime support still
-requires the TV checks.
+Python 3.11 is the minimum supported source/runtime target; 3.12 catches newer-runtime
+regressions and runs release/security tooling. Both matrix jobs run the full suite
+and packaging checks, not two copies of the same interpreter. All CI runners are
+explicitly Ubuntu 24.04 for this matrix; hosted image contents still change.
 
-The compatibility matrix uses Ubuntu 22.04 for Python 3.8 and Ubuntu 24.04 for
-Python 3.12. `ubuntu-latest` resolved to 26.04 during the first run and lacked a
-Python 3.8 distribution, so that job failed before tests; explicit runner versions
-keep the intended interpreter coverage. Hosted image contents still change over time.
+Evidence is pinned to Kodi 21.2 source revision
+[`d1a1d48c3cb3722d39264ffdd8132f755ffecd27`](https://github.com/xbmc/xbmc/tree/d1a1d48c3cb3722d39264ffdd8132f755ffecd27):
+[Python 3.11.7 dependency](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/tools/depends/target/python3/PYTHON3-VERSION),
+[depends Python selection](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/cmake/modules/FindPython.cmake),
+and [Android build instructions](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/docs/README.Android.md).
+The manifest's `xbmc.python` 3.0.1 denotes the Kodi add-on API, not the embedded
+CPython version, and remains unchanged. No interpreter is bundled with HomeFX.
+
+The required-check name changes from **Python 3.8 tests and package** to
+**Python 3.11 tests and package**. If branch protection names the old check,
+the maintainer must replace that requirement; a stale requirement must not be
+satisfied with a misleading job label or bypassed. Repository settings are not
+modified by the source change.
 
 The repository generator writes a local candidate under `dist/repository` (or
 `--output PATH`). It accepts a fresh directory or identical prior output, and refuses

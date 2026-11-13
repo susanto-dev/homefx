@@ -23,7 +23,7 @@ def check(root=ROOT):
         return 2
     command = [
         sys.executable, "-m", "ruff", "check", "--isolated", "--select", "F",
-        "--target-version", "py38", "addons", "tools",
+        "--target-version", "py311", "addons", "tools",
     ]
     try:
         # Fixed interpreter/module/options, no shell or user-supplied command.

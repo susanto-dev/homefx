@@ -105,7 +105,7 @@ def validate(source=ADDON):
             raise ValueError("Missing or unsafe packaged file: " + path)
         _regular_source(file)
         if path.endswith(".py"):
-            ast.parse(file.read_text(encoding="utf-8"), feature_version=(3, 8))
+            ast.parse(file.read_text(encoding="utf-8"), feature_version=(3, 11))
     for asset in manifest.findall("./extension[@point='xbmc.addon.metadata']/assets/*"):
         if asset.text not in FILES:
             raise ValueError("Manifest asset not in package allowlist")

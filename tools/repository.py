@@ -27,6 +27,8 @@ MAX_CONTENT = 32 * 1024 * 1024
 MAX_INVENTORY = 64 * 1024
 MAX_RETAINED = 32
 MAX_RETAINED_BYTES = 64 * 1024 * 1024
+# Published through 0.17.2 under the original Python 3.8 syntax contract.
+LEGACY_VIDEO_PYTHON_LAST_VERSION = (0, 17, 2)
 CANDIDATE_NOTICE = """HomeFX repository candidate — LOCAL REVIEW ARTIFACT
 
 This build is for review and device-test preparation. Generation does not publish
@@ -235,10 +237,14 @@ def _retained_contract(manifest, contents, ident):
                 or directory.find("datadir").get("zip") != "true"
                 or directory.findtext("hashes") != "sha256"):
             raise ValueError("Invalid retained repository contract")
+    python_version = (3, 8)
+    if (ident == "plugin.video.homefx"
+            and _version(manifest.get("version")) > LEGACY_VIDEO_PYTHON_LAST_VERSION):
+        python_version = (3, 11)
     for name, data in contents.items():
         if name.endswith(".py"):
             try:
-                ast.parse(data.decode("utf-8"), feature_version=(3, 8))
+                ast.parse(data.decode("utf-8"), feature_version=python_version)
             except (SyntaxError, UnicodeError, ValueError, RecursionError):
                 raise ValueError("Invalid retained Python syntax") from None
 
