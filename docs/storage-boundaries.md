@@ -99,3 +99,12 @@ of separate existence and stat calls. It applies the same sidecar-only zero-link
 rule, including preference journals, before constructing components. Real-commit
 factory tests preserve stored generations, epochs and cooldowns without provider
 traffic; unlinked mandatory databases remain rejected before construction.
+
+## Conditional list confirmation (0.15)
+
+The preference save optionally compares the caller's expected ordered choices in
+the same BEGIN IMMEDIATE transaction as its existing clear-epoch check and write.
+A chooser opened before another local selection changed cannot overwrite that
+selection after confirmation. This adds no schema migration; existing callers
+without expected choices retain their behavior. Credential generations and verified
+account UUIDs remain separate checks around the UI interaction.

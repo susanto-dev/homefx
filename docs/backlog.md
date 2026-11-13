@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.14.2 sidecar follow-up (video add-on 0.14.2, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.15.0 read-only list preparation (video add-on 0.15.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -11,7 +11,7 @@ provider or release choice. The current public add-on remains synthetic.
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented | Actual Android/Google TV compatibility pending |
-| B02 | Multiple selected list widgets and folder browsing | Implemented in demo | Choose actual personal/liked lists; live wiring and widget-title click behavior need TV verification |
+| B02 | Multiple selected list widgets and folder browsing | Implemented in demo; mixed-list read projection and inactive interaction added (0.15) | Account-bound live routes, activation and widget-title click behavior need TV verification |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; complete-series/season summaries mocked (0.10) | Live episode identity/status and refresh behavior |
 | B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
@@ -28,7 +28,7 @@ provider or release choice. The current public add-on remains synthetic.
 |---|---|---|---|
 | T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Application registration, public ID/redirect URI, actual login/refresh and TV storage/TLS verification |
 | T02 | Account connect/cancel/switch/disconnect UI | Controller and injected dialog adapter inactive (0.12); setup guidance implemented | Wire UI only after activation gates; verify revocation/privacy wording and recovery on TV |
-| T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; storage and migration guards hardened (0.13) | Choose real lists and verify live account isolation, paging and restart behavior |
+| T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded list chooser and conditional selection save added (0.15) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
 | T05 | Live Trakt read views | Pending | Enable after registration, transport and device checks |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
@@ -61,8 +61,8 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.14.1 publication and HTTP integrity verified | 0.14.1 repair deployed successfully; 0.14.2 pending review/merge/publication |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.14.1 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.14.2 publication and HTTP integrity verified | 0.15.0 pending review/merge/publication |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.14.2 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -72,20 +72,24 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current focused batch: 0.14.2 shared sidecar lifecycle
+## Current focused batch: 0.15.0 read-only list preparation
 
-The 0.14.1 repair is published: post-merge Python validation, deployment and hosted
-verification passed at `1ad8df1f50111cc0d8a2c155b3cae030f9bbb83a`. Direct HTTP
-checks confirm the current index and matching root/repository ZIP hashes. See
-[publication evidence](releases.md).
+The 0.14.2 merge, validation, deployment and hosted-byte verification passed.
+Direct HTTP checks confirmed the advertised version and matching root/repository
+ZIPs. See [publication evidence](releases.md). TV acceptance remains unverified.
 
-The follow-up corrects the same transient-journal stat assumption in Trakt tokens,
-Real-Debrid credentials, shared request limits and their factory preflight. Real SQLite commit regressions
-cover existing-instance reads and constructor reopen, while mandatory databases
-and unsafe sidecars remain rejected. No live services or features are activated.
-Video 0.14.2 preserves all nine prior archive records and bytes; publication remains
-conditional on review, merge and the ordinary successful workflow. TV acceptance
-and the existing account/service gates remain open.
+Mixed movie/show list projection preserves ordering, identity and unknown watched
+state, with explicit unsupported-entry reporting. The inactive list interaction
+uses the real Library for local selection, browsing and season/episode views;
+account changes invalidate stale dialog confirmations and result delivery.
+Selection conflicts are checked inside the private-store transaction. Empty,
+offline, authorization-needed and cancelled outcomes remain distinct.
+
+The public entry point and existing demo widget routes stay unchanged. A durable,
+opaque account-bound widget reference and gated Kodi rendering remain necessary;
+raw list IDs or positional slots must not silently bind a widget to another account.
+Registration, actual secret-free refresh and TV checks still block activation.
+No remote writes, playback, Real-Debrid or scrobbling work is included.
 
 ## External inputs and decisions
 
@@ -93,7 +97,7 @@ The next useful device evidence is the readiness report and existing widget/navi
 checklist, followed by service-registration details (public IDs only). Real lists/views,
 movie release region/type, first playback path, source-provider choice, scrobbling
 ownership, final original-code licence and TV acceptance of repository updates/rollback remain open.
-These inputs do not block the current mocked foundation work. Never send secrets,
+These inputs block live activation; completed independent work does not satisfy them. Never send secrets,
 account exports, watch history or a full Kodi backup.
 
 NBA, a separate Android app and an always-on server are outside scope. A new skin is

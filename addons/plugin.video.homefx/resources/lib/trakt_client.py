@@ -336,6 +336,10 @@ class Client:
         name = item.get("name")
         if not isinstance(name, str) or not 1 <= len(name) <= 1000:
             raise ApiError("invalid_response")
+        try:
+            name = _metadata_text(name)
+        except ApiError:
+            raise ApiError("invalid_response") from None
         if own:
             owner = "me"
         else:

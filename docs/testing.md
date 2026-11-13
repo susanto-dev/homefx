@@ -194,3 +194,15 @@ of separate existence and stat calls. It applies the same sidecar-only zero-link
 rule, including preference journals, before constructing components. Real-commit
 factory tests preserve stored generations, epochs and cooldowns without provider
 traffic; unlinked mandatory databases remain rejected before construction.
+
+## Read-only list journey regressions (0.15)
+
+The list-journey and list-UI suites use actual Session, Library and temporary private
+stores with fabricated GET responses. They check mixed movie/show order, unsupported
+entries, unknown watched status, restart restoration, cancellation versus explicit
+empty selection, and independent personal/liked paths. Account switching and
+reentrant UI cleanup must discard old results. Concurrent selection writes between
+inspection and save must fail the ordered-choice comparison inside the transaction.
+Names with control characters are rejected before display. Empty, authorization,
+connection and service failures remain distinct; widget mode opens no dialogs.
+No real account, Kodi device, service login, mutation or player is exercised.

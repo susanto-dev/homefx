@@ -44,3 +44,7 @@ failed before deployment. Only 0.14.1 is the repaired current video update targe
 Video 0.14.2 completes the transient-sidecar correction across credential and quota
 stores. All nine prior records and bytes remain unchanged, including the verified
 published 0.14.1 repair. Repository 0.2.0 is reused unchanged.
+
+The 0.15.0 read-only list preparation retains all ten previous records and archive
+bytes, including published 0.14.2. Repository 0.2.0 remains unchanged. Live account
+routes remain inactive; publication is not device or account acceptance.

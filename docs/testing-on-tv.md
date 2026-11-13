@@ -4,11 +4,40 @@ Status: NOT RUN. Target: Kodi 21.2 with the user’s existing home-screen layout
 Record device, embedded Python, skin and widget-configuration component versions,
 package SHA-256, steps, expected/observed behavior and elapsed load times.
 
+## Start here: bounded read-only journey
+
+1. **Published package first:** follow the repository installation/update steps below.
+   Expected: Kodi reports the advertised video/repository versions; old widget
+   shortcuts still open. Record versions and whether installation/update succeeded.
+2. **Local capability next:** open Device readiness, then Test private storage.
+   Expected: safe capability fields and fixed storage/cleanup results. Cancel the
+   storage prompt once before running it; cancellation must not perform the test.
+3. **Current preview navigation:** select two demo lists in HomeFX, then configure
+   their rows separately in the existing skin. Check thumbnail focus, Back and return
+   position, opening the full-list folder when the heading cannot be clicked, and
+   title/season browsing. Cancel selection once; previous choices must remain. Record
+   first-open and immediate-reopen load times. Restart Kodi and check selections and
+   saved widget paths again. Existing detailed checks below remain applicable.
+4. **Blocked until activation gates:** registered identity/redirect verification,
+   explicit owner authorization, and the [account gates](account-setup.md) precede
+   any real login. Then repeat selection, row configuration, details and restart
+   checks with one personal and one liked list. Check loading, empty, offline,
+   authorization-needed and cancellation outcomes without remote writes. Never
+   label the live step passed from synthetic or cloud tests.
+
+Return only versions, fixed result/error categories, success/failure of the steps,
+focus/Back/return-position observations and cold/warm timings. Do not send tokens,
+device codes, private title/list contents, history, profile paths, screenshots with
+private information, unredacted logs or a Kodi backup. No playback, Real-Debrid or
+scrobbling acceptance is part of this milestone.
+
+## Detailed preview checks
+
 1. After the reviewed Pages deployment and HTTP check, use Kodi Settings → File
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install version 0.14.2.
+   Preview Repository → Video add-ons → HomeFX Preview to install version 0.15.0.
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks
@@ -90,7 +119,7 @@ or starting media. Existing movie/episode clicks must still show demo informatio
 There is no real account login or source input field to test in this version.
 Follow the separate [playback plan](playback-plan.md) before any future live experiment.
 
-## Experimental repository acceptance (0.2.0 repository / 0.14.2 video)
+## Experimental repository acceptance (0.2.0 repository / 0.15.0 video)
 
 Status: NOT RUN. Record the deployed revision, exact ZIP checksums and the HTTP-check
 result separately from device observations. Confirm Kodi can browse the source URL,

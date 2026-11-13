@@ -1,6 +1,6 @@
 # Trakt authentication feasibility
 
-Reviewed 2026-11-12. Status: supported by current documented contracts; no live
+Rechecked 2026-11-13. Status: supported by current documented contracts; no live
 login, token refresh, account access, or Android TV test has been performed.
 
 ## Proposed path
@@ -18,9 +18,12 @@ appropriate URI and verify secret-free refresh with a real device-issued token
 before calling this integration complete. Do not invent a URI or assume omission
 works. The device-code flow itself does not require a callback server.
 
-Development app registration and the public client ID remain outstanding. Current
-registration guidance allows the owner and up to 16 invited users in Development;
-broad access requires separate Production access. Production registration calls
+Development app registration and the public client ID remain unverified. Current
+registration guidance requires a verified GitHub account, allows the owner and up
+to 16 invited users in Development, and allows any redirect URI for Development
+testing. The actual configured redirect must still be supplied and verified. Personal
+or small-group applications may remain in Development; broad access requires a
+separate Production application and client ID. Production registration calls
 for privacy documentation and a Trakt nonendorsement notice. Premium is not stated
 as mandatory for the proposed basic functionality. No account or paid service was
 created during this investigation.
@@ -79,6 +82,12 @@ No playback or scrobbling claims follow from successful Trakt login. Umbrella
 handoff remains a separate test gate. Aired/released does not imply playable.
 
 ## Primary sources
+
+On 2026-11-13 the official repository's `master` branch still resolved to
+`030a5e3cb6aacb11508f250865c0b907ab17b2ed`. The linked device-token, optional-secret,
+refresh and base-field contracts were reread alongside the current registration
+and OAuth guides. This checks published requirements, not the owner's registered
+application, actual grants, rotated refreshes or device compatibility.
 
 - [Authentication](https://developer.trakt.tv/docs/authentication-oauth)
 - [API hosts](https://developer.trakt.tv/docs/api-url)

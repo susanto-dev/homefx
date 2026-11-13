@@ -1,7 +1,7 @@
 # Architecture
 
 One source repository, with separate add-on directories as components are needed.
-plugin.video.homefx 0.14.2 supplies the synthetic preview. repository.homefx 0.2.0
+plugin.video.homefx 0.15.0 supplies the synthetic preview. repository.homefx 0.2.0
 provides the experimental repository-first installation contract. The 0.9 publication and hosted-byte verification passed. Each later release must
 pass its own publication checks; TV installation/update behavior remains a separate
 acceptance gate. A separate skin component is deferred
@@ -206,3 +206,13 @@ injected dialog adapter supplies confirmation, device-code display and bounded w
 without importing Kodi or reading profiles. A future entry-point integration must
 supply real Kodi objects only after the existing activation gates. Cancellation and
 local credential deletion do not imply service-side revocation.
+
+## Read-only list interaction (0.15)
+
+The inactive [list interaction](trakt-list-journey.md) consumes the existing Library
+for mixed movie/show metadata, local selection and season/episode reads. Selection
+confirmation pins the account and atomically compares prior ordered choices;
+result delivery checks the captured account even after UI callbacks. It supplies
+explicit empty/error/cancellation states without enabling a public live route.
+Existing synthetic widget URLs remain stable; private account-bound route identity
+and actual Kodi rendering remain the next gated integration boundary.

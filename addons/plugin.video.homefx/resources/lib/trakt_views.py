@@ -7,7 +7,7 @@ stays unknown; it is never silently treated as unwatched.
 from datetime import date, datetime, time, timezone
 import math
 
-from .trakt_client import ApiError
+from .trakt_client import ApiError, metadata_rows
 
 UTC = timezone.utc
 MIN_TIME = datetime.min.replace(tzinfo=UTC)
@@ -70,6 +70,42 @@ def _row(item, kind, watched, pause, now):
             "release_status": status, "watched": watched, "progress": progress,
             "last_played": last_played,
             "aired_unwatched": status == "aired" and watched is False}
+
+
+def browse_list(items, now=None):
+    """Normalize movie/show entries in list order without inventing watch state.
+
+    Season, episode and person entries are explicitly counted as unsupported in
+    this browser. Unknown types and malformed supported rows fail the whole read.
+    """
+    now = _now(now)
+    if not isinstance(items, list) or len(items) > 10000:
+        raise ApiError("invalid_metadata")
+    rows, seen, unsupported = [], set(), 0
+    for item in items:
+        if not isinstance(item, dict):
+            raise ApiError("invalid_metadata")
+        kind = item.get("type")
+        if not isinstance(kind, str) or kind not in {"movie", "show", "season", "episode", "person"}:
+            raise ApiError("invalid_metadata")
+        if kind in {"season", "episode", "person"}:
+            if _id(item.get(kind)) is None:
+                raise ApiError("invalid_metadata")
+            unsupported += 1
+            continue
+        row = metadata_rows([item], kind, wrapped=True)[0]
+        identity = (kind, row["trakt_id"])
+        if identity in seen:
+            raise ApiError("invalid_metadata")
+        seen.add(identity)
+        media = item[kind]
+        release = _stamp(media.get("released" if kind == "movie" else "first_aired"),
+                         date_only=kind == "movie")
+        row.update(id="trakt:" + kind + ":" + str(row["trakt_id"]),
+                   release_at=release,
+                   release_status="unknown" if release is None else "upcoming" if release > now else "aired")
+        rows.append(row)
+    return {"items": rows, "unsupported_count": unsupported}
 
 
 def episodes(metadata, watched_snapshot, paused=(), now=None):
