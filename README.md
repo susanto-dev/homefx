@@ -16,14 +16,22 @@ For the next device and account checkpoint, use the
 [activation handoff checklist](docs/activation-checklist.md). It separates safe demo
 observations from the gates required before any live connection.
 
-## Preview candidate: 0.17.4
+For the separately installed, manually built test add-on, see the
+[bounded Development device test](docs/development-device-test.md). It does not
+activate live routes in HomeFX Preview or join the public repository channel.
 
-The 0.17.4 candidate aligns the synthetic directory check with private-store setup:
-it explicitly sets private permissions on its fresh temporary directory, then
-verifies them. It reports whether setting, inspecting or retaining the mode failed.
-This may fix a creation-mode discrepancy; Android storage compatibility remains
-unverified. Version 0.17.3 is the verified hosted release until the candidate is
-merged and its normal publication checks pass. Live accounts remain inactive.
+## Published preview: 0.17.4
+
+HomeFX Preview 0.17.4 and repository 0.2.0 are published; post-merge checks and
+hosted package bytes were verified. The owner reported the synthetic private
+storage check passing on the TV, including permissions, directory check, SQLite
+commit/rollback and temporary cleanup. This does not verify real account-store
+persistence, TLS, login, refresh or playback. Live preview accounts remain inactive.
+
+The owner also confirmed that the registered Development public client ID and
+redirect match the configured variables. This is not service-side verification.
+The separate Development device-test source is a candidate for a manually built
+artifact after merge; it has not been published or tested on the TV.
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

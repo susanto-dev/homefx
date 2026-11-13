@@ -1,0 +1,151 @@
+# Bounded Development Trakt test on Kodi
+
+**This is a separate experimental test add-on, not live mode for HomeFX Preview.**
+HomeFX Preview 0.17.4 and repository 0.2.0 remain unchanged. The test adds no list
+widgets, account-data reads, history/list writes, playback, Real-Debrid or scrobbling.
+It is a Kodi program add-on, not a new Android app or server.
+
+The owner has confirmed that the registered Development client ID and redirect
+match the GitHub variables, and supplied a passing synthetic storage report on
+0.17.4: permissions, directory check, SQLite commit/rollback and cleanup passed;
+failure stage was none. These observations do not establish real TLS, token-store
+persistence, login, refresh rotation or account entitlement. Those remain device
+tests, not cloud results.
+
+The implementation and workflow are candidates until merged and reviewed checks
+pass. Preparing this change does not dispatch the workflow or initiate login.
+
+## Build the test artifact after merge
+
+A maintainer should:
+
+1. Open the repository's **Actions → Build Development device test → Run workflow**.
+2. Select **main**. Confirm the readiness input only if the registered Development
+   public ID/redirect still match and the synthetic TV storage check has passed.
+3. Run the workflow. It uses only the **Development** environment, runs fabricated
+   tests, requires the selected revision still to be current main, and then builds
+   the test ZIP. It does not contact Trakt, obtain credentials or deploy Pages.
+4. Wait for a successful run. Download its artifact named
+   `homefx-development-device-test-<source SHA>-<run ID>`. Artifacts expire after
+   three days; record the run link/source SHA before downloading.
+
+The build embeds the **public** Development client ID and registered redirect from
+`TRAKT_CLIENT_ID` and `TRAKT_REDIRECT_URI`. These are not secrets. The artifact and
+its public configuration may be accessible through the public repository; GitHub
+may also display step environment values. Never put a client secret, token, device
+code, private list/history or private configuration in these variables. No secret
+is needed or accepted by the test configuration schema. Production is not an
+option in this workflow.
+
+The existing configuration preflight remains a syntax-only check. This separate,
+manually requested build is the only workflow that embeds public configuration in
+the test ZIP. Ordinary PR tests use fabricated values; public preview ZIPs and Pages
+never receive these app variables. No real-account test belongs in CI.
+
+## Install alongside the preview
+
+1. Extract the downloaded Actions artifact wrapper on a computer or phone. Inside
+   are a Kodi ZIP named `script.homefx.development-0.1.0-<SHA-256>.zip` and its
+   `.sha256` sidecar. The digest identifies the exact built bytes; it is not a
+   signature or proof that an account integration works.
+2. Transfer the **inner Kodi ZIP** using a method you trust. In Kodi choose
+   **Add-ons → Install from zip file**, review the Unknown sources warning and
+   select that file. Do not install the outer Actions artifact wrapper.
+3. Open **HomeFX Development Test** under **Program add-ons**. Skin labels may vary;
+   this installation/menu path has not yet been validated on the TV.
+4. Keep HomeFX Preview, HomeFX Preview Repository and the current skin installed.
+   The test does not replace their files, routes or profiles.
+
+This test add-on is not in the Kodi repository index and has no repository-driven
+auto-update path. Use only a deliberately reviewed replacement test artifact.
+Version 0.1.0 identifies the test harness; the source SHA, run ID and ZIP digest
+identify its exact code/configuration. Do not confuse it with a published HomeFX
+video add-on version. Building the same inputs reproduces the same ZIP; different
+public configuration has a different content-addressed filename.
+
+## Run one action at a time
+
+Opening or cancelling the menu makes no network request and does not open a profile.
+Each selection asks for confirmation before reading configuration or local storage.
+The add-on closes after one action; reopen it for the next one. Do not enable Kodi
+debug logging or capture/share a screen containing an authorization code for this test.
+
+1. **Test this add-on's private storage**. Cancel once, then reopen and confirm.
+   Read the complete report. Permissions, directory check, SQLite and cleanup must
+   pass before proceeding. A failure stops this sequence; return fixed results only.
+2. **Local connection status (no network)**. Confirm and record its fixed status.
+   A first run should report disconnected. This action can create/check empty local
+   test stores, but does not refresh or contact Trakt.
+3. **Connect Development Trakt**. Read the consent and confirm only when ready to
+   authorize. The storage check runs again before credentials or network setup.
+   Use your own phone/computer to open exactly `https://trakt.tv/activate` and enter
+   the code displayed privately on the TV. Never copy the code into chat, logs or
+   an issue. The dialog supports cancellation and is bounded to ten minutes; network
+   operations have their own limits, while OS DNS resolution can still delay return.
+4. First exercise cancellation while the code prompt is open and **before**
+   authorizing on Trakt. Expect a fixed cancelled outcome and no authorized state.
+   Reopen and connect again when ready. An authorized result means credentials were
+   stored locally; it does not establish list access, refresh or public activation.
+5. Fully restart Kodi. Reopen the test and choose **Local connection status (no
+   network)**. Expect credentials stored, or an explicit refresh/login-required
+   state if appropriate. Do not infer persistence from an invocation that never closed.
+6. **Test one refresh rotation**. Confirm once after a successful login and restart
+   check. This consumes a stored refresh token and attempts one replacement grant;
+   no list request follows. Expected success is **Refresh rotation: passed**. A busy,
+   cancelled, interrupted or failed result is not a pass and may require login again.
+   Do not repeatedly press refresh to work around a failure or deliberately corrupt
+   storage/network state; failure injection remains in fabricated tests.
+7. **Disconnect this test locally**. Confirm the scope-specific deletion prompt.
+   Reopen local status and expect disconnected. Separately revoke the application's
+   authorization in your Trakt account settings if you want service-side access
+   removed. Local disconnect does not revoke it remotely or erase backups.
+
+A replacement login removes this test scope's prior local credentials even if the
+new login is cancelled. Denial, expiry, cancellation, offline/slow responses and
+interrupted-refresh recovery remain separate acceptance outcomes. Record cases
+that were not exercised as **not run**; do not manufacture a pass from the happy path.
+
+## Storage and privacy limits
+
+The test uses its own Kodi add-on profile, further separated by a digest of the public
+client ID and redirect. This prevents a rebuilt test for a different app identity
+from reusing the old app's tokens. No profile or credential migration into HomeFX
+Preview occurs. The synthetic storage check before connect/refresh uses this same
+scope, not the preview's earlier test location.
+
+Tokens are unencrypted. Other code running as Kodi and profile backups may access
+them. Do not share this profile, databases, full Kodi backups or unredacted logs.
+Changing or invalidating the packaged configuration makes the old scope unavailable
+to this test's status/disconnect actions; it does not erase that old data or revoke
+its authorization. Keep the matching reviewed artifact for local disconnect, and
+use Trakt account settings for remote revocation. Uninstalling is not proof of
+forensic data erasure. Do not edit databases or guess profile paths to recover a test.
+
+## Safe observations to return
+
+Return only:
+
+- The workflow run link/source SHA, test harness version and ZIP checksum.
+- Fixed storage results, including cleanup and overall status.
+- Fixed connect/cancel, restart-status, refresh and disconnect outcomes.
+- Approximate wait times, responsiveness and any unexercised cases marked not run.
+
+Do not return public app values unnecessarily, or any client secret, token, device
+code, profile path, private list/history, account screenshot, full backup or raw log.
+A generic failure is useful evidence; do not disable TLS verification or add a client
+secret to bypass it.
+
+After these results are reviewed, the next bounded milestone is the real read-only
+list journey in HomeFX: one personal or liked list, separate skin-row assignment,
+details and restart persistence. This test does not enable it automatically.
+Continue Watching, Next aired and Upcoming remain separate; metadata and future
+dates never prove a playable source.
+
+See [account gates](account-setup.md#activation-gates),
+[authentication contracts and primary sources](trakt-authentication.md), and
+[storage boundaries](storage-boundaries.md). The current documented
+[Trakt OAuth](https://developer.trakt.tv/docs/authentication-oauth) and
+[registration](https://developer.trakt.tv/docs/create-an-app) requirements still
+apply; owner confirmation is not proof of a successful provider grant or Production
+approval. No app registration, changed-terms acceptance or paid service is performed
+by this workflow.

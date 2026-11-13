@@ -1,0 +1,56 @@
+name: Build Development device test
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_readiness:
+        description: Registered Development ID/redirect match and synthetic TV storage passed; build an experimental device-test ZIP
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && inputs.confirm_readiness == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: Development
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install reviewed build and quality tools
+        run: |
+          python tools/check_dependencies.py
+          python -m pip install --require-hashes --only-binary=:all: -r tools/build-requirements.txt -r tools/quality-requirements.txt
+      - name: Check code and fabricated tests
+        run: |
+          python tools/check_quality.py
+          python tools/run_tests.py --summary dist/tests/development-summary.json
+      - name: Require the current main revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          current_sha="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')"
+          test -n "$current_sha"
+          test "$current_sha" = "$EXPECTED_SHA"
+      - name: Build explicitly configured Development test only
+        env:
+          HOMEFX_TRAKT_ENVIRONMENT: Development
+          TRAKT_CLIENT_ID: ${{ vars.TRAKT_CLIENT_ID }}
+          TRAKT_REDIRECT_URI: ${{ vars.TRAKT_REDIRECT_URI }}
+        run: python tools/build_development_test.py dist/development-test
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: homefx-development-device-test-${{ github.sha }}-${{ github.run_id }}
+          path: dist/development-test/
+          retention-days: 3
+          if-no-files-found: error
