@@ -1,6 +1,6 @@
 # Packaging and preview releases
 
-This change prepares `plugin.video.homefx` 0.12.0 alongside
+This change prepares `plugin.video.homefx` 0.13.0 alongside
 `repository.homefx` 0.2.0. The owner authorized repository-first publication on the
 existing GitHub Pages site. Protected main remains PR-only; the maintainer merges.
 A merge publishes only after workflow checks pass. This does not establish TV
@@ -116,7 +116,10 @@ Kodi installation, updates or playback. Video 0.10.0 later deployed from merge c
 also passed build, deployment and hosted-byte verification. The following 0.11.0 release was merged at
 `96f2e307db4d5e9bffd0d8b7937d619816dd99e8`; its
 [publication run 43341996914](https://github.com/susanto-dev/homefx/actions/runs/43341996914)
-passed build, deployment and hosted-byte verification. Version 0.12.0 remains pending its
+passed build, deployment and hosted-byte verification. Video 0.12.0 deployed from merge commit
+`4fbc5b3a34bfb76c5aac3fce5646814b82f7a7b0`;
+[publication run 43349117123](https://github.com/susanto-dev/homefx/actions/runs/43349117123)
+passed build, deployment and hosted-byte verification. Version 0.13.0 awaits its
 own merge and publication. Previously indexed archives remain immutable.
 
 

@@ -28,3 +28,7 @@ and prospective inventory are added. Repository 0.2.0 remains unchanged.
 Video 0.12.0 was staged with the same verified proposal workflow, preserving all five
 prior records and bytes. Its optional storage self-check uses synthetic temporary
 files only; no profile or account configuration is packaged.
+
+Video 0.13.0 uses the same verified proposal workflow and preserves all six prior
+records and archive bytes. Repository 0.2.0 remains unchanged. Storage regression
+fixtures are synthetic and are not included in the video package.

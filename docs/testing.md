@@ -123,3 +123,9 @@ injected dialogs. It checks no construction-time network, invalid configuration
 before storage, readonly Trakt writes, shared cooldowns, cancellation, replacement
 races and provider-isolated disconnect. UI stand-ins establish API contracts only;
 they do not prove Kodi dialog behavior or TV responsiveness.
+
+The 0.13 storage regressions cover unsafe ancestors, hardlinks, special files,
+SQLite sidecars, malformed schemas and records, integer exhaustion, and a refresh
+claim expiring while waiting for a write lock. Assembly tests preserve baseline
+credentials and list selections across refresh and reject unsafe later operations.
+All account values are synthetic; platform-specific TV behavior is still untested.

@@ -10,12 +10,21 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 
 from .trakt_auth import AuthError
 
 
 class PreferencesError(AuthError):
     """Fixed error categories with no account, list or filesystem details."""
+
+
+_MAX_INTEGER = 2 ** 63 - 1
+_MAX_FILE_BYTES = 1024 * 1024
+
+
+def _integer(value):
+    return type(value) is int and 0 <= value <= _MAX_INTEGER
 
 
 def account_uuid(settings):
@@ -49,85 +58,183 @@ class AccountPreferences:
     evicted on the ninth account. Disconnect should call clear_all: the complete
     local profile's choices are forgotten, even before identity has been fetched.
     File permissions do not protect against code running as Kodi or profile backups.
+    Path checks reject unsafe existing files; another process running as Kodi can
+    still replace paths concurrently.
     """
     def __init__(self, profile_directory):
         if os.name != 'posix' or not hasattr(os, 'fchmod'):
             raise PreferencesError('preferences_platform_unsupported')
-        self._directory = Path(profile_directory) / 'trakt'
+        self._directory = Path(profile_directory).absolute() / 'trakt'
         self._path = self._directory / 'preferences.sqlite3'
         try:
-            if self._directory.is_symlink():
-                raise OSError()
+            self._safe_paths(private=False, missing=True)
             self._directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+            self._safe_paths(private=False, missing=True)
             os.chmod(str(self._directory), 0o700)
-            if self._path.is_symlink() or (self._path.exists() and self._path.stat().st_size > 1024 * 1024):
-                raise OSError()
-            descriptor = os.open(str(self._path), os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+            flags = os.O_RDWR | os.O_NONBLOCK | getattr(os, 'O_NOFOLLOW', 0)
             try:
+                descriptor = os.open(str(self._path), flags | os.O_CREAT | os.O_EXCL, 0o600)
+                created = True
+            except FileExistsError:
+                descriptor = os.open(str(self._path), flags)
+                created = False
+            try:
+                self._file_info(os.fstat(descriptor), private=False)
+                if not created and os.fstat(descriptor).st_size == 0:
+                    raise OSError()
                 os.fchmod(descriptor, 0o600)
             finally:
                 os.close(descriptor)
-            self._transaction(self._initialize)
-        except (OSError, sqlite3.Error):
+            self._transaction(lambda conn: self._initialize(conn, created), validate=False)
+        except (OSError, sqlite3.Error, ValueError, TypeError, OverflowError):
             raise PreferencesError('preferences_unavailable') from None
 
     def __repr__(self):
         return 'AccountPreferences(<private profile>)'
 
     @staticmethod
-    def _initialize(conn):
+    def _initialize(conn, created):
         version = conn.execute('PRAGMA user_version').fetchone()[0]
         if version not in (0, 1, 2):
             raise PreferencesError('preferences_version_unsupported')
-        conn.execute('CREATE TABLE IF NOT EXISTS selections ('
-                     'account TEXT PRIMARY KEY, selected TEXT NOT NULL, revision INTEGER NOT NULL)')
+        if created:
+            conn.execute('CREATE TABLE selections ('
+                         'account TEXT PRIMARY KEY, selected TEXT NOT NULL, revision INTEGER NOT NULL)')
+        AccountPreferences._table(conn, 'selections')
+        AccountPreferences._rows(conn)
         if version < 2:
-            conn.execute('CREATE TABLE IF NOT EXISTS preference_state ('
-                         'id INTEGER PRIMARY KEY CHECK(id=1), epoch INTEGER NOT NULL CHECK(epoch>=0))')
-            conn.execute('INSERT OR IGNORE INTO preference_state(id,epoch) VALUES(1,0)')
+            state = conn.execute("SELECT 1 FROM sqlite_master WHERE name='preference_state'").fetchone()
+            if state is None:
+                conn.execute('CREATE TABLE preference_state ('
+                             'id INTEGER PRIMARY KEY CHECK(id=1), epoch INTEGER NOT NULL CHECK(epoch>=0))')
+                conn.execute('INSERT INTO preference_state(id,epoch) VALUES(1,0)')
+        AccountPreferences._table(conn, 'preference_state')
         AccountPreferences._epoch(conn)
         conn.execute('PRAGMA user_version=2')
 
     @staticmethod
-    def _epoch(conn):
-        row = conn.execute('SELECT epoch FROM preference_state WHERE id=1').fetchone()
-        if row is None or type(row[0]) is not int or row[0] < 0:
+    def _table(conn, name):
+        expected = {
+            'selections': [('account', 'TEXT', 0, 1), ('selected', 'TEXT', 1, 0),
+                           ('revision', 'INTEGER', 1, 0)],
+            'preference_state': [('id', 'INTEGER', 0, 1), ('epoch', 'INTEGER', 1, 0)],
+        }
+        columns = conn.execute('PRAGMA table_info(' + name + ')').fetchall()
+        shape = [(row[1], row[2].upper(), row[3], row[5]) for row in columns]
+        table = conn.execute('SELECT type FROM sqlite_master WHERE name=?', (name,)).fetchone()
+        if table != ('table',) or shape != expected[name]:
             raise PreferencesError('preferences_invalid')
-        return row[0]
 
-    def _transaction(self, action):
-        conn = None
+    @staticmethod
+    def _epoch(conn):
+        rows = conn.execute('SELECT id,epoch FROM preference_state LIMIT 2').fetchall()
+        if len(rows) != 1 or type(rows[0][0]) is not int or rows[0][0] != 1 or not _integer(rows[0][1]):
+            raise PreferencesError('preferences_invalid')
+        return rows[0][1]
+
+    @staticmethod
+    def _rows(conn):
+        rows = conn.execute('SELECT account,selected,revision FROM selections LIMIT 9').fetchall()
+        if len(rows) > 8:
+            raise PreferencesError('preferences_invalid')
+        result = {}
+        for account, selected, revision in rows:
+            if (not isinstance(account, str) or not re.fullmatch(r'[a-f0-9]{64}', account)
+                    or account in result or not isinstance(selected, str) or len(selected) > 4096
+                    or not _integer(revision)):
+                raise PreferencesError('preferences_invalid')
+            try:
+                result[account] = (_selection(json.loads(selected)), revision)
+            except (ValueError, TypeError, RecursionError, PreferencesError):
+                raise PreferencesError('preferences_invalid') from None
+        return result
+
+    @staticmethod
+    def _file_info(info, private):
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                or info.st_size > _MAX_FILE_BYTES
+                or (private and stat.S_IMODE(info.st_mode) & 0o077)):
+            raise OSError()
+
+    def _safe_file(self, path, private, missing):
         try:
-            if self._directory.is_symlink() or self._path.is_symlink():
+            before = path.lstat()
+        except FileNotFoundError:
+            if missing:
+                return
+            raise
+        self._file_info(before, private)
+        try:
+            descriptor = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK | getattr(os, 'O_NOFOLLOW', 0))
+        except FileNotFoundError:
+            if missing:
+                return
+            raise
+        try:
+            info = os.fstat(descriptor)
+            self._file_info(info, private)
+            if (before.st_dev, before.st_ino) != (info.st_dev, info.st_ino):
                 raise OSError()
-            conn = sqlite3.connect(str(self._path), timeout=2)
+        finally:
+            os.close(descriptor)
+
+    def _safe_paths(self, private=True, missing=False):
+        for path in (self._directory,) + tuple(self._directory.parents):
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISDIR(info.st_mode):
+                raise OSError()
+            if path == self._directory and private and stat.S_IMODE(info.st_mode) & 0o077:
+                raise OSError()
+        self._safe_file(self._path, private, missing)
+        for suffix in ('-journal', '-wal', '-shm'):
+            self._safe_file(Path(str(self._path) + suffix), private=True, missing=True)
+
+    def _connect(self):
+        self._safe_paths()
+        conn = sqlite3.connect(self._path.as_uri() + '?mode=rw', timeout=2, uri=True)
+        try:
             conn.execute('PRAGMA synchronous=FULL')
             conn.execute('PRAGMA secure_delete=ON')
+            conn.execute('PRAGMA journal_mode=DELETE')
             conn.execute('PRAGMA max_page_count=256')
+            return conn
+        except sqlite3.Error:
+            conn.close()
+            raise
+
+    def _transaction(self, action, validate=True):
+        conn = None
+        try:
+            conn = self._connect()
             conn.execute('BEGIN IMMEDIATE')
+            if validate:
+                if conn.execute('PRAGMA user_version').fetchone()[0] != 2:
+                    raise PreferencesError('preferences_version_unsupported')
+                self._table(conn, 'selections')
+                self._table(conn, 'preference_state')
+                self._epoch(conn)
+                self._rows(conn)
             value = action(conn)
             conn.commit()
             return value
-        except (OSError, sqlite3.Error):
+        except (OSError, sqlite3.Error, ValueError, TypeError, OverflowError):
             raise PreferencesError('preferences_unavailable') from None
         finally:
             if conn is not None:
-                conn.close()
+                try:
+                    conn.close()
+                except sqlite3.Error:
+                    raise PreferencesError('preferences_unavailable') from None
 
     def snapshot(self, uuid):
         """Read clear epoch and ordered selection in one transaction."""
         account = _account_key(uuid)
         def read(conn):
             epoch = self._epoch(conn)
-            row = conn.execute('SELECT selected FROM selections WHERE account=?', (account,)).fetchone()
-            if row is None:
-                return epoch, []
-            if not isinstance(row[0], str) or len(row[0]) > 4096:
-                raise PreferencesError('preferences_invalid')
-            try:
-                return epoch, _selection(json.loads(row[0]))
-            except (ValueError, TypeError, RecursionError, PreferencesError):
-                raise PreferencesError('preferences_invalid') from None
+            return epoch, self._rows(conn).get(account, ([], 0))[0]
         return self._transaction(read)
 
     def load(self, uuid):
@@ -135,14 +242,17 @@ class AccountPreferences:
 
     def save(self, uuid, keys, expected_epoch=None):
         """Return False without writing if a clear invalidated the caller's epoch."""
-        if expected_epoch is not None and (type(expected_epoch) is not int or expected_epoch < 0):
+        if expected_epoch is not None and not _integer(expected_epoch):
             raise PreferencesError('invalid_preference_epoch')
         account = _account_key(uuid)
         selected = json.dumps(_selection(keys), separators=(',', ':'))
         def write(conn):
             if expected_epoch is not None and self._epoch(conn) != expected_epoch:
                 return False
-            revision = conn.execute('SELECT COALESCE(MAX(revision),0)+1 FROM selections').fetchone()[0]
+            revision = max((row[1] for row in self._rows(conn).values()), default=0)
+            if revision == _MAX_INTEGER:
+                raise PreferencesError('preferences_revision_exhausted')
+            revision += 1
             conn.execute('INSERT OR REPLACE INTO selections(account,selected,revision) VALUES(?,?,?)',
                          (account, selected, revision))
             conn.execute('DELETE FROM selections WHERE account NOT IN '
@@ -153,14 +263,19 @@ class AccountPreferences:
     def clear(self, uuid):
         account = _account_key(uuid)
         def clear_account(conn):
-            conn.execute('UPDATE preference_state SET epoch=epoch+1 WHERE id=1')
-            self._epoch(conn)
+            self._advance_epoch(conn)
             conn.execute('DELETE FROM selections WHERE account=?', (account,))
         self._transaction(clear_account)
 
     def clear_all(self):
         def clear_profile(conn):
-            conn.execute('UPDATE preference_state SET epoch=epoch+1 WHERE id=1')
-            self._epoch(conn)
+            self._advance_epoch(conn)
             conn.execute('DELETE FROM selections')
         self._transaction(clear_profile)
+
+    @staticmethod
+    def _advance_epoch(conn):
+        epoch = AccountPreferences._epoch(conn)
+        if epoch == _MAX_INTEGER:
+            raise PreferencesError('preferences_epoch_exhausted')
+        conn.execute('UPDATE preference_state SET epoch=? WHERE id=1', (epoch + 1,))

@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.12 development batch (video add-on 0.12.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.13 development batch (video add-on 0.13.0, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -26,9 +26,9 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive | Application registration, public ID/redirect URI, actual login/refresh and TV storage/TLS verification |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Application registration, public ID/redirect URI, actual login/refresh and TV storage/TLS verification |
 | T02 | Account connect/cancel/switch/disconnect UI | Controller and injected dialog adapter inactive (0.12); setup guidance implemented | Wire UI only after activation gates; verify revocation/privacy wording and recovery on TV |
-| T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive | Choose real lists and verify live account isolation, paging and restart behavior |
+| T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; storage and migration guards hardened (0.13) | Choose real lists and verify live account isolation, paging and restart behavior |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
 | T05 | Live Trakt read views | Pending | Enable after registration, transport and device checks |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
@@ -61,8 +61,8 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.11 publication and HTTP integrity verified | 0.12 publication follows merge; cloud checks do not prove TV installation |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.11 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.12 publication and HTTP integrity verified | 0.13 publication follows merge; cloud checks do not prove TV installation |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.12 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented | Manual issue triage; no automatic update PRs or PR comments |
@@ -72,21 +72,23 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current combined batch: 0.12
+## Current combined batch: 0.13
 
-Parallel scope: explicit Trakt/Real-Debrid assemblies with shared request limits,
-provider-compatible account interaction, an injected device-login dialog adapter,
-and a separately confirmed on-device synthetic private-storage check.
-Construction performs local private-store setup only; imports and constructors do
-not contact providers. No Kodi connection route, real account, playback, scrobbling
-or persistent metadata cache is enabled. Trakt mutation requests remain disabled in
-the assembly.
+Parallel scope: harden the existing Trakt credential and preference stores, protect
+demo state reads and atomic saves from unsafe filesystem targets, and test the
+assembled services against legacy stores and subsequent filesystem changes.
+Valid saved credentials and list selections remain compatible. Malformed private
+stores fail without automatic reset, deletion or a network fallback. See
+[storage boundaries](storage-boundaries.md) for guarantees and limitations.
+No real account, playback, scrobbling or persistent metadata cache is enabled;
+Trakt mutation requests remain disabled in the assembly.
 
-Video 0.11.0 and repository 0.2.0 deployed from merge commit
-`96f2e307db4d5e9bffd0d8b7937d619816dd99e8`. The
-[publication run](https://github.com/susanto-dev/homefx/actions/runs/43341996914)
-passed build, deployment and public-byte verification. HTTP checks never establish Kodi installation or
-upgrade acceptance. This batch prepares video 0.12.0 and preserves published archives.
+Video 0.12.0 and repository 0.2.0 deployed from merge commit
+`4fbc5b3a34bfb76c5aac3fce5646814b82f7a7b0`. The
+[publication run](https://github.com/susanto-dev/homefx/actions/runs/43349117123)
+passed build, deployment and public-byte verification. HTTP checks never establish
+Kodi installation or upgrade acceptance. This batch prepares video 0.13.0 and
+preserves all six prior archive records and bytes.
 
 ## External inputs and decisions
 
