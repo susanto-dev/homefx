@@ -40,7 +40,7 @@ Download snapshot checked on **13 November 2026**:
 
 - Repository installer: [repository.homefx-0.2.0.zip](https://susanto-dev.github.io/homefx/repository.homefx-0.2.0.zip).
 - Video add-on: **HomeFX Preview 0.17.2**. Its separate manual download is
-  [plugin.video.homefx-0.17.2.zip](https://susanto-dev.github.io/homefx/plugin.video.homefx-0.17.2.zip).
+  [plugin.video.homefx-0.17.2.zip](https://susanto-dev.github.io/homefx/repository/plugin.video.homefx/plugin.video.homefx-0.17.2.zip).
 
 Start with the **repository ZIP**, not the video ZIP. The repository is Kodi's
 installation and update source for HomeFX. Later releases may advertise a newer
