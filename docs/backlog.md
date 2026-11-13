@@ -1,6 +1,6 @@
 # Complete project backlog
 
-Status at the 0.16.0 widget preparation (video add-on 0.16.0, repository add-on 0.2.0). **Implemented** means source and automated
+Status at the 0.16.1 journey integration repair (video add-on 0.16.1, repository add-on 0.2.0). **Implemented** means source and automated
 checks exist; it never means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -61,10 +61,10 @@ provider or release choice. The current public add-on remains synthetic.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.15.0 publication and HTTP integrity verified | 0.16.0 pending review/merge/publication |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.15.0 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.16.0 publication and HTTP integrity verified | 0.16.1 repair pending review/merge/publication; TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.16.0 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
-| Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate test reports and focused boundary regressions added | Continue regression coverage; cloud tests never replace TV tests |
+| Q01 | Python 3.8/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
 | Q03 | Full Kodi add-on checker, pinned linter, package hash lock | Pinned Ruff correctness gate and dependency hash locks implemented (0.9); source manifest contracts strengthened; official checker pending | Full checker blocked on reviewed secure/offline input and compatible repository schema; diagnostic schema checks are not a full pass |
 | Q04 | Device readiness and sanitized test checklist | Implemented; optional synthetic private-storage check added (0.12); TV results pending | Provide safe version fields and observations; no full backup or secrets needed |
@@ -72,13 +72,21 @@ provider or release choice. The current public add-on remains synthetic.
 | G02 | Third-party source/assets and service compliance | Ongoing gate | Verify exact licence/compatibility before reuse; no upstream source/assets copied |
 | G03 | Public repository neutrality and secret hygiene | Implemented practice | Keep credentials/private watch data out of source, artifacts, logs and public discussion |
 
-## Current focused batch: 0.16.0 account-bound widget preparation
+## Current focused batch: 0.16.1 journey integration repair
 
-The 0.15.0 merge, validation, publication and hosted bytes are verified. This batch
-adds durable opaque references and an inactive read-only Kodi-shaped renderer for
-selected lists, series/season navigation and metadata details. The same bound list
-route supplies full-folder access independent of skin heading clickability.
-Public preview routes remain unchanged; no login or service activation is enabled.
+The 0.16.0 merge, validation, publication and hosted bytes are verified. The current
+batch joins the actual service factory, transport, account dialogs/flow, list chooser
+and widget renderer using fabricated HTTPS framing and temporary private stores.
+A fresh factory and fresh UI objects exercise restart persistence independently
+of invocation-memory caches. Cancellation, account changes, refresh and disconnect
+remain part of the integration boundary.
+
+The joined tests exposed renderer cancellation being lost when the progress
+dialog closed. The repair preserves cancellation before cleanup and prevents
+a cancelled read from becoming an offline result or successful directory.
+Public preview routes and all twelve earlier release archives remain unchanged.
+This is stronger automated evidence, not live activation or a Kodi test.
+Registration and actual-device gates still apply.
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|

@@ -122,6 +122,7 @@ class WidgetDirectoryUI:
     def render(self, library, handle, query, widget=False):
         result, staged, guard = ListResult('failed'), [], None
         details, detail_rows = False, []
+        cleanup_failed = False
         try:
             if type(handle) is not int or handle < 0 or type(widget) is not bool:
                 raise ValueError('invalid_ui_configuration')
@@ -156,12 +157,21 @@ class WidgetDirectoryUI:
         except Exception:
             result = ListResult('failed')
         finally:
+            # Closing releases the progress object and its cancellation flag.
+            # Preserve the user's decision before cleanup, including read errors.
+            try:
+                if self.cancelled():
+                    result = ListResult('cancelled')
+            except Exception:
+                cleanup_failed = True
+                result = ListResult('failed')
             try:
                 self._close()
             except Exception:
+                cleanup_failed = True
                 result = ListResult('failed')
         try:
-            if self.cancelled():
+            if not cleanup_failed and self.cancelled():
                 result = ListResult('cancelled')
             successful = result.state in {'ready', 'empty', 'partial'}
             if successful:
