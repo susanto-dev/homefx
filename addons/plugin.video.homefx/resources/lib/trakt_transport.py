@@ -232,6 +232,7 @@ class Transport:
                    r"/users/" + slug + r"/lists/" + slug + r"/items",
                    r"/sync/playback", r"/shows/[1-9][0-9]{0,19}/progress/watched",
                    r"/shows/[1-9][0-9]{0,19}/seasons/[0-9]{1,5}",
+                   r"/shows/[1-9][0-9]{0,19}/seasons",
                    r"/search/(?:movie|show)", r"/movies/[1-9][0-9]{0,19}/related")
         if not any(re.fullmatch(pattern, parsed.path) for pattern in allowed):
             raise TransportError("invalid_request")
@@ -257,6 +258,13 @@ class Transport:
             raise TransportError("invalid_request")
         if related and set(fields) != {"page", "limit"}:
             raise TransportError("invalid_request")
+        seasons = bool(re.fullmatch(r"/shows/[1-9][0-9]{0,19}/seasons", parsed.path))
+        progress = bool(re.fullmatch(r"/shows/[1-9][0-9]{0,19}/progress/watched", parsed.path))
+        if seasons and fields != {"extended": "full"}:
+            raise TransportError("invalid_request")
+        if progress and (set(fields) != {"hidden", "specials"}
+                         or fields["hidden"] != "false" or fields["specials"] not in {"false", "true"}):
+            raise TransportError("invalid_request")
         for key, value in query:
             if key in {"page", "limit"}:
                 valid = bool(re.fullmatch(r"[1-9][0-9]{0,2}", value)) and int(value) <= 100
@@ -264,6 +272,8 @@ class Transport:
                 valid = key in {"query", "fields"}
             else:
                 valid = (key, value) in {("extended", "full"), ("hidden", "false"), ("specials", "false")}
+                if progress and (key, value) == ("specials", "true"):
+                    valid = True
             if not valid:
                 raise TransportError("invalid_request")
 

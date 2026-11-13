@@ -106,6 +106,72 @@ class AdapterTests(unittest.TestCase):
         self.assertIn('Umbrella version: unavailable; handoff untested', report)
         self.assertNotIn(self.temp.name, report)
 
+    def test_widget_setup_has_no_profile_account_network_or_player_access(self):
+        def forbidden(*args, **kwargs):
+            raise AssertionError('Private or player access forbidden')
+        class NoInfoAddon:
+            def getAddonInfo(self, key):
+                forbidden()
+        self.modules['xbmcaddon'].Addon = NoInfoAddon
+        self.modules['xbmcvfs'].translatePath = forbidden
+        self.modules['xbmc'].Player = forbidden
+        with patch.object(state, 'load', side_effect=forbidden), \
+                patch('sqlite3.connect', side_effect=forbidden), \
+                patch('socket.create_connection', side_effect=forbidden):
+            self.run_route('widget_setup')
+        self.assertEqual(len(self.messages), 2)
+        self.assertIn('one list folder per row', self.messages[0])
+        self.assertIn('Clickable widget headings depend on your skin', self.messages[1])
+        self.assertIn('no media will play', self.messages[1])
+        self.assertEqual((self.rows, self.ends, self.commands), ([], [], []))
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_widget_setup_only_in_root_and_rejects_extra_parameters(self):
+        self.run_route()
+        rows = [(url, folder) for url, item, folder in self.rows
+                if item.label == 'Widget setup…']
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0][1])
+        self.assertEqual(routes.parse(urlsplit(rows[0][0]).query), ('widget_setup', {}))
+        self.run_route('widgets')
+        self.assertNotIn('widget_setup', [routes.parse(urlsplit(url).query)[0]
+                                         for url, _, _ in self.rows])
+        for extra in ('id=private', 'q=secret', 'value=1', 'url=plugin%3A%2F%2Fother',
+                      'route=home'):
+            with self.assertRaises(ValueError):
+                routes.parse('route=widget_setup&' + extra)
+
+    def test_repository_readiness_uses_explicit_presence_and_version_only(self):
+        reads = []
+        class VersionAddon:
+            def __init__(self, addon_id='plugin.video.homefx'):
+                self.addon_id = addon_id
+            def getAddonInfo(self, key):
+                reads.append((self.addon_id, key))
+                if key != 'version':
+                    raise AssertionError('Only version may be read')
+                return '0.2.0' if self.addon_id == 'repository.homefx' else '1.2.3'
+        self.modules['xbmcaddon'].Addon = VersionAddon
+        conditions = []
+        def installed(condition):
+            conditions.append(condition)
+            return True
+        self.modules['xbmc'].getCondVisibility = installed
+        with patch.object(state, 'load', side_effect=AssertionError('Profile forbidden')):
+            self.run_route('readiness')
+        self.assertEqual(conditions, ['System.HasAddon(repository.homefx)'])
+        self.assertIn(('repository.homefx', 'version'), reads)
+        self.assertIn('HomeFX repository: 0.2.0', self.messages[-1])
+        reads.clear()
+        self.modules['xbmc'].getCondVisibility = lambda condition: False
+        self.run_route('readiness')
+        self.assertNotIn(('repository.homefx', 'version'), reads)
+        self.assertIn('HomeFX repository: not installed', self.messages[-1])
+        self.modules['xbmc'].getCondVisibility = lambda condition: 'unexpected private text'
+        self.run_route('readiness')
+        self.assertIn('HomeFX repository: unavailable', self.messages[-1])
+        self.assertNotIn('unexpected private text', self.messages[-1])
+
     def test_playback_setup_is_information_only_before_any_profile_or_account_access(self):
         def forbidden(*args, **kwargs):
             raise AssertionError('Account, profile and playback access forbidden')
@@ -402,7 +468,7 @@ class AdapterTests(unittest.TestCase):
 
     def test_legacy_empty_id_widget_urls_remain_navigable(self):
         for route in ('home', 'continue', 'next', 'upcoming', 'search', 'select',
-                      'reset', 'setup', 'readiness', 'widgets', 'upcoming_movies', 'playback_setup'):
+                      'reset', 'setup', 'readiness', 'widgets', 'upcoming_movies', 'playback_setup', 'widget_setup'):
             with self.subTest(route=route):
                 self.assertEqual(routes.parse('route=' + route + '&id='), (route, {}))
         for route in ('continue', 'next', 'upcoming'):

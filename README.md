@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.9.0
+## Current preview: 0.10.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
@@ -19,7 +19,7 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.9.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+Version 0.10.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
 account/session coordination, a cancellable account-flow controller, saved account-list
 preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is
@@ -67,3 +67,9 @@ Repository installation and upgrades on the TV are not yet verified.
 Original code currently carries the existing MIT licence. The owner's final licence
 preference remains pending. No third-party code reuse is authorized by that licence.
 NBA and a separate Android application are outside scope.
+
+
+The 0.10 preview adds **Widget setup** guidance and the installed HomeFX repository
+version to **Device readiness**. See [widget setup](docs/widget-setup.md). Complete-series
+Trakt views and playback event observation are inactive foundations tested with
+fabricated responses, not live account or player features.

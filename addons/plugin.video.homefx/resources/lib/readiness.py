@@ -32,7 +32,17 @@ def _read(probe):
         return UNAVAILABLE
 
 
-def report(homefx_version, kodi_version, provider_version, *,
+def _repository(probe):
+    if probe is None:
+        return UNAVAILABLE
+    try:
+        value = probe()
+        return "not installed" if value is None else _version(value)
+    except Exception:
+        return UNAVAILABLE
+
+
+def report(homefx_version, kodi_version, provider_version, *, repository_version=None,
            importer=importlib.import_module, python_version=sys.version_info,
            os_name=os.name, private_file_mode=hasattr(os, "fchmod")):
     """Probe only specified local capabilities; callback errors never become output."""
@@ -62,6 +72,7 @@ def report(homefx_version, kodi_version, provider_version, *,
     lines = [
         "Local runtime information only",
         "HomeFX: " + _read(homefx_version),
+        "HomeFX repository: " + _repository(repository_version),
         "Kodi: " + _read(kodi_version),
         "Python: " + _numbers(python_version),
         "SQLite version: " + sqlite_version,

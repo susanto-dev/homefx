@@ -100,3 +100,11 @@ Install all hash-locked tool inventories for the complete suite; run `tools/chec
 and `tools/release_history.py releases/inventory.json --base-ref <review-base>` as well.
 The full official Kodi add-on checker remains pending for the reasons in
 [tooling licences](tooling-licenses.md).
+
+The 0.10 suite exercises complete-series joins across actual session, token-store,
+client and library boundaries with fabricated provider responses. It checks known
+count mismatch, unexpected pagination, request/row bounds, unknown watched status,
+explicit specials, and refresh/account changes during a compound read. Playback
+observation tests separate dispatch from AV start and never infer watched completion.
+Widget setup tests verify fixed routes and local repository-version reporting before
+profile access. These remain mocked or local checks, not TV or live-service evidence.

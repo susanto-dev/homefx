@@ -88,3 +88,9 @@ permission. Network and player adapters must enforce the remaining boundaries.
 Kodi distinguishes a playback request from available audiovisual playback; see its
 [official player callback documentation](https://xbmc.github.io/docs.kodi.tv/master/kodi-dev-kit/group__python___player_c_b.html).
 That reference is current development documentation, not a device test of Kodi 21.2.
+
+
+The inactive [playback event observer](playback-events.md) distinguishes a dispatched
+request from AV start, pause/resume and terminal callbacks. It supplies observations
+only: completion thresholds, scrobbling ownership and the real Kodi adapter remain
+open. An ended event is not a successful watched-state update.

@@ -184,3 +184,21 @@ keeping full-SHA external Action pins and weekly manual update triage. The offic
 Kodi add-on checker is still a documented coverage gap. Existing MIT notices and the
 pending final owner licence preference remain unchanged; no paid service or runtime
 third-party Python dependency is added.
+
+
+## Complete-series browsing and playback observations (0.10)
+
+Extend the existing series workflow with bounded complete-series reads. Regular
+seasons are the default scope; specials require an explicit option and never become
+an implicit automatic-playback choice. Missing watched evidence stays unknown,
+and a failed or incomplete compound read cannot become a successful partial list.
+Full browsing keeps season/episode order; aired-unwatched results put paused items
+first and then order by air date. These are metadata views, not playable catalogues.
+
+Playback observation is a separate inactive state machine. Dispatch acceptance does
+not establish AV start; end callbacks do not establish a watched threshold. No new
+completion threshold, scrobbling owner, resume reconciliation policy or automatic
+next-playback behavior is chosen here. All need explicit integration acceptance.
+
+The existing skin remains in use. In-app widget setup and safe repository version
+information help collect device evidence without importing backups or private data.

@@ -591,3 +591,144 @@ class PersistentLibraryTests(unittest.TestCase):
         with self.assertRaisesRegex(AuthError, 'preferences_unavailable'):
             self.library.disconnect()
         self.assertEqual(self.store.snapshot().state, 'disconnected')
+
+
+class CompleteSeriesTests(unittest.TestCase):
+    """A fake session exposes deliberate account changes between component reads."""
+    def setUp(self):
+        from copy import deepcopy
+        self.calls = []
+        self.generation = 1
+        self.revision = 0
+        self.responses = {
+            ("show_seasons", 10): {"show_id": 10, "seasons": [
+                {"number": n, "ids": {"trakt": 100 + n}} for n in (2, 0, 1)]},
+            ("show_progress", 10, False): {"show_id": 10, "progress": {"seasons": [
+                {"number": 1, "episodes": [{"number": 1, "completed": False}]},
+                {"number": 2, "episodes": [{"number": 1, "completed": True}]}]}},
+            ("paused",): [],
+        }
+        for season in (0, 1, 2):
+            self.responses[("season_episodes", 10, season)] = {"show_id": 10, "episodes": [{
+                "season": season, "number": 1, "ids": {"trakt": 200 + season},
+                "title": "Synthetic", "first_aired": "2026-11-01T00:00:00Z"}]}
+        self.hook = lambda key: None
+        owner = self
+
+        class FakeSession:
+            @property
+            def data_revision(self):
+                return owner.revision
+
+            def cache_key(self):
+                return owner.generation
+
+            def assert_current(self, generation):
+                if generation != owner.generation:
+                    raise AuthError("session_changed")
+
+            def read(self, operation, *args):
+                key = (operation,) + args
+                owner.calls.append(key)
+                value = deepcopy(owner.responses[key])
+                owner.hook(key)
+                return value
+
+        self.library = Library(FakeSession())
+        self.now = datetime(2026, 11, 12, tzinfo=timezone.utc)
+
+    def test_complete_regular_series_one_progress_pause_and_cached_copies(self):
+        result = self.library.series_view(10, now=self.now)
+        self.assertEqual([row["season"] for row in result], [1, 2])
+        self.assertEqual([row["watched"] for row in result], [False, True])
+        self.assertEqual(self.calls, [("show_seasons", 10), ("season_episodes", 10, 1),
+            ("season_episodes", 10, 2), ("show_progress", 10, False), ("paused",)])
+        result[0]["title"] = "Changed copy"
+        self.assertEqual(self.library.series_view(10, now=self.now,
+            episode_filter="aired_unwatched")[0]["title"], "Synthetic")
+        self.assertEqual(len(self.calls), 5)
+        self.assertEqual(len(self.library.series_seasons(10, now=self.now)), 2)
+
+    def test_specials_require_optin_and_matching_progress_scope(self):
+        self.responses[("show_progress", 10, True)] = self.responses[("show_progress", 10, False)]
+        rows = self.library.series_view(10, now=self.now, include_specials=True)
+        self.assertEqual([row["season"] for row in rows], [0, 1, 2])
+        self.assertIsNone(rows[0]["watched"])
+        self.assertIn(("show_progress", 10, True), self.calls)
+        self.assertFalse(rows[0]["aired_unwatched"])
+
+    def test_invalid_inputs_do_not_activate_or_request(self):
+        for values in ({"show_id": True}, {"show_id": 0}, {"show_id": 10, "include_specials": 1},
+                       {"show_id": 10, "episode_filter": []}, {"show_id": 10, "now": 0}):
+            with self.subTest(values=values), self.assertRaises(ApiError):
+                self.library.series_view(**values)
+        self.assertEqual(self.calls, [])
+
+    def test_budgets_fail_without_partial_result_and_clear_cache(self):
+        self.responses[("show_seasons", 10)]["seasons"] = [
+            {"number": n, "ids": {"trakt": n}} for n in range(1, 52)]
+        with self.assertRaisesRegex(ApiError, "series_limit_exceeded"):
+            self.library.series_view(10)
+        self.assertEqual(self.calls, [("show_seasons", 10)])
+        self.responses[("show_seasons", 10)]["seasons"] = [{"number": 1, "ids": {"trakt": 1}}]
+        self.responses[("season_episodes", 10, 1)]["episodes"] *= 5001
+        with self.assertRaisesRegex(ApiError, "series_limit_exceeded"):
+            self.library.series_view(10)
+        self.assertIsNone(self.library._generation)
+        self.assertNotIn(("paused",), self.calls)
+
+    def test_bad_wrappers_duplicates_and_season_mismatch_fail_closed(self):
+        from copy import deepcopy
+        original = deepcopy(self.responses)
+        changes = [(("show_seasons", 10), {"show_id": 20, "seasons": []}),
+                   (("show_seasons", 10), {"show_id": 10, "seasons": [
+                       {"number": 1, "ids": {"trakt": 1}}, {"number": 1, "ids": {"trakt": 2}}]}),
+                   (("season_episodes", 10, 1), {"show_id": 10, "episodes": [{"season": 2}]}),
+                   (("season_episodes", 10, 2), deepcopy(original[("season_episodes", 10, 1)]))]
+        for key, value in changes:
+            self.responses = deepcopy(original)
+            self.responses[key] = value
+            with self.subTest(key=key), self.assertRaises(ApiError):
+                self.library.series_view(10)
+            self.assertIsNone(self.library._generation)
+
+    def test_account_revision_and_read_failure_abort_the_entire_join(self):
+        for failure in ("account", "revision", "error"):
+            self.library.clear()
+            self.calls.clear()
+
+            def change(key):
+                if key == ("season_episodes", 10, 2):
+                    if failure == "account":
+                        self.generation += 1
+                    elif failure == "revision":
+                        self.revision += 1
+                    else:
+                        raise ApiError("cancelled")
+            self.hook = change
+            with self.subTest(failure=failure), self.assertRaises((AuthError, ApiError)):
+                self.library.series_view(10)
+            self.assertIsNone(self.library._generation)
+            self.assertNotIn(("show_progress", 10, False), self.calls)
+
+
+    def test_advertised_count_mismatch_and_cross_season_duplicate_fail_closed(self):
+        self.responses[("show_seasons", 10)]["seasons"][-1]["episode_count"] = 2
+        with self.assertRaisesRegex(ApiError, "incomplete_series"):
+            self.library.series_view(10)
+        self.assertEqual(self.calls, [("show_seasons", 10), ("season_episodes", 10, 1)])
+        self.responses[("show_seasons", 10)]["seasons"][-1]["episode_count"] = 1
+        self.responses[("season_episodes", 10, 2)]["episodes"][0]["ids"]["trakt"] = 201
+        with self.assertRaisesRegex(ApiError, "duplicate_metadata"):
+            self.library.series_view(10)
+        self.assertIsNone(self.library._generation)
+
+    def test_summary_generation_is_rechecked_after_derivation(self):
+        from unittest.mock import patch
+        def summarize(rows):
+            self.generation += 1
+            return []
+        with patch("resources.lib.trakt_library.trakt_views.season_summaries", side_effect=summarize):
+            with self.assertRaisesRegex(AuthError, "session_changed"):
+                self.library.series_seasons(10)
+        self.assertIsNone(self.library._generation)

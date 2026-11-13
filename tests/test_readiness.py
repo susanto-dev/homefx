@@ -89,6 +89,23 @@ class ReadinessTests(unittest.TestCase):
             self.context.cert_store_stats = lambda: {'x509_ca': value}
             self.assertIn('Trusted CA count: unavailable', self.report())
 
+    def test_repository_absence_is_distinct_from_unavailable_or_invalid_version(self):
+        self.assertIn('HomeFX repository: unavailable', self.report())
+        self.assertIn('HomeFX repository: not installed',
+                      self.report(repository_version=lambda: None))
+        self.assertIn('HomeFX repository: 0.2.0',
+                      self.report(repository_version=lambda: '0.2.0'))
+        def failure():
+            raise RuntimeError('/private/account/token')
+        self.assertIn('HomeFX repository: unavailable',
+                      self.report(repository_version=failure))
+        for value in ('/private/token', '0.2.0\nsecret', 'https://secret', True,
+                      '', 'x' * 10000, {'token': 'secret'}):
+            report = self.report(repository_version=lambda: value)
+            self.assertIn('HomeFX repository: unavailable', report)
+            self.assertNotIn('secret', report)
+            self.assertNotIn('/private', report)
+
 
 if __name__ == '__main__':
     unittest.main()

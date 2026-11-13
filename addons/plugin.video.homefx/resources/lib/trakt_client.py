@@ -72,6 +72,50 @@ def metadata_id(value):
     return value
 
 
+def progress_arguments(show_id, include_specials=False):
+    show_id = metadata_id(show_id)
+    if type(include_specials) is not bool:
+        raise ApiError("invalid_identifier")
+    return show_id, include_specials
+
+
+def season_arguments(show_id, season):
+    show_id = metadata_id(show_id)
+    if type(season) is not int or not 0 <= season <= 10000:
+        raise ApiError("invalid_identifier")
+    return show_id, season
+
+
+def _season_rows(items, maximum):
+    """Project season metadata; counts never establish watched or playable state."""
+    if not isinstance(items, list) or len(items) > min(maximum, 1000):
+        raise ApiError("invalid_metadata")
+    rows, numbers, identifiers = [], set(), set()
+    for item in items:
+        if not isinstance(item, dict) or not isinstance(item.get("ids"), dict):
+            raise ApiError("invalid_metadata")
+        number, ident = item.get("number"), metadata_id(item["ids"].get("trakt"))
+        if (type(number) is not int or not 0 <= number <= 10000
+                or number in numbers or ident in identifiers):
+            raise ApiError("invalid_metadata")
+        row = {"number": number, "ids": {"trakt": ident}}
+        for key in ("episode_count", "aired_episodes"):
+            value = item.get(key)
+            if value is not None and (type(value) is not int or not 0 <= value <= 10000):
+                raise ApiError("invalid_metadata")
+            row[key] = value
+        for key, maximum_length in (("title", 1024), ("first_aired", 64)):
+            value = item.get(key)
+            if value is not None and (not isinstance(value, str) or len(value) > maximum_length
+                    or any(unicodedata.category(c).startswith("C") for c in value)):
+                raise ApiError("invalid_metadata")
+            row[key] = value
+        rows.append(row)
+        numbers.add(number)
+        identifiers.add(ident)
+    return rows
+
+
 def metadata_rows(items, kind, wrapped=False):
     """Project basic title metadata without inferring release or watched state."""
     if not isinstance(items, list) or len(items) > 10000:
@@ -275,18 +319,27 @@ class Client:
     def paused(self):
         return self._pages("/sync/playback")
 
-    def show_progress(self, show_id):
-        ident = _positive_id(show_id)
-        body = self._get("/shows/" + str(ident) + "/progress/watched?hidden=false&specials=false").body
+    def show_seasons(self, show_id):
+        ident = metadata_id(show_id)
+        response = self._get("/shows/" + str(ident) + "/seasons?extended=full")
+        if any(str(key).lower().startswith("x-pagination-") for key in response.headers):
+            raise ApiError("invalid_pagination")
+        return {"show_id": ident, "seasons": _season_rows(response.body, self.max_items)}
+
+    def show_progress(self, show_id, include_specials=False):
+        ident, include_specials = progress_arguments(show_id, include_specials)
+        specials = "true" if include_specials else "false"
+        body = self._get("/shows/" + str(ident) + "/progress/watched?hidden=false&specials=" + specials).body
         if not isinstance(body, dict) or not isinstance(body.get("seasons"), list):
             raise ApiError("invalid_response")
         return {"show_id": ident, "progress": body}
 
     def season_episodes(self, show_id, season):
-        ident = _positive_id(show_id)
-        if type(season) is not int or not 0 <= season <= 10000:
-            raise ApiError("invalid_identifier")
-        body = self._get("/shows/" + str(ident) + "/seasons/" + str(season) + "?extended=full").body
+        ident, season = season_arguments(show_id, season)
+        response = self._get("/shows/" + str(ident) + "/seasons/" + str(season) + "?extended=full")
+        if any(str(key).lower().startswith("x-pagination-") for key in response.headers):
+            raise ApiError("invalid_pagination")
+        body = response.body
         if (not isinstance(body, list) or len(body) > self.max_items or
                 any(not isinstance(row, dict) for row in body)):
             raise ApiError("invalid_response")
