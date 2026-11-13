@@ -381,6 +381,84 @@ class AdapterTests(unittest.TestCase):
         self.run_route('select')
         self.assertEqual(self.commands, [])
 
+    def test_selection_applies_to_latest_state_after_other_edits_during_dialog(self):
+        path = Path(self.temp.name) / 'demo.json'
+        def choose(dialog, title, labels, preselect):
+            state.update(path, 'watched', key='m1', value=True)
+            state.update(path, 'collect', key='m2', value=True)
+            return [0]
+        with patch.object(self.modules['xbmcgui'].Dialog, 'multiselect', choose):
+            self.run_route('select')
+        self.assertEqual(state.load(path), {'watched': {'m1': True},
+                         'selected': ['weekend'], 'saved_movies': ['m2']})
+        self.assertEqual(self.commands, ['Container.Refresh'])
+
+    def test_cancelled_selection_preserves_edits_made_during_dialog(self):
+        path = Path(self.temp.name) / 'demo.json'
+        def cancel(dialog, title, labels, preselect):
+            state.update(path, 'select', selected=['saved'])
+            state.update(path, 'watched', key='m1', value=True)
+            return None
+        with patch.object(self.modules['xbmcgui'].Dialog, 'multiselect', cancel):
+            self.run_route('select')
+        self.assertEqual(state.load(path), {'watched': {'m1': True},
+                         'selected': ['saved'], 'saved_movies': []})
+        self.assertEqual((self.commands, self.messages), ([], []))
+
+    def test_collection_confirmation_preserves_unrelated_concurrent_updates(self):
+        path = Path(self.temp.name) / 'demo.json'
+        state.update(path, 'collect', key='m3', value=True)
+        def confirm(dialog, title, text):
+            state.update(path, 'select', selected=['saved'])
+            state.update(path, 'watched', key='m1', value=True)
+            state.update(path, 'collect', key='m2', value=True)
+            return True
+        with patch.object(self.modules['xbmcgui'].Dialog, 'yesno', confirm):
+            self.run_route('collect', id='m3', value='0')
+        self.assertEqual(state.load(path), {'watched': {'m1': True},
+                         'selected': ['saved'], 'saved_movies': ['m2']})
+        self.assertEqual(self.commands, ['Container.Refresh'])
+
+    def test_stale_remove_route_still_requires_confirmation_for_concurrent_addition(self):
+        path = Path(self.temp.name) / 'demo.json'
+        def cancel(dialog, title, text):
+            state.update(path, 'collect', key='m3', value=True)
+            return False
+        with patch.object(self.modules['xbmcgui'].Dialog, 'yesno', cancel):
+            self.run_route('collect', id='m3', value='0')
+        self.assertEqual(state.load(path)['saved_movies'], ['m3'])
+        self.assertEqual((self.commands, self.messages), ([], []))
+
+    def test_confirmed_reset_deliberately_clears_latest_state(self):
+        path = Path(self.temp.name) / 'demo.json'
+        def confirm(dialog, title, text):
+            state.update(path, 'select', selected=['saved'])
+            state.update(path, 'watched', key='m1', value=True)
+            state.update(path, 'collect', key='m2', value=True)
+            return True
+        with patch.object(self.modules['xbmcgui'].Dialog, 'yesno', confirm):
+            self.run_route('reset')
+        self.assertEqual(state.load(path), {'watched': {},
+                         'selected': list(state.LISTS), 'saved_movies': []})
+        self.assertEqual(self.commands, ['Container.Refresh'])
+
+    def test_busy_mutations_never_report_success_or_refresh(self):
+        path = Path(self.temp.name) / 'demo.json'
+        state.update(path, 'collect', key='m3', value=True)
+        before = path.read_bytes()
+        for route, params in [('select', {}), ('watched', {'id': 'm1', 'value': '1'}),
+                              ('collect', {'id': 'm3', 'value': '0'}), ('reset', {})]:
+            with self.subTest(route=route):
+                self.messages.clear()
+                with patch.object(state, 'update', side_effect=OSError('busy/private/path')):
+                    self.run_route(route, **params)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(self.commands, [])
+                self.assertEqual(len(self.messages), 1)
+                self.assertIn('Unable to complete', self.messages[0])
+                self.assertNotIn('busy/private/path', self.messages[0])
+                self.assertEqual(self.ends, [{'succeeded': False}])
+
     def test_setup_is_information_only_without_network_or_token_storage(self):
         with patch('socket.create_connection', side_effect=AssertionError('Unexpected network')):
             self.run_route('setup')
@@ -520,7 +598,7 @@ class AdapterTests(unittest.TestCase):
         self.assertFalse(self.ends[-1]['succeeded'])
 
     def test_failed_profile_write_does_not_disclose_private_path(self):
-        with patch.object(state, 'save', side_effect=OSError('/private/user/profile/token.sqlite')):
+        with patch.object(state, 'update', side_effect=OSError('/private/user/profile/token.sqlite')):
             self.run_route('watched', id='m1', value='1')
         self.assertFalse(self.ends[-1]['succeeded'])
         self.assertNotIn('/private', self.messages[-1])

@@ -33,10 +33,10 @@ scrobbling acceptance is part of this milestone.
 
 ## Current device candidate and timing record
 
-Use the already published **video 0.17.0 / repository 0.2.0**; no new package is
-needed for this checkpoint. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
+The verified baseline is **video 0.17.1 / repository 0.2.0**. Test the 0.17.2
+repair only after its merge and publication are separately verified. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
 **Vertical Multi Widget Netflix**. Keep the existing skin and saved routes.
-The [release evidence](releases.md#verified-0170-publication) establishes hosted
+The [release evidence](releases.md#verified-0171-publication-after-configuration-preflight) establishes hosted
 bytes only. Device acceptance remains **NOT RUN**.
 
 This public candidate tests synthetic navigation, local demo persistence and the
@@ -86,13 +86,25 @@ exercised** rather than pass in that case. Do not infer that previously submitte
 rows disappear atomically. Repeat the timing protocol above without claiming speed
 improvement from cloud tests. All live-account activation gates remain unchanged.
 
+## 0.17.2 local-edit acceptance — after verified publication
+
+Restart Kodi after updating, then confirm existing selections, watched overrides,
+saved movies and widget routes are retained. Select lists, mark a title watched,
+add/remove a saved movie and cancel each dialog once. Expected: unrelated changes
+remain, cancellation changes nothing, and confirmed reset deliberately restores all
+defaults. If two invocations can be exercised safely, leave list selection open,
+make a watched/movie change from another invocation, then finish selection: all
+non-conflicting changes must persist after restart. A busy/save failure must not
+show an update-success notification. Return only fixed outcomes and timings, not
+profile files. Synthetic checks do not establish actual SQLite locking on Android.
+
 ## Detailed preview checks
 
 1. After the reviewed Pages deployment and HTTP check, use Kodi Settings → File
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install the currently published version (0.17.1 only after its publication is verified).
+   Preview Repository → Video add-ons → HomeFX Preview to install the currently published version (0.17.2 only after its publication is verified).
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks

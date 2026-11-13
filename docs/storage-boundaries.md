@@ -118,3 +118,39 @@ clear epoch; item references also bind kind/title identity. Keys stay in private
 storage and references do not authorize access. Fresh account/selection/epoch
 checks reject stale resolves and presentation. No schema downgrade is supported;
 older packages require a separate compatible profile. See [routing](widget-routing.md).
+
+## Serialized demo mutations (0.17.2)
+
+The authoritative demo data remains `demo.json`; its format and read-only load
+behavior are unchanged. `state.update` applies only a confirmed selection, watched
+flag, movie add/remove or explicit reset to the latest state under a shared SQLite
+lock. The complete-replacement `save` API participates in the same serialization.
+No UI dialog or network operation runs while the lock is held. A reset deliberately
+replaces every field; overlapping edits to the same field follow lock acquisition
+order, not the time a dialog opened.
+
+The sibling `demo.json.lock.sqlite3` contains lock metadata only, not list selections,
+watch data, credentials or tokens. Each SQLite lock acquisition uses a 0.25-second
+busy timeout; first initialization can require two write-lock acquisitions. Filesystem
+operations are not guaranteed wall-clock deadlines. Busy/error outcomes
+produce the existing fixed save failure, without update-success notifications or
+automatic retries. SQLite is loaded only for a mutation, so browsing and Device
+readiness do not depend on opening this lock. Missing SQLite prevents local edits.
+
+Lock paths, metadata and SQLite sidecars are checked. Metadata inspection uses
+SQLite-managed connections: directly opening and closing the database file can
+release another connection's POSIX locks. First-use checks inspect transient sidecars
+before the persistent database so concurrent creation is not mistaken for an orphan; unsafe, unrelated or corrupt
+lock files are not reset or silently adopted. This is separate from the retained
+malformed ordinary demo JSON recovery behavior. Ordinary reads do not create a
+lock file. Updated writers cooperate through the same lock, and atomic JSON
+replacement keeps readers from observing a partial document. This is not a
+multi-file atomic transaction or protection against an active filesystem attacker.
+Restart Kodi after upgrading so earlier invocations cannot bypass the lock. Avoid
+mixing updated writers with older versions or external editors.
+
+Concurrency, initialized-lock process-exit release, failure and dialog tests use
+synthetic data. Interrupted or corrupt initial lock setup can fail closed and is
+not automatically repaired; the JSON remains authoritative. Real Android
+SQLite/filesystem behavior, cancellation and restart persistence still require TV
+acceptance. The Trakt/Real-Debrid private stores and activation gates are unchanged.
