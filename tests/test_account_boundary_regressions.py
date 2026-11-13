@@ -115,20 +115,32 @@ class AccountBoundaryRegressions(unittest.TestCase):
         self.assertEqual(self.monitor.waits, [])
         self.assertEqual(self.progress.closed, 0)
 
-    def test_provider_accepted_prompts_rejected_by_ui_cancel_before_display(self):
-        # The provider accepts these strings; the display contract is narrower.
-        for changes in ({"verification_url": "https://trakt.tv/activate?synthetic=1"},
-                        {"user_code": "[synthetic]"}):
-            with self.subTest(changes=changes):
+    def test_untrusted_activation_url_is_rejected_before_ui_is_touched(self):
+        for url in ("https://trakt.tv/activate?synthetic=1",
+                    "https://auth.trakt.tv/activate?synthetic=1"):
+            with self.subTest(url=url):
                 self.make_flow()
-                self.code.update(changes)
+                self.code["verification_url"] = url
+                show_code = Mock(wraps=self.ui.show_code)
+                self.ui.show_code = show_code
                 self.assertEqual(self.flow.connect(), account_flow.FlowResult.FAILED)
                 self.assert_abandoned()
+                show_code.assert_not_called()
                 self.factory.assert_not_called()
                 self.assertEqual(self.progress.created, [])
                 self.assertEqual(self.monitor.waits, [])
-                with self.assertRaisesRegex(account_ui.UIError, "^ui_failed$"):
-                    self.ui.cancelled()
+                self.assertFalse(self.ui.cancelled())
+
+    def test_provider_accepted_code_rejected_by_ui_cancels_before_display(self):
+        # The protocol accepts this code string; Kodi markup must still be rejected.
+        self.code["user_code"] = "[synthetic]"
+        self.assertEqual(self.flow.connect(), account_flow.FlowResult.FAILED)
+        self.assert_abandoned()
+        self.factory.assert_not_called()
+        self.assertEqual(self.progress.created, [])
+        self.assertEqual(self.monitor.waits, [])
+        with self.assertRaisesRegex(account_ui.UIError, "^ui_failed$"):
+            self.ui.cancelled()
 
     def test_incomplete_progress_object_is_closed_without_display_or_polling(self):
         self.progress.iscanceled = None
