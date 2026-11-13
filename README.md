@@ -3,7 +3,7 @@
 A personal Kodi video add-on project targeting Kodi 21.2, with configurable
 home-screen widgets and standard folder browsing.
 
-## Current preview: 0.12.0
+## Current preview: 0.13.0
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
@@ -19,7 +19,7 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.12.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
+Version 0.13.0 contains inactive Trakt authentication, token-storage, HTTPS transport,
 account/session coordination, a cancellable account-flow controller, saved account-list
 preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is
@@ -93,3 +93,7 @@ For the next device check, run **Test private storage** from the HomeFX root. It
 synthetic temporary SQLite data after confirmation and reports private-file and
 cleanup results without exposing account data. See the [TV checklist](docs/testing-on-tv.md).
 This check does not connect accounts or prove live token storage/recovery.
+
+The 0.13 preview hardens saved demo state and the inactive Trakt stores. Valid
+existing credentials and list selections remain compatible; malformed private
+stores are not silently reset. See [storage boundaries](docs/storage-boundaries.md).

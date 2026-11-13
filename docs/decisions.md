@@ -240,3 +240,11 @@ Kodi modules and is not instantiated by the current entry point. Device codes ar
 shown only in the intended private dialog. Provider-specific confirmations distinguish
 local deletion, saved Trakt choices and remote authorization. The adapter opens no URL
 or browser and does not replace real TV responsiveness and cleanup tests.
+
+## Preserve valid storage, reject corruption (0.13)
+
+Harden existing Trakt stores without changing the credential schema or deleting
+malformed state. Preserve supported preference migrations and ordered selections.
+Validate stored integers before mutation and refresh deadlines after lock acquisition.
+Demo data retains default recovery on reads, while unsafe writes fail. See
+[storage boundaries](storage-boundaries.md) for the filesystem assumptions.

@@ -267,3 +267,9 @@ and synthetic SQLite values, and never opens account stores. Its fixed result do
 not expose paths or exception text. Cleanup failure is explicit; an empty newly created
 profile directory may remain. Passing does not protect against other code running as
 Kodi or establish real credential lifecycle safety.
+
+## Storage checks (0.13)
+
+See [local storage boundaries](storage-boundaries.md) for per-operation path checks,
+strict persisted-state validation, migration compatibility and fail-closed errors.
+Concurrent path replacement by same-user code remains outside this boundary.
