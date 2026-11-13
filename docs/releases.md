@@ -401,3 +401,24 @@ byte-identical. The normal checked Pages deployment after merge will advertise
 indexed archives. Nothing is published independently; check post-merge publication
 before updating the TV. This is a diagnostic release, not a storage compatibility
 fix or live-account activation. Follow the [bounded rerun](testing-on-tv.md#observed-device-diagnostics-and-0173-rerun).
+
+## 0.17.4 directory setup candidate
+
+The 0.17.3 storage result stopped at directory permissions before SQLite; cleanup
+passed. This candidate aligns the synthetic probe with explicit private-directory
+setup: it sets `0700` on only the fresh test directory through a verified descriptor
+and strictly checks the resulting mode. It distinguishes setting/inspection/mode
+failures without exposing paths. Ignored or rejected permission changes still fail.
+This is not a demonstrated Android filesystem fix; the TV rerun remains required.
+
+The current 0.17.3 index/checksum and indexed video/repository package/checksum pairs
+were verified. No repository-format defect was found. Documentation now covers
+refresh timing, update settings and reselecting the latest HomeFX repository version
+after a manual ZIP install. Automatic update delivery on the TV remains unverified.
+
+Runtime changes require a new video **0.17.4** archive. Both new download URLs were
+absent before preparation. All 17 prior inventory records and archive bytes are
+preserved, including repository **0.2.0**. Merging uses the normal checked Pages
+workflow to advertise 0.17.4 and update the guide; prior indexed video archives
+remain available. No independent deployment, new dependency, account activation,
+profile migration or storage-permission exemption is included.

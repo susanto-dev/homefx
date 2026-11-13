@@ -154,3 +154,31 @@ synthetic data. Interrupted or corrupt initial lock setup can fail closed and is
 not automatically repaired; the JSON remains authoritative. Real Android
 SQLite/filesystem behavior, cancellation and restart persistence still require TV
 acceptance. The Trakt/Real-Debrid private stores and activation gates are unchanged.
+
+## Synthetic directory permission setup on Android
+
+The 0.17.3 TV probe stopped at `directory permissions`, before SQLite, with cleanup
+passed. That stage alone does not identify an inspection failure versus a mode
+mismatch. The 0.17.4 candidate first opens only its newly created synthetic
+directory, checks descriptor/path type and identity, requests mode `0700` through
+the descriptor, then checks that exact mode. Existing profiles, parents and account
+files are not chmodded or migrated. Ignored or rejected mode changes still fail;
+SQLite is not opened until directory and database privacy checks pass.
+
+The fixed `Directory check` field describes this initial directory setup. It is
+not a certificate of whole-profile privacy; final permissions and cleanup must
+also pass. Inspection errors contain no paths or exception messages. The first
+failure stage survives cleanup failure, which remains separately visible.
+
+This aligns the probe with the explicit directory-mode request used by inactive
+account stores. A restrictive creation mode that can be corrected may now pass;
+a filesystem that does not retain POSIX private permissions remains unsupported.
+No Android-specific exemption or new credential location is introduced.
+
+Pinned [Kodi 21.2 Android setup](https://github.com/xbmc/xbmc/blob/d1a1d48c3cb3722d39264ffdd8132f755ffecd27/xbmc/platform/android/activity/XBMCApp.cpp#L1660)
+uses app-specific external storage for the default HOME, with overrides/fallbacks.
+Its internal Python/assets paths derive from Android cache storage. This makes
+emulated-storage permission behavior plausible, not established for the reported
+TV. Cache paths are not durable credential storage. Do not derive internal files
+paths from cache parents, hard-code Android package paths, or relax checks to make
+the test pass. An actual TV rerun is still required before account activation.

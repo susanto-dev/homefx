@@ -16,12 +16,14 @@ For the next device and account checkpoint, use the
 [activation handoff checklist](docs/activation-checklist.md). It separates safe demo
 observations from the gates required before any live connection.
 
-## Preview candidate: 0.17.3
+## Preview candidate: 0.17.4
 
-The 0.17.3 candidate adds scrollable diagnostic reports and fixed storage-failure
-stages. It does not repair the observed Android permission failure or enable accounts.
-Version 0.17.2 remains the verified hosted release until the candidate is merged
-and its normal publication checks pass.
+The 0.17.4 candidate aligns the synthetic directory check with private-store setup:
+it explicitly sets private permissions on its fresh temporary directory, then
+verifies them. It reports whether setting, inspecting or retaining the mode failed.
+This may fix a creation-mode discrepancy; Android storage compatibility remains
+unverified. Version 0.17.3 is the verified hosted release until the candidate is
+merged and its normal publication checks pass. Live accounts remain inactive.
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,
@@ -37,7 +39,7 @@ changes are local demonstration overrides, never Trakt updates. A separate episo
 context action previews the next-episode choice without starting media.
 
 Movies/episodes open an explanatory dialog when selected. Shows open their episodes.
-Version 0.17.3 contains inactive Trakt authentication, token-storage, HTTPS transport,
+Version 0.17.4 contains inactive Trakt authentication, token-storage, HTTPS transport,
 account/session coordination, a cancellable account-flow controller, saved account-list
 preferences and explicit action contracts tested with fabricated responses. These are not connected to the
 Kodi account actions and do not enable real accounts. The connection-setup menu is

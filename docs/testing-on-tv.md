@@ -1,6 +1,6 @@
 # TV acceptance — next preview
 
-Status: **PARTIAL — storage check did not pass on 0.17.2**. Target: Kodi 21.2
+Status: **PARTIAL — storage check still did not pass on the 0.17.3 rerun**. Target: Kodi 21.2
 with the user’s existing home-screen layout. Navigation and live-service acceptance
 remain untested.
 Record device, embedded Python, skin and widget-configuration component versions,
@@ -38,8 +38,8 @@ scrobbling acceptance is part of this milestone.
 
 ## Current device candidate and timing record
 
-The hosted baseline checked on 13 November 2026 is **video 0.17.2 / repository 0.2.0**.
-The index and both root/indexed ZIP copies matched the release inventory. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
+The hosted baseline checked on 13 November 2026 is **video 0.17.3 / repository 0.2.0**.
+The hosted index and indexed ZIP/checksum pairs matched the release inventory. Target Kodi **21.2**, Arctic Zephyr Reloaded **3.0.3**,
 **Vertical Multi Widget Netflix**. Keep the existing skin and saved routes.
 These download checks establish hosted bytes only; see the
 [installation guide](install.md) for the verified source and filenames. Device acceptance remains incomplete; the observed diagnostics are recorded below.
@@ -93,29 +93,52 @@ inferred. The storage check reported:
 | Temporary cleanup | passed |
 | Overall | not passed |
 
-SQLite was not reached; this is not evidence of a SQLite transaction failure.
-The exact permission failure stage and underlying filesystem cause remain unknown.
-These observations establish neither a clean repository-first installation path
-nor widget navigation, persistence, timing, TLS or live-account acceptance.
+The subsequent 0.17.3 rerun displayed **Failure stage: directory permissions**,
+with private permissions failed, SQLite not run, cleanup passed and overall not
+passed. The complete storage report was visible. This narrows the failing check;
+it does not prove the underlying filesystem cause, readiness scrolling/Back behavior
+or SQLite/TLS capability results. SQLite was not reached, so this is not evidence
+of a SQLite transaction failure. The owner also reported manually installing the
+video ZIP after an expected automatic update did not appear; repository-first
+upgrade and automatic update acceptance remain unverified.
 
-**0.17.3 is a diagnostic candidate until its merge and publication are verified.**
-It uses a scrollable report for readiness/storage and adds a fixed **Failure stage**
-label to the storage result. It does not relax permissions or repair profile data.
-After verified publication:
+Version 0.17.3 is published. **0.17.4 remains a candidate until its merge and
+publication are verified.** After that verification, update through the HomeFX
+repository where available, fully restart Kodi and repeat the bounded checks:
 
-1. Update to 0.17.3, fully restart Kodi, then open **Device readiness**. Check that
-   the remote can scroll through the complete report and Back returns to HomeFX.
-   Record versions and fixed capability fields, including unavailable results.
+1. Open **Device readiness**. Check that the remote can scroll through the complete
+   report and Back returns to HomeFX. Record versions and fixed capability fields,
+   including unavailable results.
 2. Open **Test private storage** and cancel once; no test should run. Reopen and
    confirm the synthetic test, then scroll through the result.
 3. Return **Private file permissions**, **SQLite commit/rollback**, **Temporary
-   cleanup**, **Overall** and **Failure stage** exactly as displayed. A failed
+   cleanup**, **Overall**, **Failure stage** and **Directory check** exactly as displayed. A failed
    result remains a blocker, even when cleanup passes. Do not infer a root cause
    from the stage label alone.
 
 Do not change permissions, clear Kodi data, delete unfamiliar files or send paths,
 logs, tokens or backups. No new screenshot is required. Live Trakt, Real-Debrid,
 writes, playback and scrobbling remain inactive while this blocker is investigated.
+
+## Repository update checkpoint
+
+Use the [update troubleshooting steps](install.md#7-update-or-uninstall). Confirm
+repository 0.2.0 is enabled, check Kodi's global update policy and HomeFX's
+Auto-update control, request **Check for updates**, then select the latest published
+HomeFX version explicitly from **HomeFX Preview Repository** in the version chooser.
+Do not reinstall or bump the repository merely because the video version changed.
+
+Record only: installed video/repository versions, whether the HomeFX repository
+source appeared in the version chooser, refresh/install success or fixed failure
+category, and whether saved rows remain after restart. The origin and pin-rule
+behavior documented from Kodi source does not prove this TV's current state.
+
+A successful manual repository selection confirms that path only. With automatic
+updates enabled and the repository retained, a future newer published release must
+be observed installing through Kodi before automatic updates can be marked passed.
+Kodi's default recheck interval is 24 hours, subject to running/reachability and
+policy conditions; publication is not an immediate notification to the TV. Do not
+change the device clock or install an older version solely to simulate an update.
 
 ## 0.17.1 repair acceptance — after verified publication
 
@@ -148,7 +171,7 @@ profile files. Synthetic checks do not establish actual SQLite locking on Androi
    manager → Add source: `https://susanto-dev.github.io/homefx/`, named HomeFX.
    Open Add-ons → Install from zip file → HomeFX → `repository.homefx-0.2.0.zip`.
    Review any Unknown sources prompt. Then use Install from repository → HomeFX
-   Preview Repository → Video add-ons → HomeFX Preview to install the currently verified published version (0.17.2).
+   Preview Repository → Video add-ons → HomeFX Preview to install the currently verified published version (0.17.3).
    If File manager listing fails, record it and transfer the repository ZIP manually.
    The separate video ZIP is an alternate manual installation, not the repository.
 2. Open Video add-ons → HomeFX Preview. Confirm every title is fictional and clicks
