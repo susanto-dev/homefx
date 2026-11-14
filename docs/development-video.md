@@ -1,6 +1,6 @@
 # One real Trakt list in Development Video
 
-**Candidate, not yet published.** This is an intentionally installed read-only
+**Published Development candidate; TV list/widget acceptance pending.** This is an intentionally installed read-only
 Development video add-on for the app owner or invited Development users. It is not
 general public Trakt access and does not activate HomeFX Preview. No paid service,
 Production registration, server or Android app is introduced.
@@ -13,13 +13,22 @@ shared runtime as HomeFX Preview, with a small video entry point. The program te
 add-on is not a dependency. Public configuration is downloadable; no secret or user
 token is embedded, requested by a build, or used in CI.
 
-The intended source remains `https://susanto-dev.github.io/homefx/`. After this
-candidate merges and normal publication/hosted-byte verification passes, the source
-will list `plugin.video.homefx.development-0.1.0-<SHA-256>.zip` and its checksum.
-The landing page will show the exact verified filename. This guide does not claim
-that the new ZIP is already hosted. No independent deployment is required.
+The verified source is `https://susanto-dev.github.io/homefx/`. PR #37 merged as
+`a28ad740458a363e48fae0c6f4284cd179195bb5`. The normal publication deployed the
+candidate; its verification-only rerun compared all uploaded artifact files with
+the hosted bytes successfully. The initial verification request failure remains
+unexplained; see [publication evidence](releases.md#verified-development-video-delivery-after-pr-37).
 
-Merging the reviewed PR approves distribution of this explicitly labelled candidate.
+Verified current video test ZIP (harness 0.1.0):
+
+[`plugin.video.homefx.development-0.1.0-bab63c56e240bc3bcb0f579b3021d03245f90d6bac7bc8de4071f847cdf70d5b.zip`](https://susanto-dev.github.io/homefx/plugin.video.homefx.development-0.1.0-bab63c56e240bc3bcb0f579b3021d03245f90d6bac7bc8de4071f847cdf70d5b.zip)
+
+The filename starts with `plugin.video.homefx.development`, not the program script
+or the public Preview ZIP. The [landing page](https://susanto-dev.github.io/homefx/)
+lists the current download and checksum. Future candidates may change the digest;
+use the then-verified filename rather than assuming this URL is retained forever.
+
+The reviewed merge approved distribution of this explicitly labelled candidate.
 It does not initiate an account connection. Installing it is deliberate; the owner
 then separately consents to Connect and to reading/selecting lists on the TV.
 The previously confirmed Development ID/redirect needs reconfirmation only if the
@@ -51,7 +60,7 @@ second program or an automatic credential migration.
 No previously passed program test needs repeating. These checks exercise a new video
 profile, entry point and real-list route, which have not been validated on TV.
 
-1. **Install only after publication is verified.** In Kodi choose Add-ons → Install
+1. **Install the verified candidate.** In Kodi choose Add-ons → Install
    from zip file → HomeFX → the newly listed **plugin.video.homefx.development** ZIP.
    Review the source/Unknown sources warning; do not bypass certificate or integrity
    failures. Keep HomeFX Preview and the existing skin installed. This candidate is

@@ -534,3 +534,38 @@ The artifact verifier compares every candidate member with the reviewed source a
 canonical public configuration, and the normal hosted-byte check covers both pairs.
 No previous recorded release is rebuilt or overwritten. Experimental candidate
 URLs may be retired; the same digest URL must never serve different bytes.
+
+## Verified Development video delivery after PR #37
+
+PR #37 merged as `a28ad740458a363e48fae0c6f4284cd179195bb5`. Validation, Security,
+CodeQL and Development configuration preflight passed. In [publication run
+43538312664](https://github.com/susanto-dev/homefx/actions/runs/43538312664), build
+and deploy succeeded, but the first `verify-published` attempt failed with
+`published request failed`. Its redacted log did not identify the file or HTTP status;
+the underlying cause is unknown. This is not evidence of a reproduced byte mismatch.
+
+Only the final read-only verification job was rerun, against that run's original
+uploaded artifact. The rerun checked 60 public files (2,425,114 bytes) successfully;
+the original build/deploy start times remained
+unchanged. No new build, deployment, workflow dispatch, account access or package
+replacement occurred. A local artifact-download attempt was denied by its storage
+host; the complete uploaded-artifact comparison is evidenced by the successful
+GitHub verification job, not an independently downloaded local artifact.
+
+Fresh hosted reads also verified index versions video 0.17.8 / repository 0.2.0,
+root ZIP/checksum equality with recorded archives, and both experimental Development
+ZIPs against their full expected source/schema and content-addressed checksums.
+The video candidate's digest is
+`bab63c56e240bc3bcb0f579b3021d03245f90d6bac7bc8de4071f847cdf70d5b`.
+See the [exact download and next TV steps](development-video.md).
+
+The diagnostic follow-up identifies only a validated public relative file, a fixed
+request category and a bounded HTTP status (when available), or a mismatch file.
+It adds no retry/sleep, keeps exact-byte comparison/TLS/budgets intact, and never
+prints response bodies, headers, raw exceptions or redirect destinations. An HTTP
+status alone does not identify which network hop produced it.
+
+No add-on source, manifest, inventory or archive changes are required. Merging the
+follow-up updates the verifier and Pages guide through the normal workflow; current
+video/repository and experimental ZIP bytes stay unchanged for unchanged public
+Development configuration. No new installation is needed for diagnostics alone.

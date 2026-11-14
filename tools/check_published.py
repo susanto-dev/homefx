@@ -6,7 +6,10 @@ made: propagation failures require investigation before manually rerunning.
 """
 import argparse
 from pathlib import Path
+import re
+import ssl
 import time
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -21,7 +24,40 @@ TOTAL_TIMEOUT = 300
 
 
 class PublishedCheckError(ValueError):
-    """A fixed diagnostic that never includes response bodies or request errors."""
+    """Fixed categories and verified public paths, never response bodies or raw errors."""
+
+
+def _public_name(name):
+    # Names reach this boundary only after complete local artifact validation.
+    # Keep diagnostics bounded even if a future caller changes that contract.
+    if (type(name) is str and re.fullmatch(r"[A-Za-z0-9_./-]{1,240}", name)
+            and not name.startswith("/") and ".." not in name.split("/")):
+        return name
+    return "unavailable"
+
+
+def _request_diagnostic(name, error):
+    category, status = "request_unavailable", "unavailable"
+    if isinstance(error, HTTPError):
+        category = "http_status"
+        if type(error.code) is int and 100 <= error.code <= 599:
+            status = str(error.code)
+    else:
+        reason = error.reason if isinstance(error, URLError) else error
+        if isinstance(reason, TimeoutError):
+            category = "timeout"
+        elif isinstance(reason, ssl.SSLCertVerificationError):
+            category = "certificate_verification"
+        elif isinstance(reason, ssl.SSLError):
+            category = "tls_error"
+        elif (isinstance(error, PublishedCheckError) and error.args
+              and error.args[0] == "published redirect rejected"):
+            category = "redirect_rejected"
+        elif (isinstance(error, PublishedCheckError) and error.args
+              and error.args[0] == "published response rejected"):
+            category = "response_rejected"
+    return ("published request failed; file: " + _public_name(name)
+            + "; category: " + category + "; HTTP status: " + status)
 
 
 def _require(condition, message):
@@ -95,10 +131,10 @@ def check(site, fetch=None):
         url = BASE_URL + quote(name, safe="/")
         try:
             actual = fetch(url, len(expected) + 1, min(REQUEST_TIMEOUT, remaining))
-        except Exception:
-            raise PublishedCheckError("published request failed") from None
+        except Exception as error:
+            raise PublishedCheckError(_request_diagnostic(name, error)) from None
         _require(time.monotonic() <= deadline, "published check budget exceeded")
-        _require(type(actual) is bytes and actual == expected, "published content mismatch")
+        _require(type(actual) is bytes and actual == expected, "published content mismatch; file: " + _public_name(name))
     return {"files": len(files), "bytes": sum(map(len, files.values()))}
 
 

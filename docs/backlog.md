@@ -1,7 +1,8 @@
 # Complete project backlog
 
-Status checked on 13 November 2026: published **video 0.17.7 / repository 0.2.0**.
-PR #36 is merged; its post-merge validation and publication passed. **Implemented** means source and automated checks exist; **published** means
+Status checked on 14 November 2026: published **video 0.17.8 / repository 0.2.0**.
+PR #37 is merged; validation passed and publication integrity passed on a read-only
+verification rerun after an initial request error. **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -123,7 +124,7 @@ see the published 0.17.4 checkpoint below. No path, token or private account dat
 
 ## Next checkpoint: bounded Development account test
 
-Video 0.17.7 and repository 0.2.0 are the published preview. Start with the
+Video 0.17.8 and repository 0.2.0 are the published preview. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
 evidence from the later, explicitly authorized Development account test.
 Keep the existing functionality and skin. Prioritize selected-list widgets, distinct
@@ -274,11 +275,11 @@ with a distinct video ID and immutable checksum-named download; it does not repl
 a published package. Existing variables supply only public Development configuration.
 A general public connection must not presume Production approval from owner tests.
 
-## Current candidate: one real list in Development Video
+## Published candidate: one real list in Development Video
 
 The dispatcher and synthetic abrupt-process recovery regression from PR #36 are
 complete, merged and independently reviewed. They are reused without duplication.
-The 0.17.8 proposal adds a distinct, deliberately installed Development video ID,
+The published 0.17.8 release adds a distinct, deliberately installed Development video ID,
 shared public-configuration validation, candidate-specific widget links and checked
 content-addressed delivery on the existing source. The program is not a dependency;
 the candidate has a fresh own-profile login. Public Preview and Production stay inactive.
@@ -287,7 +288,7 @@ the candidate has a fresh own-profile login. Public Preview and Production stay 
 |---|---|
 | Development auth/refresh/restart/disconnect/cancel/offline responsiveness | Owner-confirmed; do not repeat |
 | Shared dispatcher and synthetic process interruption | Complete in PR #36 |
-| Development video configuration and package delivery | Implemented candidate; publication pending merge |
+| Development video configuration and package delivery | Published and byte-verified after PR #37; ready for deliberate TV installation |
 | One real personal/liked list, seasons, saved selection after restart | Synthetic end-to-end tests; pending owner video-candidate acceptance |
 | Existing-skin row, focus/Back, cold/warm and multiple-row loading | Pending actual-device measurements |
 | Public/Production connection, writes, playback, Real-Debrid, scrobbling | Inactive; outside milestone |
@@ -295,3 +296,16 @@ the candidate has a fresh own-profile login. Public Preview and Production stay 
 The [short candidate checklist](development-video.md) needs only deliberate install,
 new profile storage check, fresh owner login and private selection of one list. No
 keys, secrets, list names, raw logs or profile files should be supplied in chat.
+
+## Publication diagnostics follow-up
+
+The first PR #37 post-deploy byte check failed with a generic request error. Fresh
+root-package checks and a verification-only rerun against the original uploaded
+artifact passed; no build or deployment was repeated. The initial file/status/cause
+was not recorded, so it is not labelled a proven cache, propagation or service bug.
+
+The follow-up adds a verified public relative filename and fixed request category /
+bounded HTTP status to failures, plus the filename for byte mismatches. Bodies,
+headers, redirects and raw exception text remain private. There are no added retries,
+sleeps, relaxed checks or changed add-on archives. No additional feature code is
+needed before the existing candidate's first real-list/widget TV test.
