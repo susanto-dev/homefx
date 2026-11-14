@@ -255,3 +255,23 @@ by this CI policy. Workflow summaries distinguish selected checks from omitted w
 service credentials or network. It reports cold/warm request counts, local timings
 and database bytes, then removes its temporary profile. This is not a Kodi/TV or
 image-decoding benchmark; see [cache policy and activation gates](tmdb-artwork.md).
+
+## Development package cleanup
+
+The shared Development builder excludes `catalogue.py`, `state.py` and `routes.py`
+from both Development ZIPs. These modules implement the public Preview's invented
+catalogue, local demo edits and demo route schema; neither Development entry uses
+them. They remain in source, the public Preview package and regression tests.
+Real-account selections/storage and shared inactive provider code are not deleted.
+
+Artifact tests build both Development packages and import every bundled runtime
+module in isolated Python processes with network calls forbidden. They also check
+that the three excluded demo modules cannot be resolved from those packages.
+Existing native-entry tests and full suites remain required. A future Development
+feature needing demo modules must explicitly revisit this boundary rather than
+rely on checkout imports masking missing files.
+
+This is package-size cleanup, not measured TV speed improvement. It does not erase
+profiles, migrate credentials, retire the diagnostic program or delete retained
+releases. Reinstallation/file replacement is Kodi's responsibility; do not manually
+delete files from a user's live profile to enforce the package inventory.

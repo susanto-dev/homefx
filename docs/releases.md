@@ -650,3 +650,19 @@ checksum-named Development downloads; repository 0.2.0 and all 27 prior package
 records/bytes remain unchanged. No independent publication or public/Production
 activation. Verify hosted bytes after merge, then update Development Video and
 restart Kodi for the [bounded TV check](show-unwatched.md); retain current login/lists.
+
+## Development-only demo packaging cleanup
+
+The Development builder omits three unused public-Preview demo modules from its
+video and program ZIPs. No public video/repository source or release inventory
+changes: video 0.17.14 and repository 0.2.0 remain byte-identical. No version bump or
+new retained archive is needed. Normal merge-triggered Pages publication creates
+new content-addressed Development filenames; it never overwrites a digest filename
+with different bytes. Prior experimental URLs may disappear under the existing
+Development retention policy; retained Preview/repository archives remain present.
+
+After merge, verify hosted bytes against the uploaded artifact as usual. No
+independent deployment. Updating Development Video from the current source ZIP and
+restarting Kodi is sufficient to receive the leaner package; no login reset,
+profile cleanup or repeat of completed account tests is requested. This cleanup
+introduces no new product flow or TV performance claim.
