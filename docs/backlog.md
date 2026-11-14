@@ -1,8 +1,11 @@
 # Complete project backlog
 
 Status checked on 14 November 2026: published **video 0.17.8 / repository 0.2.0**.
-PR #37 is merged; validation passed and publication integrity passed on a read-only
-verification rerun after an initial request error. **Implemented** means source and automated checks exist; **published** means
+PR #39 is merged as `238bc3b86888d21e2dd688257196fbced8bf49f9`; its post-merge
+validation, Security, CodeQL, Development preflight and
+[publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43545085858)
+passed. Fresh hosted index/package checks matched video 0.17.8, repository 0.2.0
+and both Development downloads. No version or archive bytes changed. **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -13,8 +16,8 @@ provider or release choice. The current public add-on remains synthetic.
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
-| B02 | Multiple selected list widgets and folder browsing | Implemented in demo; mixed-list reads and inactive account-bound widget rendering added (0.16) | Gated public dispatch, activation and widget-title click behavior need TV verification |
-| B03 | Episode/season browser, watched counts, aired-unwatched filter | Implemented in demo; inactive opaque episode filters and season/progress display added (0.17) | Live episode identity/status and refresh behavior |
+| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; public Preview remains demo-only | One real list, separate skin-row assignment, widget heading/full-list access and restart acceptance on TV |
+| B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development read-only browser; synthetic integration tests passed | Live episode identity/status, season navigation and refresh behavior on TV |
 | B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
@@ -38,13 +41,13 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Mocked/inactive; storage hardened (0.13) | Owner confirms registered Development ID/redirect match GitHub variables; 0.17.4 synthetic storage passed; separate Development device test prepared, Development authorization and one refresh rotation passed on TV; restart persistence, disconnect, cancellation and responsive offline failure passed on TV; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed |
-| T02 | Account connect/cancel/switch/disconnect UI | Controller/dialog adapter implemented; separate explicit Development test prepared | Development consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
-| T03 | Personal/liked lists and saved account-bound selections | Mocked/inactive; guarded chooser and persistent account-bound widget references added (0.16) | Choose lists privately after activation; verify live account isolation, paging and restart behavior |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Shared implementation; program lifecycle passed on TV; Development identity/redirect owner-confirmed | Fresh video-profile login/storage acceptance; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed. Do not repeat completed program checks |
+| T02 | Account connect/cancel/switch/disconnect UI | Shared UI and Development video entry published | Program consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
+| T03 | Personal/liked lists and saved account-bound selections | Published in Development Video; synthetic end-to-end acceptance passed | Owner privately chooses one real list; verify paging, widget and saved selection after restart on TV |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
-| T05 | Live Trakt read views | Pending | Enable after registration, transport and device checks |
+| T05 | Live Trakt read views | Read-only selected-list Development candidate published; public/Production inactive | Validate candidate on TV; Continue Watching, Next aired and Upcoming need separate future integration |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
-| T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache implemented; shared request limits implemented/inactive (0.9), persistence guards hardened (0.14); persistent cache decision pending | Validate shared limits on TV; decide retention/invalidation and measure TV load times before live wiring |
+| T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache and shared request limits wired in Development Video; persistent metadata cache pending | Validate shared limits and cold/warm/multiple-row load times on TV; use measurements to decide cache retention/invalidation |
 | T08 | Wider public Trakt application access | Pending external approval | Service registration/Production requirements and current terms review |
 
 ## Real-Debrid
@@ -73,8 +76,8 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Implemented; 0.17.4 publication and HTTP integrity verified | TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.4 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Published 0.17.8; Development video/program downloads byte-verified | Development video TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.8 deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -122,7 +125,7 @@ Its subsequent TV storage report identified **directory permissions**, with SQLi
 not run and cleanup passed. The underlying filesystem cause remains unknown;
 see the published 0.17.4 checkpoint below. No path, token or private account data is required.
 
-## Next checkpoint: bounded Development account test
+## Next checkpoint: one real list in Development Video
 
 Video 0.17.8 and repository 0.2.0 are the published preview. Start with the
 [activation handoff checklist](activation-checklist.md), which separates demo TV
@@ -135,13 +138,13 @@ before the [bounded TV checklist](testing-on-tv.md).
 
 | Priority | Backlog scope | Current status / next acceptance |
 |---|---|---|
-| 1 | R01–R03, Q04, B10 | 0.17.4 synthetic storage passed; installation/update path, navigation and restart acceptance remain open |
-| 2 | B02, T07 | Measure one-row and multi-row first-open/reopen timings on TV; synthetic timings do not prove live network/cache performance |
-| 3 | T01–T03, T05 | Development identity/redirect confirmed; source installation, authorization and refresh passed on TV; restart/disconnect/cancellation/offline responsiveness passed; automated denial/expiry/recovery evidence stays distinct; Production not run |
-| 4 | B02–B04, T03, T05 | Then validate one real personal or liked list, separate skin row assignment, details and restart persistence; inactive rendering is not tested by public demo routes |
-| Ongoing | Q01–Q02, R01–R03 | Preserve automated checks, independent review and immutable publication |
-| Later | Q03 | Official checker secure/offline input and schema compatibility remain unresolved |
-| Deferred | T06, D01–D06, P01–P06 | Remote writes, Real-Debrid and playback; no expansion in this checkpoint |
+| 1 | B02–B03, T01–T03, T05 | Install the published Development video candidate, check its own storage, authorize fresh, select one real list and browse title/season details |
+| 2 | B02, B10, T03, T07 | Assign one skin row separately; verify focus/Back/return position and selection persistence after restart; measure cold/warm and then multiple-row loading |
+| 3 | R02–R03 | Verify repository-first installation and update behavior for public Preview; the experimental video candidate remains deliberate ZIP installation |
+| 4 | B04, B11, T04–T05 | After selected-list acceptance, choose one bounded read-only progress row; keep Continue Watching, Next aired and Upcoming distinct |
+| Ongoing | Q01–Q02, R01–R03, G02–G03 | Preserve tests, security/manual triage, independent review, privacy and immutable publication |
+| Later | Q03, T07 | Official checker secure/offline input; persistent cache only after device measurements justify it |
+| Deferred | T06, D01–D06, P01–P06 | Remote writes, Real-Debrid, sources/playback and scrobbling require separate decisions and gates |
 
 Device and registration gates cannot be satisfied by cloud tests. Protected main
 remains maintainer-merged after independent review and successful checks.
@@ -149,7 +152,7 @@ remains maintainer-merged after independent review and successful checks.
 ## External inputs and decisions
 
 The next useful device evidence is the deliberately enabled video-profile list
-journey and widget/navigation, after configuration delivery is reviewed. Completed
+journey and widget/navigation using the published, verified Development candidate. Completed
 Development lifecycle checks need not be repeated. Registered Development values are
 owner-confirmed; no app values need to be posted. Real lists/views,
 movie release region/type, first playback path, source-provider choice, scrobbling
@@ -239,6 +242,9 @@ post-login checks below. No list/playback scope was added.
 
 ## Current checkpoint: Development authorization and refresh passed
 
+This records the completed program-test checkpoint. The current product acceptance
+is the Development Video list/widget journey described below.
+
 PR #34 merged as `e860684c06551de7fd203096f9e4f0816fe0a531`. Validation,
 Security, configuration preflight and Pages publication/deployed-byte checks passed.
 Video 0.17.6 and repository 0.2.0 are published; all 19 preceding archive records
@@ -252,7 +258,7 @@ reports from the separately installed program add-on; the refresh made no list/h
 | Local disconnect and code-dialog cancellation | Passed on TV | Disconnect and post-cancel status disconnected; cancellation reported cancelled |
 | Offline failure and recovery | Passed on TV | Kodi remained responsive during request; error dismissed with Back; network restoration allowed code issuance; elapsed time unmeasured |
 | Denial/expiry and interrupted-refresh recovery | Automated failure evidence; not live-tested | See testing.md; no destructive real-token test requested |
-| Read-only connection/list/widget in the video add-on | Prepared assemblies; live wiring inactive | Gate review, own-profile login/storage, one list and restart acceptance |
+| Read-only connection/list/widget in the video add-on | Development candidate published; public Preview inactive | Own-profile login/storage, one list and restart acceptance |
 | Live performance and skin navigation | Not measured | Cold/warm, multiple rows, focus/Back/return position |
 
 The program is a temporary authentication test, not the intended product interface.
@@ -322,3 +328,18 @@ journey is accepted on TV and its own-profile disconnect/recovery is covered. Ke
 its completed device evidence, current download, shared implementation and local
 disconnect access. No credentials are migrated or deleted by this cleanup. The next
 owner action remains the [video checklist](development-video.md#smallest-tv-checklist).
+
+## Current batch and next implementation boundary
+
+PR #39 removed the redundant manual Development artifact workflow. Required
+Validation, Security, configuration preflight and Pages publishing remain. The
+program add-on and shared builder are retained until the video candidate has device
+acceptance and sufficient own-profile disconnect/recovery coverage.
+
+No additional feature code is required before the
+[existing six-step video test](development-video.md#smallest-tv-checklist). A concrete
+failure from that journey takes priority over broader integrations. If it passes,
+the next bounded implementation is one agreed read-only progress row, preceded by
+measurement of real widget loading. No completed program test must be repeated just
+because this backlog was reconciled. No account details or private lists are needed
+in a report; fixed outcomes, navigation observations and timings are sufficient.
