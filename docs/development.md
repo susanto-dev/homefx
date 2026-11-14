@@ -248,3 +248,10 @@ comparison with the exact uploaded artifact remain mandatory. Every main merge s
 runs normal publication: skipping deployment based only on its latest diff could
 leave an earlier code merge unpublished. No version/archive changes are introduced
 by this CI policy. Workflow summaries distinguish selected checks from omitted work.
+
+## Artwork-cache benchmark
+
+`python tools/benchmark_tmdb_cache.py` exercises 100 fabricated title IDs with no
+service credentials or network. It reports cold/warm request counts, local timings
+and database bytes, then removes its temporary profile. This is not a Kodi/TV or
+image-decoding benchmark; see [cache policy and activation gates](tmdb-artwork.md).

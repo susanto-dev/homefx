@@ -79,6 +79,9 @@ def _list_description(media):
     Scores retain their Trakt identity and require a positive vote count.
     """
     result = {}
+    tmdb_id = media.get("ids", {}).get("tmdb")
+    if type(tmdb_id) is int and 1 <= tmdb_id < 2**63:
+        result["tmdb_id"] = tmdb_id
     overview = media.get("overview")
     if type(overview) is str and len(overview) <= 4096 and overview.strip():
         result["overview"] = overview
