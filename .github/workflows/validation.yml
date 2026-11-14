@@ -32,14 +32,23 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python }}
+      - name: Select checks from changed files
+        id: scope
+        run: python tools/ci_scope.py
       - name: Validate declared dependency inventories
         run: python tools/check_dependencies.py
       - name: Install build dependency
         run: |
-          python -m pip install --require-hashes --only-binary=:all: -r tools/build-requirements.txt -r tools/quality-requirements.txt
+          python -m pip install --require-hashes --only-binary=:all: -r tools/build-requirements.txt
+      - name: Install quality tools for full checks
+        if: steps.scope.outputs.mode != 'docs'
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r tools/quality-requirements.txt
       - name: Check Python correctness
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/check_quality.py
       - name: Protect published release history
+        if: steps.scope.outputs.mode != 'docs'
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
@@ -53,9 +62,16 @@ jobs:
           esac
           python tools/release_history.py releases/inventory.json --base-ref "$base"
       - name: Test synthetic behavior
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/run_tests.py --summary dist/tests/summary.json
+      - name: Check documentation links and rendering
+        if: steps.scope.outputs.mode == 'docs' && matrix.python == '3.12'
+        run: python tools/run_tests.py --documentation --summary dist/tests/summary.json
+      - name: Explain documentation-only matrix scope
+        if: steps.scope.outputs.mode == 'docs'
+        run: echo 'Documentation links and rendering run once on Python 3.12. Runtime and package checks are not required for this Markdown-only diff.' >> "$GITHUB_STEP_SUMMARY"
       - name: Summarize automated tests
-        if: always()
+        if: always() && (steps.scope.outputs.mode != 'docs' || matrix.python == '3.12')
         run: |
           if [ -f dist/tests/summary.json ]; then
             {
@@ -69,7 +85,7 @@ jobs:
             echo 'Automated test summary unavailable; inspect the failed or skipped setup/test step.' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Save aggregate test results
-        if: always()
+        if: always() && (steps.scope.outputs.mode != 'docs' || matrix.python == '3.12')
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: test-results-python-${{ matrix.python }}
@@ -77,17 +93,22 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
       - name: Validate package and preview site
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/build_site.py
       - name: Verify embedded preview repository
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/verify_repository.py dist/site/repository --channel preview
       - name: Build inactive repository candidate
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/repository.py --retain-manifest releases/inventory.json
       - name: Verify candidate before upload
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/verify_repository.py dist/repository
       - name: Check reproducible release output
+        if: steps.scope.outputs.mode != 'docs'
         run: python tools/check_reproducibility.py
       - name: Save repository candidate for manual review
-        if: matrix.python == '3.12'
+        if: matrix.python == '3.12' && steps.scope.outputs.mode != 'docs'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: repository-candidate

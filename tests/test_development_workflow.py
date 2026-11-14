@@ -27,7 +27,7 @@ class DevelopmentWorkflowTests(unittest.TestCase):
         build = workflow['jobs']['build']
         self.assertEqual(build['if'], "github.ref == 'refs/heads/main'")
         self.assertEqual(build['environment'], 'Development')
-        self.assertNotIn('permissions', build)
+        self.assertEqual(build['permissions'], {'contents': 'read', 'actions': 'read'})
         steps = build['steps']
         configured = [step for step in steps if 'TRAKT_CLIENT_ID' in step.get('env', {})]
         self.assertEqual([step['run'] for step in configured], [

@@ -26,36 +26,44 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Select checks from changed files
+        id: scope
+        run: python tools/ci_scope.py
       - name: Validate declared dependency inventories
         run: python tools/check_dependencies.py
       - name: Install pinned audit tools
+        if: steps.scope.outputs.mode != 'docs'
         run: |
           python -m pip install --require-hashes --only-binary=:all: -r tools/security-requirements.txt
           mkdir -p dist/security
       - name: Scan Python code
+        if: steps.scope.outputs.mode != 'docs'
         id: code
         continue-on-error: true # Preserve reports and run other scans; final gate fails.
         run: bandit -r addons tools -f json -o dist/security/bandit.json
       - name: Audit Python runtime inventory
+        if: steps.scope.outputs.mode != 'docs'
         id: runtime
         continue-on-error: true
         run: pip-audit -r requirements.txt --no-deps --disable-pip -f json -o dist/security/runtime.json
       - name: Audit development tools and transitive dependencies
+        if: steps.scope.outputs.mode != 'docs'
         id: tooling
         continue-on-error: true
         run: pip-audit -r tools/security-requirements.txt -r tools/build-requirements.txt -r tools/quality-requirements.txt --no-deps --disable-pip -f json -o dist/security/tooling.json
       - name: Summarize scans
-        if: always()
+        if: always() && steps.scope.outputs.mode != 'docs'
         env:
           CODE_OUTCOME: ${{ steps.code.outcome }}
           RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
           TOOLING_OUTCOME: ${{ steps.tooling.outcome }}
         run: python tools/security_summary.py
       - name: Upload reports for manual triage
-        if: always()
+        if: always() && steps.scope.outputs.mode != 'docs'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: security-reports
@@ -63,7 +71,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
       - name: Require successful scans
-        if: always()
+        if: always() && steps.scope.outputs.mode != 'docs'
         env:
           CODE_OUTCOME: ${{ steps.code.outcome }}
           RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
@@ -72,6 +80,10 @@ jobs:
           test "$CODE_OUTCOME" = success
           test "$RUNTIME_OUTCOME" = success
           test "$TOOLING_OUTCOME" = success
+
+      - name: Explain documentation-only security scope
+        if: steps.scope.outputs.mode == 'docs'
+        run: echo 'Only allowlisted Markdown changed. Python vulnerability scans were not requested; scheduled/manual runs still scan everything. External Action checks run separately.' >> "$GITHUB_STEP_SUMMARY"
 
   actions:
     name: External Action pins and updates
@@ -95,6 +107,8 @@ jobs:
         run: python -m unittest discover -s tests -p test_trakt_config_workflow.py -v
       - name: Test Development artifact boundaries
         run: python -m unittest discover -s tests -p test_development_workflow.py -v
+      - name: Test changed-file selection and workflow gates
+        run: python -m unittest discover -s tests -p 'test_ci_scope*.py' -v
       - name: Check local pins
         run: python tools/action_audit.py
       - name: Inspect nested pins and available releases

@@ -58,12 +58,22 @@ def summarize(result):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--pattern", default="test*.py",
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--documentation", action="store_true",
+                           help="run documentation links and guide rendering only")
+    selection.add_argument("--pattern", default="test*.py",
                         help="unittest discovery filename pattern (default: test*.py)")
     parser.add_argument("--summary", type=Path,
                         help="write aggregate counts as JSON, creating parent directories")
     args = parser.parse_args(argv)
-    summary = summarize(run_suite(discover_suite(args.pattern)))
+    if args.documentation:
+        groups = [discover_suite(pattern) for pattern in
+                  ("test_documentation.py", "test_guide_page.py")]
+        # A missing group must not be hidden by successful discovery in the other.
+        suite = unittest.TestSuite(groups) if all(group.countTestCases() for group in groups) else unittest.TestSuite()
+    else:
+        suite = discover_suite(args.pattern)
+    summary = summarize(run_suite(suite))
     print("Tests: run={run}, passed={passed}, failures={failures}, errors={errors}, "
           "skipped={skipped}, expected_failures={expected_failures}, "
           "unexpected_successes={unexpected_successes}, success={success}".format(**summary))

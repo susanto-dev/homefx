@@ -269,3 +269,12 @@ Existing authentication/flow tests cover denial and expiry; lost-response tests 
 ambiguous refresh outcomes. The owner separately confirmed real grant/refresh,
 restart persistence, cancellation/disconnect and responsive offline error handling.
 Do not convert one evidence type into a claim about the other.
+
+## Targeted documentation validation
+
+`python tools/run_tests.py --documentation --summary dist/tests/summary.json` runs
+only the project Markdown link checks and installation-guide rendering tests. It
+cannot be combined with `--pattern`. The default command still discovers the full
+suite. CI chooses the lighter group only through the conservative
+[changed-file policy](development.md#change-aware-checks), never for mixed code/docs
+changes. Missing discovery, import errors and test failures remain failures.

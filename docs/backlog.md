@@ -343,3 +343,12 @@ the next bounded implementation is one agreed read-only progress row, preceded b
 measurement of real widget loading. No completed program test must be repeated just
 because this backlog was reconciled. No account details or private lists are needed
 in a report; fixed outcomes, navigation observations and timings are sufficient.
+
+## Change-aware CI batch
+
+Implementation selects documentation link/render checks for allowlisted Markdown-only
+changes while retaining stable required checks. Code, workflow, dependency and release
+changes run full validation; scheduled/manual security scans remain full. Pages uses
+the last successful publication as its test-selection baseline and always retains
+archive/artifact/deployment verification. See [policy and limits](development.md#change-aware-checks).
+No add-on or activation change and no new TV test are required for this batch.

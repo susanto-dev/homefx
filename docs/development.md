@@ -43,8 +43,9 @@ The separate Security scans workflow runs Bandit and pip-audit weekly and on
 changes; see security.md for coverage, manual triage and report retention.
 Secret scanning and repository security settings remain maintainer-managed.
 
-The Validation workflow runs the complete available unittest suite and builds the
-package/site on PRs and main pushes with Python 3.11 and 3.12. Build, quality and security dependencies are installed from pinned, hash-locked
+For code, workflow, dependency, asset and release changes, Validation runs the complete
+available unittest suite and builds the package/site with Python 3.11 and 3.12.
+Allowlisted documentation-only diffs use the targeted checks described below. Build, quality and security dependencies are installed from pinned, hash-locked
 requirement files in their respective jobs. The Action-audit suite runs in Security
 scans with its audited tool environment. All new Actions use the existing reviewed
 commit pins. Validation has read-only permissions and does not deploy or create PRs.
@@ -212,3 +213,38 @@ receives different bytes. Existing recorded video/repository archives remain
 immutable and retained. No test profile, database or generated configuration belongs
 in source control. Actual-device installation, TLS, login, refresh and persistence
 remain separate from fabricated tests and HTTP byte verification.
+
+## Change-aware checks
+
+`tools/ci_scope.py` allows the lighter path only for a nonempty diff containing
+`README.md`, `CONTRIBUTING.md`, `SECURITY.md` or Markdown beneath `docs/`.
+All other paths, mixed changes, renames involving code, unknown/missing history and
+empty diffs select full checks. Manual and scheduled runs always select full checks.
+No third-party filtering Action, dependency or secret is introduced.
+
+Validation compares the PR base or the main push's `before` commit with the checked-out
+HEAD. Required matrix check names remain unchanged and always report. On a docs-only
+change, Python 3.12 runs `python tools/run_tests.py --documentation` once: all project
+Markdown links plus guide rendering/navigation tests, with an aggregate report.
+Python 3.11 reports that no runtime check was requested. Neither result claims runtime
+coverage. Code/workflow/dependency/release changes retain both full suites, quality,
+archive history, manifest/package checks, repository verification and repeatability.
+
+Security skips Python source/dependency vulnerability scans for docs-only PR/push
+diffs, with an explicit scope explanation. Weekly/manual full scans and the final
+failure gate remain. External Action pin/workflow guards continue on every run,
+including the new scope-boundary tests. Platform-managed CodeQL is unchanged.
+
+Pages compares against the latest successful main Pages publication via a read-only
+Actions API request, not the immediate push commit. The base must exist locally and
+be an ancestor. Thus code awaiting publication after a failed/superseded run cannot
+be hidden by a later documentation merge. Missing history/API results select the
+full suite. Manual publication checks always use the full suite; this does not
+authorize an independent dispatch.
+
+Even for docs-only publication, archive-history protection, site/package generation,
+repository verification, reproducibility, current-main deployment protection and
+comparison with the exact uploaded artifact remain mandatory. Every main merge still
+runs normal publication: skipping deployment based only on its latest diff could
+leave an earlier code merge unpublished. No version/archive changes are introduced
+by this CI policy. Workflow summaries distinguish selected checks from omitted work.
