@@ -162,6 +162,47 @@ class DevelopmentPackageTests(unittest.TestCase):
                     self.build()
             self.assertFalse((self.parent / "output").exists())
 
+    def test_development_archives_omit_demo_but_all_bundled_modules_import_in_isolation(self):
+        # Test real artifacts, not only the builder's own file-list calculation.
+        excluded = {'catalogue.py', 'state.py', 'routes.py'}
+        before = (ROOT / 'releases/inventory.json').read_bytes()
+        for video in (False, True):
+            with self.subTest(video=video), patch.object(builder, 'ROOT', ROOT):
+                archive = builder.build(self.parent / ('clean-video' if video else 'clean-script'),
+                                        CONFIG, video=video)
+                addon_id = builder.VIDEO_ID if video else builder.ADDON_ID
+                unpacked = self.parent / ('video-imports' if video else 'script-imports')
+                with ZipFile(archive) as packed:
+                    names = set(packed.namelist())
+                    self.assertTrue(all(addon_id + '/resources/lib/' + name not in names for name in excluded))
+                    for member in packed.infolist():
+                        target = unpacked / member.filename
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.write_bytes(packed.read(member))
+                code = r'''import importlib, importlib.util, pathlib, socket, sys
+root = pathlib.Path(sys.argv[1])
+sys.path.insert(0, str(root))
+sys.dont_write_bytecode = True
+def forbidden(*args, **kwargs):
+    raise AssertionError("Network forbidden during import")
+socket.create_connection = forbidden
+socket.getaddrinfo = forbidden
+for source in sorted((root / "resources/lib").glob("*.py")):
+    module = importlib.import_module("resources.lib." + source.stem)
+    assert pathlib.Path(module.__file__).is_relative_to(root)
+for name in ("catalogue", "state", "routes"):
+    assert importlib.util.find_spec("resources.lib." + name) is None
+print("Isolated runtime imports passed.")
+'''
+                result = subprocess.run([sys.executable, '-I', '-c', code, str(unpacked / addon_id)],
+                                        cwd=self.parent, capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, 'Isolated runtime imports passed.\n')
+        self.assertEqual(before, (ROOT / 'releases/inventory.json').read_bytes())
+        for name in excluded:
+            self.assertIn('resources/lib/' + name, builder.package.FILES)
+            self.assertTrue((ROOT / 'addons/plugin.video.homefx/resources/lib' / name).is_file())
+
     def test_actual_sources_build_without_mutating_release_inventory(self):
         before = (ROOT / "releases/inventory.json").read_bytes()
         with patch.object(builder, "ROOT", ROOT):

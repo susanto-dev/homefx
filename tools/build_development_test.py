@@ -22,7 +22,11 @@ MAX_FILE = 1024 * 1024
 MAX_TOTAL = 32 * 1024 * 1024
 MAX_ZIP = 16 * 1024 * 1024
 SCRIPT_FILES = ("addon.xml", "default.py", "resources/lib/development_test.py")
-RUNTIME_FILES = tuple(name for name in package.FILES if (
+# These implement the synthetic public Preview, not either Development entry.
+PREVIEW_ONLY_FILES = frozenset({
+    "resources/lib/catalogue.py", "resources/lib/state.py", "resources/lib/routes.py",
+})
+RUNTIME_FILES = tuple(name for name in package.FILES if name not in PREVIEW_ONLY_FILES and (
     name == "resources/__init__.py" or name == "resources/art/icon.png"
     or (name.startswith("resources/lib/") and name.endswith(".py"))))
 

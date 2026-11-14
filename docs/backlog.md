@@ -1,11 +1,11 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.13 / repository 0.2.0**.
-PR #46 merged as `413da5ccf141f3a2d40baa47c932fc139db445ed`; Validation, Security,
-configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43569717493) passed.
-Publication verified 125 public files; fresh hosted index/current ZIP checks match
-retained bytes. Native Kodi identities are published, not yet TV-validated with
-Helper/skin. Direct TMDB integration remains deferred; no provider activation.
+Status checked on 14 November 2026: published **video 0.17.14 / repository 0.2.0**.
+PR #47 merged as `c52760f184f70dc6b938ef964aedadc34d1f2c19`; Validation, Security,
+configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43571506572) passed.
+Publication verified 129 public files; fresh hosted index/current ZIP checks match
+retained bytes. Cross-season aired-unwatched browsing and native Kodi identities
+are published, not yet TV-validated. Direct TMDB integration remains deferred.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -436,3 +436,12 @@ See [scope, request costs and TV acceptance](show-unwatched.md). This advances B
 it does not complete global Continue Watching, narrative Next aired, playback or
 skin-widget acceptance. No new account setup is required. Large-show load times
 and the new context-menu path remain unverified on TV.
+
+## Development package cleanup
+
+Remove Preview-only catalogue/state/routes modules from Development ZIPs, retaining
+their source, public Preview behavior, synthetic tests and published archives.
+Both packages receive isolated complete-runtime import checks. This avoids shipping
+unused demo behavior without deleting shared inactive integrations or retiring the
+program test add-on before its existing gates. No runtime feature, public package
+version, credential or skin change. TV speed benefits are not claimed.
