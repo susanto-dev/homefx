@@ -1,12 +1,12 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.14 / repository 0.2.0**.
-PR #48 merged as `7870a1f0652c6b2ce8b128a03bbc0fede91bc69e`; Validation, Security,
-configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43574173173) passed.
-Publication verified 129 public files. The Development-only demo-module cleanup is
-published; Preview/repository versions and retained bytes are unchanged. Selected
-real-list browsing passed on TV; skin widget/restart/performance acceptance remains
-open. Direct TMDB integration and public/Production activation remain deferred.
+Status checked on 14 November 2026: published **video 0.17.15 / repository 0.2.0**.
+PR #50 merged as `7037e0cd1a119ff6954daa250e67e8433353d418`; its post-merge
+Validation, Security, configuration and publication/hosted-byte checks passed. It changes test structure only, retaining
+all existing regression cases and package bytes. The [PR #50 publication](https://github.com/susanto-dev/homefx/actions/runs/43595596639)
+verified 133 public files against its uploaded artifact. Real saved-list selection and 100+ movie browsing passed
+on TV; skin widget, video restart and performance acceptance remain open. Direct
+TMDB and public/Production activation remain deferred.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -18,9 +18,9 @@ provider or release choice. The current public add-on remains synthetic.
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
-| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; unified widget folder picker candidate added; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
-| B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development season and cross-season read-only browser; picker candidate added | Live episode identity/status, season navigation and refresh behavior on TV |
-| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; global/episode Continue Watching and Next aired remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
+| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; unified widget folder picker published; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
+| B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development season and cross-season read-only browser; picker published | Live episode identity/status, season navigation and refresh behavior on TV |
+| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; per-show episode Continue Watching, Next aired and Upcoming candidate added; global feeds remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
 | B07 | Title search | Demo implemented; Trakt title-search contracts mocked/inactive (0.9) | Live literal-query behavior, entitlement, keyboard/context-menu UI and TV integration |
@@ -43,11 +43,11 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| T01 | Device login, refresh, protected token store, HTTPS/session guards | Shared implementation; program lifecycle passed on TV; Development identity/redirect owner-confirmed | Fresh video-profile login/storage acceptance; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed. Do not repeat completed program checks |
+| T01 | Device login, refresh, protected token store, HTTPS/session guards | Shared implementation; program lifecycle passed on TV; Development identity/redirect owner-confirmed | Video selected-list browsing owner-confirmed; video restart acceptance pending; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed. Do not repeat completed program checks |
 | T02 | Account connect/cancel/switch/disconnect UI | Shared UI and Development video entry published | Program consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
 | T03 | Personal/liked lists and saved account-bound selections | Published in Development Video; synthetic end-to-end acceptance passed | Selection/save and opening a real 100+ movie list passed; verify widget and saved selection after restart on TV |
 | T04 | Complete movie watched snapshot and filtered joins | Published Development movie-progress views; synthetic adapter tests passed | Actual endpoint/entitlement, filter and performance acceptance on TV; failed snapshots never mean unwatched |
-| T05 | Live Trakt read views | Read-only selected-list Development candidate published; public/Production inactive | Validate candidate on TV; Continue Watching, Next aired and Upcoming need separate future integration |
+| T05 | Live Trakt read views | Read-only selected-list Development candidate published; public/Production inactive | Validate candidate on TV; per-show episode progress candidate; global feeds need separate integration |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
 | T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache and shared request limits wired in Development Video; persistent metadata cache pending | Validate shared limits and cold/warm/multiple-row load times on TV; use measurements to decide cache retention/invalidation |
 | T08 | Wider public Trakt application access | Pending external approval | Service registration/Production requirements and current terms review |
@@ -464,7 +464,7 @@ a skin or activate public service access.
 | T07: cold/warm and multiple-row performance | Request limits and invocation cache implemented | TV timings; no speed or cross-row cache claim |
 | R01–R03: installation/update | Public Preview repository and experimental Development ZIP paths published | Development remains deliberate ZIP update; not repository auto-update |
 | T08: general public live access | Inactive, external approval/configuration gate | Owner/service requirements; do not infer from Development tests |
-| B04/B11: global Continue Watching, narrative Next aired, personal calendar | Shared contracts inactive; selected-list views only | Separate product integration and TV acceptance |
+| B04/B11: episode progress | Per-show Continue Watching / narrative Next aired / Upcoming candidate; global feeds and personal calendar inactive | Per-show TV acceptance; separate global-feed integration |
 | B05–B08/T06: remote list/history writes, live search/related UI | Demo/local or inactive contracts | Separate consent, service and UI gates |
 | D01–D06/P01–P06: Real-Debrid, sources, playback and scrobbling | Inactive; no playable source catalogue assumed | Registration, authorized source decision, single-owner playback/device checks |
 | Artwork | Trakt text/ratings and local placeholders; native Kodi IDs published | Skin/Helper behavior on TV; direct TMDB deferred |
@@ -481,9 +481,31 @@ Validation and publication passed. The publication verifier compared all 133 hos
 files with its uploaded artifact. Preview 0.17.15 and repository 0.2.0 are published;
 this does not establish the outstanding widget TV checks above.
 
-The maintenance candidate separates shared widget stand-ins from test case modules,
+Published PR #50 separates shared widget stand-ins from test case modules,
 removes redundant per-test verifier package builds using isolated copies, and supports
 multiple focused discovery patterns without duplicate execution. Existing regression
 cases remain; no obsolete boundary coverage was identified for deletion. Full-suite
 and independent review gates remain required. No runtime, archive or version change
 is needed; existing installations require no update solely for this cleanup.
+
+## Selected-show progress batch and completion milestones
+
+The [selected-show progress candidate](show-progress.md) adds three distinct terminal
+widget folders to the existing show picker. It uses complete bounded series reads,
+regular seasons only, and existing account/selection guards. No new endpoint, remote
+write, provider, persistent cache or player activation is introduced. The older
+all-episodes and aired-unwatched routes remain unchanged.
+
+| Milestone | Status | Completion evidence / remaining work |
+|---|---|---|
+| Read-only Development library | Real list selection/save and browsing passed; season/progress implementation published or candidate | Season/progress correctness, selected video list after restart |
+| Existing-skin widget MVP | Picker and guide published; three per-show progress folders candidate | One real row, remote focus/Back, restart, cold/warm and multiple-row times on TV |
+| Usable personal playback add-on | Not complete; provider/player contracts inactive | Choose and verify authorized source path, provider login, real playback, subtitles, seek/resume, next episode and scrobbling ownership |
+| Public live release | Not complete; public Preview still synthetic | Service/public registration gates, repository delivery of live build, tested updates and release acceptance |
+
+There is no meaningful percentage complete: synthetic contracts are not device
+acceptance or playable source integration. Finish the read-only widget milestone
+before claiming the personal playback milestone. Related/search and remote watched
+correction remain separate backlog items; artwork provider selection is deferred.
+Current authentication evidence is retained and does not need repeating solely for
+this batch. No replacement skin is planned.

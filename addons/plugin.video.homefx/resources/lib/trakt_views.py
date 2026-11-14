@@ -215,6 +215,41 @@ def _series_rows(rows):
     return rows
 
 
+
+def show_progress(rows, selection):
+    """Separate pause, narrative-next and future metadata for one regular show.
+
+    Upcoming preserves unknown watched state instead of claiming unwatched. A
+    date or pause is metadata, never evidence of a playable source.
+    """
+    if type(selection) is not str or selection not in {"continue", "next", "upcoming"}:
+        raise ApiError("invalid_filter")
+    regular = []
+    for row in _series_rows(rows):
+        release, paused = row.get("release_at"), row.get("last_played")
+        progress = row.get("progress")
+        if (row["release_status"] != "unknown_date" and
+                (not isinstance(release, datetime) or release.tzinfo is None)):
+            raise ApiError("invalid_metadata")
+        if (type(progress) not in (int, float) or not math.isfinite(progress)
+                or not 0 <= progress <= 100 or
+                (paused is not None and (not isinstance(paused, datetime) or paused.tzinfo is None))):
+            raise ApiError("invalid_progress")
+        if row["season"] > 0:
+            regular.append(row)
+    narrative = lambda row: (row["season"], row["episode"])
+    if selection == "upcoming":
+        return sorted((row for row in regular if row["release_status"] == "upcoming"
+                       and row["watched"] is not True),
+                      key=lambda row: (row["release_at"], *narrative(row)))
+    aired = [row for row in regular if row["release_status"] == "aired" and row["watched"] is False]
+    if selection == "next":
+        return sorted(aired, key=narrative)[:1]
+    unfinished = sorted((row for row in aired if 0 < row["progress"] < 100
+                         and row["last_played"] is not None), key=narrative)
+    return sorted(unfinished, key=lambda row: row["last_played"], reverse=True)
+
+
 def season_summaries(rows):
     """Count actual normalized rows, preserving unknown watched/date evidence."""
     seasons = {}

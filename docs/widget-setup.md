@@ -60,6 +60,10 @@ Inside **Widget folders**, choose the terminal folder appropriate for the row:
   episodes — all regular seasons**. The latter is a directly selectable episode
   folder. For a single season, enter Seasons and episodes, then the season folder
   before saving the widget source.
+- The selected-show progress candidate adds **Continue watching episodes**,
+  **Next aired unwatched episode** and **Upcoming episodes** under that same show
+  chooser. Enter a terminal view before **Use as widget**. These are separate
+  per-show views, not global feeds or playback; see [rules and acceptance](show-progress.md).
 
 The ordinary show click in an existing selected-list row still opens seasons.
 Existing saved routes remain valid; the new picker folders do not require remaking
@@ -90,7 +94,7 @@ the [personal calendar](calendar-contract.md) is not every selected show's sched
 
 ## Existing synthetic Preview widgets
 
-**HomeFX Preview** remains separate: repository **0.2.0**, video **0.17.14** in the
+**HomeFX Preview** remains separate: repository **0.2.0**, video **0.17.15** in the
 existing published Preview. Its repository installation and updates do not install
 or update Development Video. Keep any working Preview widget routes.
 

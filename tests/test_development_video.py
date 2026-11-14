@@ -130,7 +130,7 @@ class DevelopmentVideoTests(unittest.TestCase):
         self.assertEqual(len(shows.rows), 1)
         success, views = self.invoke('?' + urlsplit(shows.rows[0][0]).query)
         self.assertTrue(success)
-        self.assertEqual(len(views.rows), 2)
+        self.assertEqual(len(views.rows), 5)
         self.assertFalse(any('/progress/' in row[2] or '/sync/playback' in row[2]
                              for row in self.service.requests[start:]))
         target = next(target for target, _, _ in views.rows if 'route=trakt_show_unwatched' in target)
@@ -141,10 +141,24 @@ class DevelopmentVideoTests(unittest.TestCase):
             self.assertEqual(len(episodes.rows), 1)
             self.assertEqual(episodes.rows[0][1].tag.values['episode'], 1)
             self.assertFalse(any(event[0] in {'confirm', 'open'} for event in episodes.events))
+        progress = {routes.parse(urlsplit(url).query)[1]['view']: url
+                    for url, _, _ in views.rows if 'route=trakt_show_progress' in url}
+        self.assertEqual(set(progress), {'continue', 'next', 'upcoming'})
+        for view, url in progress.items():
+            for _ in range(2):
+                success, rows = self.invoke('?' + urlsplit(url).query)
+                self.assertTrue(success)
+                self.assertEqual(len(rows.rows), 1 if view == 'next' else 0)
+                if rows.rows:
+                    self.assertEqual(rows.rows[0][1].tag.values['episode'], 1)
+                    self.assertIn('route=trakt_episode_details', rows.rows[0][0])
+                self.assertFalse(any(event[0] in {'confirm', 'open'} for event in rows.events))
+        self.assertTrue(all(row[1] == 'GET' for row in self.service.requests[start:]))
         self.invoke('?action=disconnect')
-        success, stale = self.invoke('?' + urlsplit(target).query)
-        self.assertFalse(success)
-        self.assertEqual(stale.rows, [])
+        for stale_target in [target, *progress.values()]:
+            success, stale = self.invoke('?' + urlsplit(stale_target).query)
+            self.assertFalse(success)
+            self.assertEqual(stale.rows, [])
 
     def test_abort_during_local_confirmation_does_not_open_storage(self):
         for action in ('probe', 'status'):

@@ -14,6 +14,7 @@ _FIELDS = {
     'trakt_list': {'ref'},
     'trakt_seasons': {'ref', 'item'},
     'trakt_show_unwatched': {'ref', 'item'},
+    'trakt_show_progress': {'ref', 'item', 'view'},
     'trakt_episodes': {'ref', 'item', 'season'},
     'trakt_details': {'ref', 'item'},
     'trakt_episode_details': {'ref', 'item', 'season', 'episode'},
@@ -28,6 +29,12 @@ MOVIE_FILTERS = {
     'upcoming': 'Upcoming movies',
 }
 
+SHOW_PROGRESS_VIEWS = {
+    'continue': 'Continue watching episodes',
+    'next': 'Next aired unwatched episode',
+    'upcoming': 'Upcoming episodes',
+}
+
 def _validate(route, params):
     if type(route) is not str or route not in _FIELDS:
         raise ValueError('invalid_widget_route')
@@ -38,6 +45,8 @@ def _validate(route, params):
         raise ValueError('invalid_widget_route')
     filters = {'all', 'aired_unwatched'} if route == 'trakt_episodes' else MOVIE_FILTERS
     if 'filter' in params and (type(params['filter']) is not str or params['filter'] not in filters):
+        raise ValueError('invalid_widget_route')
+    if 'view' in params and (type(params['view']) is not str or params['view'] not in SHOW_PROGRESS_VIEWS):
         raise ValueError('invalid_widget_route')
     for key in ('ref', 'item'):
         if key in params and (type(params[key]) is not str or

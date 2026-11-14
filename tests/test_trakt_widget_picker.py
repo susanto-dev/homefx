@@ -61,8 +61,8 @@ class WidgetPickerTests(WidgetDirectoryFixture, unittest.TestCase):
         self.intercept = self.series
         self.show_choices()
         self.assertFalse(any('/shows/' in path or '/sync/playback' in path for path in self.calls))
-        self.assertEqual(len(self.rows), 2)
-        terminal = [url for url, _, folder in self.rows if folder]
+        self.assertEqual(len(self.rows), 5)
+        terminal = [url for url, _, folder in self.rows[:2] if folder]
         self.assertEqual([routes.parse(urlsplit(url).query)[0] for url in terminal],
                          ['trakt_seasons', 'trakt_show_unwatched'])
         for url in terminal:

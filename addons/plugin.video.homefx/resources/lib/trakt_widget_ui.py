@@ -143,7 +143,9 @@ class WidgetDirectoryUI:
             return dict(result, items=[
                 {'name': 'Seasons and episodes (reads Trakt history)', 'route': 'trakt_seasons'},
                 {'name': 'Aired unwatched episodes — all regular seasons', 'route': 'trakt_show_unwatched'},
-            ])
+            ] + [{'name': label + ' — this show, regular seasons',
+                  'route': 'trakt_show_progress', 'view': view}
+                 for view, label in routes.SHOW_PROGRESS_VIEWS.items()])
         if route == 'trakt_movie_views':
             result = library.widget_sources()
             if not any(row['ref'] == params['ref'] for row in result['items']):
@@ -157,6 +159,8 @@ class WidgetDirectoryUI:
             return library.widget_seasons(params['ref'], params['item'])
         if route == 'trakt_show_unwatched':
             return library.widget_show_unwatched(params['ref'], params['item'])
+        if route == 'trakt_show_progress':
+            return library.widget_show_progress(params['ref'], params['item'], params['view'])
         if route == 'trakt_episodes':
             return library.widget_episodes(params['ref'], params['item'], params['season'],
                                            episode_filter=params.get('filter', 'all'))
@@ -174,7 +178,8 @@ class WidgetDirectoryUI:
                 target, folder = self._url(row['route']), True
             elif route == 'trakt_show_views':
                 label = _text(row['name'])
-                target, folder = self._url(row['route'], ref=params['ref'], item=params['item']), True
+                target, folder = self._url(row['route'], ref=params['ref'], item=params['item'],
+                    **({'view': row['view']} if 'view' in row else {})), True
             elif route in {'trakt_sources', 'trakt_movie_sources', 'trakt_show_sources'}:
                 label = _text(row['name'])
                 destination = {'trakt_movie_sources': 'trakt_movie_views',
@@ -196,10 +201,10 @@ class WidgetDirectoryUI:
                     target = self._url(destination, ref=params['ref'], item=row['item_ref'],
                                        **({'filter': params['filter']} if 'filter' in params else {}))
                     folder = row['kind'] == 'show'
-                elif route in {'trakt_episodes', 'trakt_show_unwatched'}:
+                elif route in {'trakt_episodes', 'trakt_show_unwatched', 'trakt_show_progress'}:
                     target = self._url('trakt_episode_details', ref=params['ref'], item=params['item'],
                                         season=row['season'], episode=row['episode'])
-                    if route == 'trakt_show_unwatched':
+                    if route in {'trakt_show_unwatched', 'trakt_show_progress'}:
                         label = 'S' + str(row['season']) + 'E' + str(row['episode']) + ' — ' + label
             item = self._item(label=label)
             if self._art:
@@ -241,7 +246,7 @@ class WidgetDirectoryUI:
                 show_view = self._url('trakt_show_unwatched', ref=params['ref'], item=row['item_ref'])
                 item.addContextMenuItems([('Aired unwatched episodes — all regular seasons',
                                           'Container.Update(' + show_view + ')')])
-            elif route in {'trakt_seasons', 'trakt_episodes', 'trakt_show_unwatched'}:
+            elif route in {'trakt_seasons', 'trakt_episodes', 'trakt_show_unwatched', 'trakt_show_progress'}:
                 show_view = self._url('trakt_show_unwatched', ref=params['ref'], item=params['item'])
                 item.addContextMenuItems([('Aired unwatched episodes — all regular seasons',
                                           'Container.Update(' + show_view + ')')])
@@ -335,6 +340,10 @@ class WidgetDirectoryUI:
                 category = routes.MOVIE_FILTERS[params['filter']] + ' — this selected list only. ' + category
             if successful and route == 'trakt_show_unwatched':
                 category = 'Aired unwatched — this show, regular seasons only. ' + category
+            if successful and route == 'trakt_show_progress':
+                category = routes.SHOW_PROGRESS_VIEWS[params['view']] + ' — this show, regular seasons only. ' + category
+                if params['view'] == 'upcoming':
+                    category += ' Dates are not playable availability or a complete personal calendar.'
             self._plugin.setPluginCategory(handle, category)
             self._plugin.setContent(handle, 'videos')
             if successful:

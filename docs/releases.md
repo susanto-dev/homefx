@@ -690,3 +690,19 @@ current login/selections. Follow [one list and one skin row](widget-mvp.md) befo
 adding a second row. Source inspection and synthetic tests do not establish TV
 navigation, persistence, artwork or performance. No independent deployment or
 repeat of completed account tests is requested.
+
+## Selected-show progress proposal (0.17.16)
+
+Development Video adds separate Continue watching, Next aired unwatched and Upcoming
+terminal folders for one selected show's regular seasons. Existing routes, private
+account storage and saved selections are preserved. Public Preview remains synthetic;
+no playback, remote writes, scrobbling or provider activation is added.
+
+Normal merge-triggered Pages publication prepares video 0.17.16 and content-addressed
+Development downloads after its gates. Repository 0.2.0 and all 29 prior archive
+records/bytes remain unchanged. No independent publication or overwrite is authorized.
+Verify the deployed artifact and hosted bytes after merge before using a new filename.
+Then update Development Video from the existing source and fully restart Kodi, keeping
+the existing login. See the [short progress-row check](show-progress.md). No repeat
+authentication test is required; skin behavior, live progress and timing need TV
+evidence. Unknown dates/watch state do not become playable or unwatched claims.
