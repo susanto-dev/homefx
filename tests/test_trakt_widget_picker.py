@@ -2,34 +2,32 @@
 import unittest
 from urllib.parse import urlsplit
 
-import test_trakt_widget_ui as widget_fixture
+from widget_fixtures import WidgetDirectoryFixture
 from resources.lib.trakt_widget_ui import WidgetDirectoryUI
 from resources.lib.trakt_client import Response
 from resources.lib.trakt_auth import TokenSet
 from resources.lib import trakt_widget_routes as routes
 
 
-class WidgetPickerTests(unittest.TestCase):
+class WidgetPickerTests(WidgetDirectoryFixture, unittest.TestCase):
     def setUp(self):
-        self.f = widget_fixture.WidgetDirectoryTests()
-        self.f.setUp()
-        self.addCleanup(self.f.doCleanups)
-        self.f.ui = WidgetDirectoryUI(self.f, self.f.item, lambda: self.f, self.f,
-            dialog=self.f, addon_id='plugin.video.homefx.development')
+        super().setUp()
+        self.ui = WidgetDirectoryUI(self, self.item, lambda: self, self,
+            dialog=self, addon_id='plugin.video.homefx.development')
 
     def url(self, route, **params):
         return routes.url(route, addon_id='plugin.video.homefx.development', **params)
 
     def render(self, target):
-        return self.f.render(target, widget=True)
+        return super().render(target, widget=True)
 
     def show_choices(self):
         self.assertEqual(self.render(self.url('trakt_widget_menu')).state, 'ready')
-        self.assertEqual(self.render(self.f.rows[2][0]).state, 'ready')
-        self.assertEqual(self.render(self.f.rows[0][0]).state, 'ready')
-        self.assertEqual(len(self.f.rows), 1)
-        self.assertEqual(self.f.rows[0][1].tag.values['type'], 'tvshow')
-        target = self.f.rows[0][0]
+        self.assertEqual(self.render(self.rows[2][0]).state, 'ready')
+        self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
+        self.assertEqual(len(self.rows), 1)
+        self.assertEqual(self.rows[0][1].tag.values['type'], 'tvshow')
+        target = self.rows[0][0]
         self.assertEqual(self.render(target).state, 'ready')
         return target
 
@@ -50,109 +48,109 @@ class WidgetPickerTests(unittest.TestCase):
         class Forbidden:
             def __getattribute__(self, name):
                 raise AssertionError('Static picker opened account runtime')
-        result = self.f.ui.render(Forbidden(), 1, 'route=trakt_widget_menu', widget=True)
+        result = self.ui.render(Forbidden(), 1, 'route=trakt_widget_menu', widget=True)
         self.assertEqual(result.state, 'ready')
-        self.assertEqual([routes.parse(urlsplit(url).query)[0] for url, _, _ in self.f.rows],
+        self.assertEqual([routes.parse(urlsplit(url).query)[0] for url, _, _ in self.rows],
                          ['trakt_sources', 'trakt_movie_sources', 'trakt_show_sources'])
-        self.assertTrue(all(folder for _, _, folder in self.f.rows))
-        self.assertEqual(self.f.calls, [])
-        self.assertEqual(self.f.events, [])
-        self.assertTrue(all(not item.tag.values for _, item, _ in self.f.rows))
+        self.assertTrue(all(folder for _, _, folder in self.rows))
+        self.assertEqual(self.calls, [])
+        self.assertEqual(self.events, [])
+        self.assertTrue(all(not item.tag.values for _, item, _ in self.rows))
 
     def test_folder_picker_reaches_show_view_without_context_or_early_history(self):
-        self.f.intercept = self.series
+        self.intercept = self.series
         self.show_choices()
-        self.assertFalse(any('/shows/' in path or '/sync/playback' in path for path in self.f.calls))
-        self.assertEqual(len(self.f.rows), 2)
-        terminal = [url for url, _, folder in self.f.rows if folder]
+        self.assertFalse(any('/shows/' in path or '/sync/playback' in path for path in self.calls))
+        self.assertEqual(len(self.rows), 2)
+        terminal = [url for url, _, folder in self.rows if folder]
         self.assertEqual([routes.parse(urlsplit(url).query)[0] for url in terminal],
                          ['trakt_seasons', 'trakt_show_unwatched'])
         for url in terminal:
             with self.subTest(url=routes.parse(urlsplit(url).query)[0]):
                 self.assertEqual(self.render(url).state, 'ready')
-                self.assertEqual(len(self.f.rows), 1)
+                self.assertEqual(len(self.rows), 1)
                 self.assertTrue(all(target.startswith('plugin://plugin.video.homefx.development/')
-                                    for target, _, _ in self.f.rows))
-        self.assertEqual(self.f.rows[0][1].tag.values['episode'], 1)
-        self.assertEqual(self.f.rows[0][1].label, 'S1E1 — Synthetic episode')
-        self.assertEqual(self.f.details, [])
-        self.assertEqual(self.f.events, [])
-        self.assertEqual(self.f.ends, [(True, False)])
+                                    for target, _, _ in self.rows))
+        self.assertEqual(self.rows[0][1].tag.values['episode'], 1)
+        self.assertEqual(self.rows[0][1].label, 'S1E1 — Synthetic episode')
+        self.assertEqual(self.details, [])
+        self.assertEqual(self.events, [])
+        self.assertEqual(self.ends, [(True, False)])
 
     def test_terminal_folder_url_survives_reopen_with_saved_selection(self):
-        self.f.intercept = self.series
+        self.intercept = self.series
         self.show_choices()
-        terminal = self.f.rows[1][0]
+        terminal = self.rows[1][0]
         self.assertEqual(self.render(terminal).state, 'ready')
-        first = [(url, item.label, folder) for url, item, folder in self.f.rows]
-        self.f.library = self.f.reopen()
+        first = [(url, item.label, folder) for url, item, folder in self.rows]
+        self.library = self.reopen()
         self.assertEqual(self.render(terminal).state, 'ready')
-        self.assertEqual(first, [(url, item.label, folder) for url, item, folder in self.f.rows])
+        self.assertEqual(first, [(url, item.label, folder) for url, item, folder in self.rows])
 
     def test_deselection_and_new_account_reject_saved_picker_and_terminal_routes(self):
-        self.f.intercept = self.series
+        self.intercept = self.series
         choices = self.show_choices()
-        terminal = self.f.rows[1][0]
-        self.f.library.select_lists([])
+        terminal = self.rows[1][0]
+        self.library.select_lists([])
         for target in (choices, terminal):
             self.assertNotIn(self.render(target).state, {'ready', 'empty', 'partial'})
-            self.assertEqual(self.f.rows, [])
-        self.f.library.select_lists(['trakt-list:1'])
-        self.f.store.install(TokenSet('synthetic-b', 'synthetic-refresh-b', 10000))
-        self.f.library = self.f.reopen()
-        self.f.library.select_lists(['trakt-list:1'])
+            self.assertEqual(self.rows, [])
+        self.library.select_lists(['trakt-list:1'])
+        self.store.install(TokenSet('synthetic-b', 'synthetic-refresh-b', 10000))
+        self.library = self.reopen()
+        self.library.select_lists(['trakt-list:1'])
         for target in (choices, terminal):
             self.assertNotIn(self.render(target).state, {'ready', 'empty', 'partial'})
-            self.assertEqual(self.f.rows, [])
+            self.assertEqual(self.rows, [])
 
     def test_show_choices_cannot_open_a_movie_or_render_after_account_change(self):
-        ref = self.f.library.widget_sources()['items'][0]['ref']
-        movie = self.f.library.widget_list(ref)['items'][0]['item_ref']
+        ref = self.library.widget_sources()['items'][0]['ref']
+        movie = self.library.widget_list(ref)['items'][0]['item_ref']
         self.assertNotEqual(self.render(self.url('trakt_show_views', ref=ref, item=movie)).state, 'ready')
-        self.assertEqual(self.f.rows, [])
+        self.assertEqual(self.rows, [])
         target = self.show_choices()
-        self.f.on_item = lambda: self.f.store.disconnect()
+        self.on_item = lambda: self.store.disconnect()
         self.assertNotEqual(self.render(target).state, 'ready')
-        self.assertEqual(self.f.rows, [])
-        self.assertEqual(self.f.ends, [(False, False)])
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.ends, [(False, False)])
 
     def test_empty_show_list_and_authorization_error_never_substitute_demo_rows(self):
-        ref = self.f.library.widget_sources()['items'][0]['ref']
-        self.f.items = self.f.items[:1]
+        ref = self.library.widget_sources()['items'][0]['ref']
+        self.items = self.items[:1]
         self.assertEqual(self.render(self.url('trakt_shows', ref=ref)).state, 'empty')
-        self.assertEqual(self.f.rows, [])
-        self.assertFalse(any('/shows/' in path or '/sync/playback' in path for path in self.f.calls))
-        self.f.store.disconnect()
+        self.assertEqual(self.rows, [])
+        self.assertFalse(any('/shows/' in path or '/sync/playback' in path for path in self.calls))
+        self.store.disconnect()
         self.assertEqual(self.render(self.url('trakt_show_sources')).state, 'authorization_needed')
-        self.assertEqual(self.f.rows, [])
-        self.assertEqual(self.f.details, [])
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.details, [])
 
     def test_picker_offline_and_cancelled_reads_remain_silent_failures(self):
-        self.f.library.clear()
-        self.f.intercept = lambda path: Response(503, body={})
+        self.library.clear()
+        self.intercept = lambda path: Response(503, body={})
         self.assertNotIn(self.render(self.url('trakt_show_sources')).state, {'ready', 'empty', 'partial'})
-        self.assertEqual(self.f.rows, [])
-        self.assertEqual(self.f.details, [])
-        self.assertEqual(self.f.events, [])
-        self.f.calls.clear()
-        self.f.abort = True
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.details, [])
+        self.assertEqual(self.events, [])
+        self.calls.clear()
+        self.abort = True
         self.assertEqual(self.render(self.url('trakt_widget_menu')).state, 'cancelled')
-        self.assertEqual(self.f.calls, [])
-        self.assertEqual(self.f.rows, [])
+        self.assertEqual(self.calls, [])
+        self.assertEqual(self.rows, [])
 
     def test_existing_list_and_movie_picker_leaves_are_unchanged(self):
         self.assertEqual(self.render(self.url('trakt_widget_menu')).state, 'ready')
-        lists, movies = self.f.rows[0][0], self.f.rows[1][0]
+        lists, movies = self.rows[0][0], self.rows[1][0]
         self.assertEqual(self.render(lists).state, 'ready')
-        full_list = self.f.rows[0][0]
+        full_list = self.rows[0][0]
         self.assertEqual(routes.parse(urlsplit(full_list).query)[0], 'trakt_list')
         self.assertEqual(self.render(full_list).state, 'ready')
-        self.assertEqual(len(self.f.rows), 2)
+        self.assertEqual(len(self.rows), 2)
         self.assertEqual(self.render(movies).state, 'ready')
-        self.assertEqual(self.render(self.f.rows[0][0]).state, 'ready')
+        self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
         self.assertEqual([routes.parse(urlsplit(url).query)[1]['filter']
-                          for url, _, _ in self.f.rows], list(routes.MOVIE_FILTERS))
-        self.assertFalse(any('/sync/playback' in path for path in self.f.calls))
+                          for url, _, _ in self.rows], list(routes.MOVIE_FILTERS))
+        self.assertFalse(any('/sync/playback' in path for path in self.calls))
 
     def test_new_route_schema_rejects_extra_fields_before_reads(self):
         ref, item = 'a' * 64, 'b' * 64
@@ -162,5 +160,5 @@ class WidgetPickerTests(unittest.TestCase):
             query = urlsplit(self.url(route, **params)).query
             self.assertEqual(routes.parse(query), (route, params))
             self.assertEqual(self.render(self.url(route, **params) + '&filter=all').state, 'failed')
-        self.assertEqual(self.f.calls, [])
-        self.assertEqual(self.f.rows, [])
+        self.assertEqual(self.calls, [])
+        self.assertEqual(self.rows, [])

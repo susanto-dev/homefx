@@ -30,6 +30,28 @@ def discover_suite(pattern="test*.py"):
     return unittest.TestLoader().discover(str(ROOT / "tests"), pattern=pattern)
 
 
+def select_suite(patterns):
+    """Combine requested discoveries once per test ID; require every selection."""
+    groups = [discover_suite(pattern) for pattern in patterns]
+    if not groups or any(not group.countTestCases() for group in groups):
+        return unittest.TestSuite()
+    if len(groups) == 1:
+        return groups[0]
+
+    def cases(suite):
+        for test in suite:
+            if isinstance(test, unittest.TestSuite):
+                yield from cases(test)
+            else:
+                yield test
+
+    selected = {}
+    for group in groups:
+        for test in cases(group):
+            selected.setdefault(test.id(), test)
+    return unittest.TestSuite(selected.values())
+
+
 def run_suite(suite, stream=None):
     """Keep ordinary verbose unittest diagnostics on the supplied stream."""
     return unittest.TextTestRunner(
@@ -61,18 +83,15 @@ def main(argv=None):
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--documentation", action="store_true",
                            help="run documentation links and guide rendering only")
-    selection.add_argument("--pattern", default="test*.py",
-                        help="unittest discovery filename pattern (default: test*.py)")
+    selection.add_argument("--pattern", action="append",
+                           help="discovery filename pattern; repeat to combine selections (default: test*.py)")
     parser.add_argument("--summary", type=Path,
                         help="write aggregate counts as JSON, creating parent directories")
     args = parser.parse_args(argv)
-    if args.documentation:
-        groups = [discover_suite(pattern) for pattern in
-                  ("test_documentation.py", "test_guide_page.py")]
-        # A missing group must not be hidden by successful discovery in the other.
-        suite = unittest.TestSuite(groups) if all(group.countTestCases() for group in groups) else unittest.TestSuite()
-    else:
-        suite = discover_suite(args.pattern)
+    patterns = ("test_documentation.py", "test_guide_page.py") if args.documentation else (
+        args.pattern or ("test*.py",)
+    )
+    suite = select_suite(patterns)
     summary = summarize(run_suite(suite))
     print("Tests: run={run}, passed={passed}, failures={failures}, errors={errors}, "
           "skipped={skipped}, expected_failures={expected_failures}, "

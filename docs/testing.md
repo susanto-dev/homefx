@@ -270,6 +270,35 @@ ambiguous refresh outcomes. The owner separately confirmed real grant/refresh,
 restart persistence, cancellation/disconnect and responsive offline error handling.
 Do not convert one evidence type into a claim about the other.
 
+## Test structure and focused work
+
+Keep behavioral assertions in `test_*.py` modules. Reusable stand-ins belong in
+`widget_fixtures.py` for shared widget doubles, rather than test case classes
+imported by other suites. A fixture
+must contain only fabricated data and must not perform network or account work.
+Use a fresh mutable fixture per test; never share account stores or service state.
+
+For several related modules, repeat the filename pattern:
+
+```sh
+python3 tools/run_tests.py --pattern 'test_trakt_widget*.py' --pattern 'test_trakt_episode_progress_ui.py'
+```
+
+Overlapping patterns run each test ID once. Every requested pattern must discover
+at least one test; a typo cannot silently produce a partial successful run. The
+default still runs the full suite, and `--documentation` remains a separate mode.
+Focused selections are development feedback, not substitutes for full pre-review CI.
+
+Verifier tests may build an immutable synthetic baseline once per class and copy
+it into a separate temporary directory for each test. Mutation tests must never
+change the baseline or share writable copies. Builder and reproducibility tests
+still perform real builds; fixture reuse does not replace those guarantees.
+
+Remove a regression only when its behavior is obsolete or demonstrably covered at
+the same boundary. Similar checks at builder, verifier and publication boundaries
+are not automatically redundant. Keep security, concurrency and account-isolation
+cases even when their successful paths overlap.
+
 ## Targeted documentation validation
 
 `python tools/run_tests.py --documentation --summary dist/tests/summary.json` runs

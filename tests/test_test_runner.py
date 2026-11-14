@@ -49,6 +49,51 @@ class TestRunnerTests(unittest.TestCase):
             status = run_tests.main(arguments)
         return status, output.getvalue(), errors.getvalue()
 
+    def test_default_still_discovers_the_full_suite(self):
+        suite = unittest.TestSuite([unittest.FunctionTestCase(lambda: None)])
+        with mock.patch.object(run_tests, "discover_suite", return_value=suite) as discover, \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(run_tests.main([]), 0)
+        discover.assert_called_once_with("test*.py")
+
+    def test_repeated_patterns_run_overlapping_cases_once_and_keep_failures(self):
+        groups = [outcome_suite(), unittest.TestSuite([
+            outcome_suite(), unittest.FunctionTestCase(lambda: None),
+        ])]
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "summary.json"
+            with mock.patch.object(run_tests, "discover_suite", side_effect=groups) as discover, \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                status = run_tests.main(["--pattern", "test_one.py", "--pattern", "test_*.py",
+                                         "--summary", str(target)])
+            report = json.loads(target.read_text(encoding="utf-8"))
+        self.assertEqual(discover.call_args_list, [mock.call("test_one.py"), mock.call("test_*.py")])
+        self.assertEqual(status, 1)
+        self.assertEqual(report["run"], 7)
+        self.assertEqual(report["passed"], 2)
+        self.assertEqual(report["failures"], 1)
+        self.assertEqual(report["errors"], 1)
+        self.assertEqual(report["unexpected_successes"], 1)
+
+    def test_one_empty_pattern_cannot_be_hidden_by_other_selected_tests(self):
+        for empty_first in (True, False):
+            with self.subTest(empty_first=empty_first):
+                groups = [unittest.TestSuite(), outcome_suite()]
+                if not empty_first:
+                    groups.reverse()
+                with mock.patch.object(run_tests, "discover_suite", side_effect=groups), \
+                        contextlib.redirect_stdout(io.StringIO()) as output, \
+                        contextlib.redirect_stderr(io.StringIO()) as errors:
+                    status = run_tests.main(["--pattern", "test_one.py", "--pattern", "missing*.py"])
+                self.assertEqual(status, 1)
+                self.assertIn("run=0", output.getvalue())
+                self.assertIn("No tests were discovered.", errors.getvalue())
+
+    def test_documentation_cannot_be_combined_with_patterns(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            run_tests.main(["--documentation", "--pattern", "test_model.py"])
+        self.assertEqual(error.exception.code, 2)
+
     def test_all_outcomes_are_counted_without_private_details_in_json(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "nested" / "summary.json"
@@ -141,12 +186,12 @@ class TestRunnerTests(unittest.TestCase):
             target = Path(directory) / "summary.json"
             process = subprocess.run(
                 [sys.executable, str(run_tests.ROOT / "tools" / "run_tests.py"),
-                 "--pattern", "test_model.py", "--summary", str(target)],
+                 "--pattern", "test_model.py", "--pattern", "test_mode*.py", "--summary", str(target)],
                 cwd=directory, capture_output=True, text=True, check=False, timeout=30,
             )
             report = json.loads(target.read_text(encoding="utf-8"))
         self.assertEqual(process.returncode, 0, process.stderr)
-        self.assertGreater(report["run"], 0)
+        self.assertEqual(report["run"], run_tests.discover_suite("test_model.py").countTestCases())
         self.assertTrue(report["success"])
         self.assertIn("test_", process.stderr)
 

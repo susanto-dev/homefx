@@ -16,27 +16,43 @@ import build_site
 
 
 class PublishedTests(unittest.TestCase):
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temporary.cleanup)
-        self.site = Path(self.temporary.name) / "site"
-        repo = repository.build(self.site / "repository", channel="preview")
+    @classmethod
+    def setUpClass(cls):
+        # Only setup is shared: each verifier/transport test mutates a fresh
+        # ordinary copy, preserving the detached-artifact trust boundary.
+        temporary = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(temporary.cleanup)
+        site = Path(temporary.name) / "site"
+        repo = repository.build(site / "repository", channel="preview")
         result = published.verify_repository.verify(repo, channel="preview")
         for ident, version in result["current"].items():
             name = ident + "-" + version + ".zip"
             for suffix in ("", ".sha256"):
-                shutil.copyfile(repo / ident / (name + suffix), self.site / (name + suffix))
-        (self.site / "LICENSE.txt").write_bytes((ROOT / "LICENSE").read_bytes())
-        (self.site / 'index.html').write_text('<a href="advanced/">advanced/</a>')
-        advanced = self.site / 'advanced'
+                shutil.copyfile(repo / ident / (name + suffix), site / (name + suffix))
+        (site / "LICENSE.txt").write_bytes((ROOT / "LICENSE").read_bytes())
+        (site / 'index.html').write_text('<a href="advanced/">advanced/</a>')
+        advanced = site / 'advanced'
         advanced.mkdir()
         video = 'plugin.video.homefx-' + result['current']['plugin.video.homefx'] + '.zip'
         for suffix in ('', '.sha256'):
-            shutil.copyfile(self.site / (video + suffix), advanced / (video + suffix))
+            shutil.copyfile(site / (video + suffix), advanced / (video + suffix))
         (advanced / 'index.html').write_text(build_site._advanced_page(video))
-        (self.site / "install.html").write_text("<!doctype html><title>HomeFX installation guide</title>")
+        (site / "install.html").write_text("<!doctype html><title>HomeFX installation guide</title>")
+        cls.baseline = site
+        cls.baseline_bytes = published.verify_repository._snapshot(site)[0]
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.site = Path(temporary.name) / "site"
+        shutil.copytree(self.baseline, self.site)
+        self.addCleanup(self.assert_baseline_unchanged)
         self.files, _ = published.verify_repository._snapshot(self.site)
         self.requests = []
+
+    def assert_baseline_unchanged(self):
+        self.assertEqual(published.verify_repository._snapshot(self.baseline)[0],
+                         self.baseline_bytes)
 
     def fetch(self, url, limit, timeout):
         self.requests.append((url, limit, timeout))

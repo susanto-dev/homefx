@@ -17,12 +17,25 @@ import verify_repository as verifier
 
 
 class VerificationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # The verifier consumes a detached tree. Build it once, then give every
+        # mutation test its own ordinary copy (never links into shared files).
+        temporary = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(temporary.cleanup)
+        cls.baseline = repository.build(Path(temporary.name) / "candidate")
+        cls.baseline_bytes = repository._tree_bytes(cls.baseline)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.candidate = self.root / "candidate"
-        repository.build(self.candidate)
+        shutil.copytree(self.baseline, self.candidate)
+        self.addCleanup(self.assert_baseline_unchanged)
+
+    def assert_baseline_unchanged(self):
+        self.assertEqual(repository._tree_bytes(self.baseline), self.baseline_bytes)
 
     def inventory(self):
         return json.loads((self.candidate / "release-inventory.json").read_bytes())

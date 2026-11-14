@@ -17,7 +17,7 @@ from resources.lib.account_ui import AccountUI
 from resources.lib.trakt_list_ui import TraktListUI
 from resources.lib.trakt_widget_ui import WidgetDirectoryUI
 from test_trakt_transport import MemorySocket, wire
-from test_trakt_widget_ui import Item
+from widget_fixtures import Item
 
 
 class FramedService:

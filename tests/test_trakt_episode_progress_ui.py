@@ -17,7 +17,7 @@ from resources.lib.trakt_session import Session
 from resources.lib.trakt_tokens import TokenStore
 from resources.lib.trakt_widget_ui import WidgetDirectoryUI, _progress_text
 from resources.lib import trakt_widget_routes as routes, trakt_views
-from test_trakt_widget_ui import Item
+from widget_fixtures import Item
 
 
 class EpisodeProgressUITests(unittest.TestCase):
