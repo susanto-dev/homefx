@@ -1,12 +1,11 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.15 / repository 0.2.0**.
-PR #50 merged as `7037e0cd1a119ff6954daa250e67e8433353d418`; its post-merge
-Validation, Security, configuration and publication/hosted-byte checks passed. It changes test structure only, retaining
-all existing regression cases and package bytes. The [PR #50 publication](https://github.com/susanto-dev/homefx/actions/runs/43595596639)
-verified 133 public files against its uploaded artifact. Real saved-list selection and 100+ movie browsing passed
-on TV; skin widget, video restart and performance acceptance remain open. Direct
-TMDB and public/Production activation remain deferred.
+Status checked on 14 November 2026: published **video 0.17.16 / repository 0.2.0**.
+PR #51 merged as `db9db3b8aae80f2b1b116ad55d927835aa735a0a`; Validation,
+Security, configuration and [publication/hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43597291985)
+passed. Its per-show Continue/Next/Upcoming folders are published; their live TV
+acceptance remains pending. Real saved-list selection and 100+ movie browsing passed
+on TV. Direct TMDB and public/Production activation remain deferred.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -20,7 +19,7 @@ provider or release choice. The current public add-on remains synthetic.
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
 | B02 | Multiple selected list widgets and folder browsing | Published in Development Video; unified widget folder picker published; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development season and cross-season read-only browser; picker published | Live episode identity/status, season navigation and refresh behavior on TV |
-| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; per-show episode Continue Watching, Next aired and Upcoming candidate added; global feeds remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
+| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; per-show episode Continue/Next/Upcoming published; account-wide Continue candidate; global Next/Upcoming inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
 | B07 | Title search | Demo implemented; Trakt title-search contracts mocked/inactive (0.9) | Live literal-query behavior, entitlement, keyboard/context-menu UI and TV integration |
@@ -509,3 +508,24 @@ before claiming the personal playback milestone. Related/search and remote watch
 correction remain separate backlog items; artwork provider selection is deferred.
 Current authentication evidence is retained and does not need repeating solely for
 this batch. No replacement skin is planned.
+
+## Account-wide Continue Watching candidate
+
+[Account-wide Continue Watching](continue-widget.md) adds a single mixed movie/episode
+widget independent of saved lists. Its source chooser reads account identity only;
+opening the terminal feed explicitly uses the existing bounded paused/detail/watched
+join. Known watched entries are excluded, unknown episode watched status is preserved,
+and incomplete or failed reads never become an empty successful feed. Details
+revalidate current membership. Opaque references use the existing private key and
+clear epoch, with no schema migration or saved history.
+
+| Work item | Status | Remaining acceptance |
+|---|---|---|
+| Account-wide Continue Watching | Candidate implemented across reference, library and UI layers | Real mixed-feed correctness, details/Back, restart and load times |
+| Per-show Continue / Next / Upcoming | Published in 0.17.16 | Existing TV checklist, no repeat login |
+| Global Next aired / personal calendar | Inactive | Separate bounded integration; calendar is not a complete selected-list schedule |
+| Playback and public live release | Inactive | Source/provider decisions, device playback/state checks and public service gates |
+
+This advances the read-only widget milestone. It does not complete a playable video
+add-on. No new provider registration, credentials, remote writes or skin change is
+needed for the candidate. Current account tests remain valid.

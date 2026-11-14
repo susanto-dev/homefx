@@ -1,6 +1,8 @@
 # Enriched continue-watching contract
 
-`Library.enriched_continue_view(now=None)` is an explicit inactive read operation.
+`Library.enriched_continue_view(now=None)` is an explicit read operation, used by the
+[Development account-wide widget candidate](continue-widget.md). Public Preview
+does not activate it.
 It supplements paused-playback metadata with authenticated title details and watched
 snapshots. The existing `continue_view` remains unchanged and never implicitly adds
 these requests. Neither method starts playback, obtains sources or writes history.
@@ -48,5 +50,5 @@ stores only invocation-memory response copies; no persistent history/cache is ad
 
 Tests use fabricated responses and temporary accounts only. They establish library
 contracts, not a live Trakt response, entitlement, playable source, device resume
-position, successful scrobble or TV acceptance. A future UI must make the extra reads
-and unknown watched state clear before live activation.
+position, successful scrobble or TV acceptance. The Development widget guide explains the extra reads and unknown watched state;
+actual endpoint and device acceptance remain unverified.

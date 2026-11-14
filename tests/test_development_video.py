@@ -103,7 +103,7 @@ class DevelopmentVideoTests(unittest.TestCase):
         (self.install / 'resources/development.json').unlink()
         success, menu = self.invoke('?route=trakt_widget_menu')
         self.assertTrue(success)
-        self.assertEqual(len(menu.rows), 3)
+        self.assertEqual(len(menu.rows), 4)
         self.assertTrue(all(folder for _, _, folder in menu.rows))
         self.assertEqual(menu.details, [])
         self.assertTrue(self.invoke('?action=widget_help')[0])
@@ -200,6 +200,52 @@ class DevelopmentVideoTests(unittest.TestCase):
         self.assertEqual(len(self.service.requests), before)
         self.assertEqual((self.program / 'sentinel').read_bytes(), b'synthetic unrelated profile')
         self.assertEqual(routes.url('trakt_sources'), 'plugin://plugin.video.homefx/?route=trakt_sources')
+
+    def test_account_continue_route_needs_no_saved_list_and_revalidates_details(self):
+        self.invoke('?action=connect')
+        original = self.service.respond
+        paused = [True]
+        def respond(host, method, path, body, headers):
+            if path.startswith('/sync/playback?'):
+                return 200, ([{'type': 'movie', 'progress': 35,
+                    'paused_at': '2020-01-02T00:00:00Z',
+                    'movie': {'ids': {'trakt': 10}, 'title': 'Synthetic movie'}}] if paused[0] else [])
+            if path == '/users/me/watched/movies':
+                return 200, []
+            if path == '/movies/10?extended=full':
+                return 200, {'ids': {'trakt': 10}, 'title': 'Synthetic movie', 'released': '2019-01-01'}
+            return original(host, method, path, body, headers)
+        self.service.respond = respond
+        start = len(self.service.requests)
+        success, sources = self.invoke('?route=trakt_continue_sources')
+        self.assertTrue(success)
+        self.assertEqual(len(sources.rows), 1)
+        self.assertFalse(any('/sync/' in r[2] or '/watched/' in r[2] for r in self.service.requests[start:]))
+        feed = sources.rows[0][0]
+        for _ in range(2):
+            success, rows = self.invoke('?' + urlsplit(feed).query)
+            self.assertTrue(success)
+            self.assertEqual(len(rows.rows), 1)
+            self.assertEqual(rows.rows[0][1].tag.values['type'], 'movie')
+        detail = rows.rows[0][0]
+        self.assertIn('route=trakt_continue_details', detail)
+        success, screen = self.invoke('?' + urlsplit(detail).query)
+        self.assertTrue(success)
+        self.assertTrue(screen.details)
+        self.assertFalse(any(event[0] == 'confirm' for event in screen.events))
+        self.assertEqual(sum(event[0] == 'open' for event in screen.events), 1)
+        self.assertEqual(sum(event[0] == 'close' for event in screen.events), 1)
+        self.assertFalse(any('/lists' in r[2] for r in self.service.requests[start:]))
+        self.assertTrue(all(r[1] == 'GET' for r in self.service.requests[start:]))
+        paused[0] = False
+        self.assertFalse(self.invoke('?' + urlsplit(detail).query)[0])
+        success, empty = self.invoke('?' + urlsplit(feed).query)
+        self.assertTrue(success)
+        self.assertEqual(empty.rows, [])
+        self.invoke('?action=disconnect')
+        before = len(self.service.requests)
+        self.assertFalse(self.invoke('?' + urlsplit(feed).query)[0])
+        self.assertEqual(len(self.service.requests), before)
 
     def test_movie_progress_route_runs_in_own_video_profile_without_playback(self):
         self.invoke('?action=connect')
