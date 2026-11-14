@@ -333,3 +333,15 @@ images are not embedded. No third-party walkthrough images or text have been cop
 - [Detailed TV acceptance checklist](https://github.com/susanto-dev/homefx/blob/main/docs/testing-on-tv.md)
 - [Trakt setup and privacy gates](https://github.com/susanto-dev/homefx/blob/main/docs/account-setup.md)
 - [Packaging, releases and retained versions](https://github.com/susanto-dev/homefx/blob/main/docs/releases.md)
+
+
+## Real-list widget MVP candidate
+
+For **HomeFX Development Video**, use the [real-list widget setup guide](https://github.com/susanto-dev/homefx/blob/main/docs/widget-setup.md)
+and [short MVP acceptance checklist](https://github.com/susanto-dev/homefx/blob/main/docs/widget-mvp.md).
+These distinguish the current Development account/list journey from the public
+Preview demo instructions above. After the candidate is merged and its publication
+verified, update the Development ZIP from the HomeFX source and restart Kodi.
+Keep an existing working login and saved lists. In the skin picker, open the final
+content folder before choosing **Use as widget**; selecting a list in HomeFX alone
+does not create a row. The guide marks source-verified and actual-TV evidence separately.

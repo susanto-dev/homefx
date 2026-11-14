@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import stat
 import sys
@@ -97,12 +98,28 @@ def _manifest(data, video=False):
 def _sources(root, configuration, video=False):
     script = root / "addons" / (VIDEO_ID if video else ADDON_ID)
     runtime = root / "addons" / "plugin.video.homefx"
-    source_files = ("addon.xml", "default.py", "resources/lib/development_video.py") if video else SCRIPT_FILES
+    source_files = ("addon.xml", "default.py", "resources/lib/development_video.py",
+                    "resources/lib/development_info.py") if video else SCRIPT_FILES
     files = {name: _read(script / name) for name in source_files}
     runtime_files = RUNTIME_FILES + (("resources/art/poster.png", "resources/art/fanart.png") if video else ())
     files.update({name: _read(runtime / name) for name in runtime_files})
     files["LICENSE"] = _read(root / "LICENSE")
     _require(files["LICENSE"] == _read(runtime / "LICENSE"))
+    if video:
+        source_version = package.parse_manifest(_read(runtime / "addon.xml")).get("version", "")
+        _require(re.fullmatch(r"[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}", source_version) is not None)
+        # Length-delimited names and bytes bind the included runtime, not app configuration.
+        fingerprint = hashlib.sha256()
+        for name, data in sorted(files.items()):
+            encoded = name.encode("utf-8")
+            fingerprint.update(len(encoded).to_bytes(8, "big"))
+            fingerprint.update(encoded)
+            fingerprint.update(len(data).to_bytes(8, "big"))
+            fingerprint.update(data)
+        files["resources/build.json"] = (json.dumps({
+            "schema": 1, "source_version": source_version,
+            "runtime_sha256": fingerprint.hexdigest(),
+        }, sort_keys=True, separators=(",", ":")) + "\n").encode("ascii")
     files["resources/development.json"] = configuration
     _require(len(files) <= 128 and sum(map(len, files.values())) <= MAX_TOTAL)
     _manifest(files["addon.xml"], video)

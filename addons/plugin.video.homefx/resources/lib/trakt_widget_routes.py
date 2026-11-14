@@ -4,6 +4,10 @@ from urllib.parse import parse_qsl, urlencode
 
 BASE = 'plugin://plugin.video.homefx/'
 _FIELDS = {
+    'trakt_widget_menu': set(),
+    'trakt_show_sources': set(),
+    'trakt_shows': {'ref'},
+    'trakt_show_views': {'ref', 'item'},
     'trakt_sources': set(),
     'trakt_movie_sources': set(),
     'trakt_movie_views': {'ref'},
