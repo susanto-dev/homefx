@@ -120,8 +120,10 @@ still be public, so it is not a credential-distribution solution.
 
 ## TMDB artwork cache candidate
 
-TMDB is now the owner's chosen artwork direction. The [bounded artwork cache](tmdb-artwork.md)
+Direct TMDB artwork is currently deferred by owner direction. The [bounded artwork cache](tmdb-artwork.md)
 retains paths only and is not yet wired into Kodi. List normalization retains an
 optional validated TMDB ID without additional reads or altering Trakt identity.
 Registration/terms, credential delivery, attribution and image-retention decisions
 remain activation gates. Existing synopsis and Trakt-rating display is unchanged.
+
+The installed Helper compatibility boundary is documented in [Kodi metadata identity](kodi-metadata.md).

@@ -55,6 +55,20 @@ def _season_plot(row):
     return '. '.join(values) + '. Counts overlap; dates do not establish playable availability.'
 
 
+def _media_identity(tag, row):
+    """Expose public metadata IDs through Kodi's native typed interface only."""
+    fields = [('trakt_id', 'trakt')]
+    if row.get('kind') in {'movie', 'show'}:
+        fields.append(('tmdb_id', 'tmdb'))
+    fields.extend([('show_trakt_id', 'tvshow.trakt'), ('show_tmdb_id', 'tvshow.tmdb')])
+    ids = {name: str(row[key]) for key, name in fields
+           if type(row.get(key)) is int and 1 <= row[key] < 2**63}
+    if ids:
+        tag.setUniqueIDs(ids, 'trakt' if 'trakt' in ids else 'tvshow.trakt')
+    if 'show_title' in row:
+        tag.setTvShowTitle(_text(row['show_title']))
+
+
 def _episode_actions(params, season, addon_id):
     return [(label, 'Container.Update(' + routes.url('trakt_episodes', addon_id=addon_id, ref=params['ref'],
              item=params['item'], season=season, filter=selection) + ')')
@@ -165,6 +179,7 @@ class WidgetDirectoryUI:
                 tag = item.getVideoInfoTag()
                 tag.setTitle(label)
                 tag.setMediaType('season')
+                _media_identity(tag, row)
                 tag.setSeason(row['season'])
                 tag.setPlot(_season_plot(row))
                 item.addContextMenuItems(_episode_actions(params, row['season'], self._addon_id))
@@ -172,6 +187,7 @@ class WidgetDirectoryUI:
                 tag = item.getVideoInfoTag()
                 tag.setTitle(label)
                 tag.setMediaType('tvshow' if row['kind'] == 'show' else row['kind'])
+                _media_identity(tag, row)
                 year = row.get('year')
                 if type(year) is int and 1 <= year <= 9999:
                     tag.setYear(year)

@@ -629,3 +629,15 @@ progress views. Public Preview and Production remain inactive. Existing profile,
 account, selected-list refs and normal widget URLs remain; no credential migration
 or fresh login is required solely for this update. New movie-history/filter/skin
 behavior needs TV acceptance. See [movie progress](movie-progress.md).
+
+## Native Kodi identity proposal (0.17.13)
+
+This candidate exposes existing public media IDs through Kodi tags and preserves
+selected parent-show identity for season/episode rows. It adds no provider calls,
+Helper dependency or activation. The normal merge-triggered Pages workflow will
+publish video 0.17.13 and new checksum-named Development packages after its gates.
+Repository 0.2.0 and all 26 prior package records/bytes remain unchanged.
+No independent deployment is authorized. Verify the uploaded artifact against
+hosted bytes after merge. Existing video-profile credentials and saved routes are
+retained; update Development Video and restart Kodi for the bounded
+[metadata compatibility check](kodi-metadata.md).

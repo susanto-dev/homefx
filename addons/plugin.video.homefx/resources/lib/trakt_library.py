@@ -373,12 +373,21 @@ class Library:
         row = result['items'][0]
         if row['kind'] != 'show':
             raise ApiError('unavailable_selection')
-        return row['trakt_id'], result['guard']
+        return row, result['guard']
+
+    @staticmethod
+    def _with_show_identity(rows, show):
+        # Parent identity comes from the selected list, never a title lookup.
+        identity = {'show_trakt_id': show['trakt_id'], 'show_title': show['title']}
+        if 'tmdb_id' in show:
+            identity['show_tmdb_id'] = show['tmdb_id']
+        return [dict(row, **identity) for row in rows]
 
     def widget_seasons(self, ref, item_ref):
         try:
-            show_id, guard = self._widget_show(ref, item_ref)
-            rows = self.series_seasons(show_id)
+            show, guard = self._widget_show(ref, item_ref)
+            rows = self.series_seasons(show['trakt_id'])
+            rows = self._with_show_identity(rows, show)
             guard()
             return {'items': rows, 'unsupported_count': 0, 'guard': guard}
         except (AuthError, ApiError):
@@ -391,8 +400,9 @@ class Library:
             raise ApiError("invalid_filter")
         season_arguments(1, season)
         try:
-            show_id, guard = self._widget_show(ref, item_ref)
-            rows = self.episode_view(show_id, season)
+            show, guard = self._widget_show(ref, item_ref)
+            rows = self.episode_view(show['trakt_id'], season)
+            rows = self._with_show_identity(rows, show)
             if any(row['season'] != season for row in rows):
                 raise ApiError('mismatched_season')
             # Validate the complete season before excluding or reordering rows.

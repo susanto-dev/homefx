@@ -29,6 +29,9 @@ class Tag:
     def setRating(self, rating, votes, source, default):
         self.values['rating'] = (rating, votes, source, default)
 
+    def setUniqueIDs(self, values, default): self.values['ids'] = (values, default)
+    def setTvShowTitle(self, value): self.values['show_title'] = value
+
     def setSeason(self, value): self.values['season'] = value
     def setEpisode(self, value): self.values['episode'] = value
 
@@ -324,7 +327,25 @@ class WidgetDirectoryTests(unittest.TestCase):
         self.assertEqual(self.events, [])
         self.assertEqual(self.ends, [(True, False)])
 
+    def test_native_ids_preserve_namespaces_without_extra_reads(self):
+        self.items[0]['movie']['ids']['tmdb'] = 310
+        self.items[1]['show']['ids']['tmdb'] = 420
+        self.assertEqual(self.render(self.source()).state, 'ready')
+        self.assertEqual([item.tag.values['ids'] for _, item, _ in self.rows],
+                         [({'trakt': '10', 'tmdb': '310'}, 'trakt'),
+                          ({'trakt': '20', 'tmdb': '420'}, 'trakt')])
+        self.assertFalse(any('/movies/' in path or '/shows/' in path for path in self.calls))
+        self.assertTrue(all('tmdb' not in target for target, _, _ in self.rows))
+
+    def test_invalid_optional_tmdb_ids_never_become_native_ids(self):
+        for value in (True, 0, -1, 2**63, '310', '1),RunScript(other'):
+            self.items[0]['movie']['ids']['tmdb'] = value
+            self.library.clear()
+            self.assertEqual(self.render(self.source()).state, 'ready')
+            self.assertEqual(self.rows[0][1].tag.values['ids'], ({'trakt': '10'}, 'trakt'))
+
     def test_show_seasons_then_read_only_episode_metadata(self):
+        self.items[1]['show']['ids']['tmdb'] = 420
         def series(path):
             if path == '/shows/20/seasons?extended=full':
                 return Response(200, body=[{'number': 1, 'ids': {'trakt': 201}, 'episode_count': 1}])
@@ -342,14 +363,27 @@ class WidgetDirectoryTests(unittest.TestCase):
         target = self.rows[1][0]
         self.assertEqual(self.render(target).state, 'ready')
         self.assertEqual(self.rows[0][1].label, 'Season 1')
+        self.assertEqual(self.rows[0][1].tag.values['ids'],
+                         ({'tvshow.trakt': '20', 'tvshow.tmdb': '420'}, 'tvshow.trakt'))
         self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
         self.assertEqual(self.rows[0][1].tag.values['episode'], 1)
+        self.assertEqual(self.rows[0][1].tag.values['ids'],
+                         ({'trakt': '21', 'tvshow.trakt': '20', 'tvshow.tmdb': '420'}, 'trakt'))
+        self.assertEqual(self.rows[0][1].tag.values['show_title'], 'Synthetic show')
         self.assertEqual(self.rows[0][1].tag.values['playcount'], 0)
         self.assertTrue(self.rows[0][0].startswith(routes.BASE))
         self.assertFalse(self.rows[0][2])
         self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
         self.assertEqual(self.details[0][0], 'Synthetic episode')
         self.assertEqual(self.ends, [])
+        del self.items[1]['show']['ids']['tmdb']
+        self.library.clear()
+        self.assertEqual(self.render(target).state, 'ready')
+        self.assertEqual(self.rows[0][1].tag.values['ids'],
+                         ({'tvshow.trakt': '20'}, 'tvshow.trakt'))
+        self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
+        self.assertEqual(self.rows[0][1].tag.values['ids'],
+                         ({'trakt': '21', 'tvshow.trakt': '20'}, 'trakt'))
 
     def test_empty_partial_authorization_and_offline_remain_distinct(self):
         target = self.source()
