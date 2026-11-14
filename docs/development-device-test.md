@@ -1,7 +1,7 @@
 # Bounded Development Trakt test on Kodi
 
 **This is a separate experimental test add-on, not live mode for HomeFX Preview.**
-HomeFX Preview 0.17.7 and repository 0.2.0 are published after PR #36. The earlier
+HomeFX Preview 0.17.8 and repository 0.2.0 are published. The earlier
 login-repair PR #34 merged as
 `e860684c06551de7fd203096f9e4f0816fe0a531`; its validation, security, publication
 and deployed-byte verification passed. The owner installed the program add-on from
@@ -127,21 +127,19 @@ filename must never serve different bytes. Keep a copy of the matching artifact 
 needed for later scope-specific local disconnect. All recorded preview/repository
 release URLs retain their existing preservation guarantees.
 
-## Optional Actions download fallback
+## Delivery and retirement
 
-The **Build Development device test** workflow remains available for a maintainer
-who wants an Actions artifact. It does not update the HomeFX source or deploy Pages.
-On **main**, check its readiness confirmation only when the registered Development
-public ID/redirect still match and the synthetic TV storage check has passed.
-The workflow runs fabricated tests and requires the selected revision still to be
-current main before building.
+Use the HomeFX source ZIP described above. The redundant manual Actions artifact
+workflow has been removed; no artifact extraction or file transfer is needed.
 
-Its three-day artifact is named
-`homefx-development-device-test-<source SHA>-<run ID>`. Download and extract the outer
-artifact only when using this fallback; transfer the inner script ZIP to the TV,
-then choose **Install from zip file**. Do not install the outer artifact wrapper.
-Record the run link/source SHA and checksum. This fallback is not required when the
-ZIP is available in the HomeFX source.
+The program add-on remains available temporarily for scope-specific diagnostics and
+local disconnect. Its completed TV evidence is retained; do not repeat those tests
+just for cleanup. New list/widget testing belongs in
+[HomeFX Development Video](development-video.md), which needs its own login and
+never imports the program's tokens. Keep the shared runtime and package validators.
+Retire the program's source/download only after the video journey is accepted and
+its own-profile disconnect/recovery coverage is sufficient. Removal from the site
+would not uninstall it from a TV or erase/revoke its credentials.
 
 ## Run one action at a time
 
@@ -230,7 +228,7 @@ forensic data erasure. Do not edit databases or guess profile paths to recover a
 
 Return only:
 
-- The publication or manual-build run link/source SHA, test harness version and ZIP checksum.
+- The publication run link/source SHA, test harness version and ZIP checksum.
 - Fixed storage results, including cleanup and overall status.
 - Fixed connect/cancel, restart-status, refresh and disconnect outcomes.
 - On connection failure, fixed Last stage, Category and Response status fields only.
@@ -254,4 +252,4 @@ See [account gates](account-setup.md#activation-gates),
 [registration](https://developer.trakt.tv/docs/create-an-app) requirements still
 apply; owner confirmation is not proof of a successful provider grant or Production
 approval. No app registration, changed-terms acceptance or paid service is performed
-by this workflow.
+by these test instructions.
