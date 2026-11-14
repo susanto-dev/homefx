@@ -36,13 +36,16 @@ The official **HomeFX project source** is:
 
 [https://susanto-dev.github.io/homefx/](https://susanto-dev.github.io/homefx/)
 
-Download snapshot checked on **13 November 2026**, after PR #31 merged. All 48
-hosted files matched the verified publication artifact; this is download integrity,
-not TV acceptance:
+Download snapshot checked on **14 November 2026**, after PR #41 merged: Preview
+**0.17.8**, repository **0.2.0** and both Development downloads were byte-verified.
+The new icon prepares **0.17.9**; it is not published until the reviewed merge and
+normal publication/hosted-byte verification succeed.
 
 - Repository installer: [repository.homefx-0.2.0.zip](https://susanto-dev.github.io/homefx/repository.homefx-0.2.0.zip).
-- Video add-on: **HomeFX Preview 0.17.4**. Its separate manual download is
-  [plugin.video.homefx-0.17.4.zip](https://susanto-dev.github.io/homefx/repository/plugin.video.homefx/plugin.video.homefx-0.17.4.zip).
+- Previously verified video: [plugin.video.homefx-0.17.8.zip](https://susanto-dev.github.io/homefx/plugin.video.homefx-0.17.8.zip).
+- After the source-layout update publishes, the main source offers only the repository
+  and current Development Video ZIP. Open **advanced/** for manual Preview installation
+  or program diagnostics. Older archives remain hosted but are not listed as install choices.
 
 Start with the **repository ZIP**, not the video ZIP. The repository is Kodi's
 installation and update source for HomeFX. Later releases may advertise a newer
@@ -99,11 +102,11 @@ see [release and integrity details](https://github.com/susanto-dev/homefx/blob/m
 
 HomeFX Preview remains synthetic. The separate **HomeFX Development Test** is only
 for the bounded account test after its readiness gates are met; it is not needed to
-install the preview or use demo widgets. The hosted source ZIP and installation path have been verified, and the owner
+install the preview or use demo widgets. The earlier source ZIP and installation path were verified; the new advanced/ folder still needs a TV navigation check. The owner
 reported authorization and refresh success in this separate test. These results
 do not activate real lists in the video preview.
 
-Choose **Add-ons → Install from zip file → HomeFX →
+Choose **Add-ons → Install from zip file → HomeFX → advanced/ →
 script.homefx.development-0.1.0-<SHA-256>.zip**, then open **Program add-ons → HomeFX
 Development Test**. No download to a phone or transfer to the TV is required. Start
 with **Test this add-on's private storage**. Follow the

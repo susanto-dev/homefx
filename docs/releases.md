@@ -569,3 +569,26 @@ No add-on source, manifest, inventory or archive changes are required. Merging t
 follow-up updates the verifier and Pages guide through the normal workflow; current
 video/repository and experimental ZIP bytes stay unchanged for unchanged public
 Development configuration. No new installation is needed for diagnostics alone.
+
+## 0.17.9 source and artwork proposal
+
+The new original house/TV icon changes video package bytes, so video advances from
+0.17.8 to 0.17.9. Repository 0.2.0 is unchanged; all 22 preceding inventory records
+remain. Development ZIPs use their existing content-addressed scheme and get new
+digest filenames, without changing their addon IDs or moving any account data.
+Nothing is published until the reviewed merge and normal workflow succeed.
+
+The source's main listing offers repository + Development Video. The advanced/
+folder supplies byte-identical copies of the current manual Preview and program
+diagnostics ZIPs. Every indexed archive also retains its root filename/checksum URL;
+older releases are hidden from the install picker, not overwritten or deleted.
+Artifact topology, duplicate-byte equality, links, archive history and exact hosted
+verification cover the new folder and retained aliases. Kodi navigation of the new
+folder remains a device check, independent of parser-oriented tests.
+
+The icon follows [Kodi artwork guidance](https://kodi.wiki/view/Add-on_structure#icon_specifications):
+512×512 PNG, fully opaque, generous padding, simple house/television silhouette and
+no Kodi/third-party logo. The existing manifest asset path is retained. Build checks
+validate dimensions, RGB opacity, PNG chunks/checksums and bounded image data;
+historical archive artwork policy remains unchanged. No new paid asset/library or
+licence change is introduced. Other title placeholders are unchanged.

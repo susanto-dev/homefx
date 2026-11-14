@@ -60,17 +60,19 @@ def _build(root, development_environment=None):
     archive = "plugin.video.homefx-" + verified["current"]["plugin.video.homefx"] + ".zip"
     bootstrap = "repository.homefx-" + verified["current"]["repository.homefx"] + ".zip"
     expected_files = {"repository/" + name for name in public_files}
-    expected_files.update({archive, archive + ".sha256", bootstrap, bootstrap + ".sha256",
-                           "LICENSE.txt", "index.html", "install.html"})
+    expected_files.update({'LICENSE.txt', 'index.html', 'install.html', 'advanced/index.html',
+                           'advanced/' + archive, 'advanced/' + archive + '.sha256'})
+    expected_files.update(name.split('/')[-1] for name in public_files
+                          if name.count('/') == 1 and name.endswith(('.zip', '.zip.sha256')))
     for video in (False, True):
         development_archive = development_download.verify(site_files, video=video)
         if (development_environment is None) != (development_archive is None):
             raise ReproducibilityError("invalid Development output")
         if development_archive is not None:
-            expected_files.update({development_archive, development_archive + ".sha256"})
-    if development_environment is not None:
-        check_published._expected(site)
-    expected_dirs = {"repository"} | {"repository/" + name for name in public_dirs}
+            expected_files.update({development_archive, development_archive + '.sha256'})
+            if not video:
+                expected_files.update({'advanced/' + development_archive, 'advanced/' + development_archive + '.sha256'})
+    expected_dirs = {"repository", "advanced"} | {"repository/" + name for name in public_dirs}
     if set(site_files) != expected_files or site_dirs != expected_dirs:
         raise ReproducibilityError("invalid preview output")
     for ident, name in (("plugin.video.homefx", archive), ("repository.homefx", bootstrap)):
@@ -84,6 +86,7 @@ def _build(root, development_environment=None):
             or not site_files["index.html"]
             or not 0 < len(site_files["install.html"]) <= build_site.guide_page.MAX_PAGE_BYTES):
         raise ReproducibilityError("inconsistent preview output")
+    check_published._expected(site)
     repository_files, repository_dirs = _snapshot(candidate)
     return {"site": (site_files, site_dirs),
             "repository": (repository_files, repository_dirs)}, verified

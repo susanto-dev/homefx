@@ -16,7 +16,7 @@ provider or release choice. The current public add-on remains synthetic.
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
-| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; public Preview remains demo-only | One real list, separate skin-row assignment, widget heading/full-list access and restart acceptance on TV |
+| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development read-only browser; synthetic integration tests passed | Live episode identity/status, season navigation and refresh behavior on TV |
 | B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
@@ -43,7 +43,7 @@ This repair does not alter private account stores or enable live services.
 |---|---|---|---|
 | T01 | Device login, refresh, protected token store, HTTPS/session guards | Shared implementation; program lifecycle passed on TV; Development identity/redirect owner-confirmed | Fresh video-profile login/storage acceptance; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed. Do not repeat completed program checks |
 | T02 | Account connect/cancel/switch/disconnect UI | Shared UI and Development video entry published | Program consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
-| T03 | Personal/liked lists and saved account-bound selections | Published in Development Video; synthetic end-to-end acceptance passed | Owner privately chooses one real list; verify paging, widget and saved selection after restart on TV |
+| T03 | Personal/liked lists and saved account-bound selections | Published in Development Video; synthetic end-to-end acceptance passed | Selection/save and opening a real 100+ movie list passed; verify widget and saved selection after restart on TV |
 | T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
 | T05 | Live Trakt read views | Read-only selected-list Development candidate published; public/Production inactive | Validate candidate on TV; Continue Watching, Next aired and Upcoming need separate future integration |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
@@ -295,7 +295,7 @@ the candidate has a fresh own-profile login. Public Preview and Production stay 
 | Development auth/refresh/restart/disconnect/cancel/offline responsiveness | Owner-confirmed; do not repeat |
 | Shared dispatcher and synthetic process interruption | Complete in PR #36 |
 | Development video configuration and package delivery | Published and byte-verified after PR #37; ready for deliberate TV installation |
-| One real personal/liked list, seasons, saved selection after restart | Synthetic end-to-end tests; pending owner video-candidate acceptance |
+| One real personal/liked list, seasons, saved selection after restart | Selection/save and 100+ movie list opening owner-confirmed; season browsing and restart acceptance pending |
 | Existing-skin row, focus/Back, cold/warm and multiple-row loading | Pending actual-device measurements |
 | Public/Production connection, writes, playback, Real-Debrid, scrobbling | Inactive; outside milestone |
 
@@ -352,3 +352,16 @@ changes run full validation; scheduled/manual security scans remain full. Pages 
 the last successful publication as its test-selection baseline and always retains
 archive/artifact/deployment verification. See [policy and limits](development.md#change-aware-checks).
 No add-on or activation change and no new TV test are required for this batch.
+
+## Source clarity and HomeFX icon candidate
+
+The owner successfully selected/saved a real Development list and opened over 100
+movies. Do not relabel this as widget, season, restart or performance acceptance.
+The next source layout lists repository + Development Video only; advanced/ holds
+manual Preview/program diagnostics. Existing release archives and root aliases are
+preserved byte-for-byte, not deleted to shorten the picker.
+
+Original house/TV artwork prepares video 0.17.9; repository 0.2.0 stays unchanged.
+The icon is a 512×512 opaque RGB PNG with no third-party logo or new paid asset.
+Normal post-merge publication and TV icon/folder navigation remain to be verified.
+List loading/pagination is unchanged; measure first/warm loads before tuning it.

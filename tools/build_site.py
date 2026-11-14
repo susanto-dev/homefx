@@ -47,7 +47,7 @@ def _page(version, archive, bootstrap, digest, development_archive=None, video_a
 <style>body{font:18px/1.6 system-ui,sans-serif;background:#18263a;color:#eef5fa;max-width:48rem;margin:4rem auto;padding:0 1.5rem}a{color:#9ce3ef;overflow-wrap:anywhere}h1{font-size:3rem;line-height:1.1}code{overflow-wrap:anywhere}li{margin:.5rem 0}.download{display:inline-block;background:#9ce3ef;color:#18263a;padding:.8rem 1.2rem;border-radius:.4rem;font-weight:700}a:focus-visible{outline:3px solid white;outline-offset:5px}</style>
 </head><body><main><p>Kodi 21.2 · Personal home-screen widgets</p><h1>HomeFX Preview</h1>
 <p>Video add-on version {{VERSION}} — movie lists, episode browsing and home-screen widgets.</p>
-<p><strong>Experimental repository. Synthetic data only.</strong> No Trakt login, playable sources or playback. Watched changes affect local demo data only. Kodi installation, updates and TV compatibility have not yet been verified.</p>
+<p><strong>Experimental repository. Synthetic data only.</strong> No Trakt login, playable sources or playback. Watched changes affect local demo data only. Repository auto-updates and the new source-folder navigation still need TV verification.</p>
 <p><a href="install.html" class="download">Installation and first-use guide</a></p>
 <p>New to Kodi? Follow the phone-friendly guide for Android/Google TV installation, restart, safe checks and demo widget setup.</p>
 <p>Download the repository ZIP:</p>
@@ -59,28 +59,12 @@ def _page(version, archive, bootstrap, digest, development_archive=None, video_a
 <li>Choose Install from repository → HomeFX Preview Repository → Video add-ons → HomeFX Preview → Install.</li>
 <li>Open HomeFX Preview and browse the demo lists. In your existing skin's widget settings, choose a HomeFX folder as a widget source.</li></ol>
 <p>The repository supplies HomeFX preview installation and updates. Keep your existing skin installed separately: this repository does not include or redistribute a skin. Availability of this website is not a successful Kodi installation or upgrade test.</p>
-<h2>Manual video add-on download</h2>
-<p><a href="{{ARCHIVE}}">{{ARCHIVE}}</a> · <a href="{{ARCHIVE}}.sha256">Video ZIP SHA-256 checksum</a></p><p><code>{{DIGEST}}</code></p>
+<p><a href="advanced/">advanced/</a> — manual Preview installation and program diagnostics. Most users do not need these downloads.</p>
 {{DEVELOPMENT}}
 <p><a href="https://github.com/susanto-dev/homefx/blob/main/docs/testing-on-tv.md">TV test checklist</a> · <a href="https://github.com/susanto-dev/homefx">Source and documentation</a></p>
-<p>Original code and geometric placeholder artwork. <a href="LICENSE.txt">MIT licence</a>. No paid plugin, analytics, external fonts or account credentials are used by this download page.</p>
+<p>Original code and HomeFX artwork. <a href="LICENSE.txt">MIT licence</a>. No paid plugin, analytics, external fonts or account credentials are used by this download page.</p>
 </main></body></html>'''
     development = ""
-    if development_archive is not None:
-        name = html.escape(development_archive)
-        development = ("<h2>Development account test — deliberate installation only</h2>"
-            "<p>Separate experimental program add-on for the registered Development app owner "
-            "and invited testers. This can contact Trakt only after you confirm an action on the TV. "
-            "It does not enable live accounts in HomeFX Preview, list widgets or playback.</p>"
-            '<p><a href="{{NAME}}">{{NAME}}</a> · <a href="{{NAME}}.sha256">ZIP SHA-256 checksum</a></p>'
-            "<p>In Kodi choose Add-ons → Install from zip file → HomeFX and select the "
-            "script.homefx.development ZIP above. Then open Program add-ons → HomeFX Development Test "
-            "and run Test this add-on’s private storage first. No file transfer is needed.</p>"
-            '<p><a href="https://github.com/susanto-dev/homefx/blob/main/docs/development-device-test.md">Development test instructions and privacy limits</a></p>'
-            "<p>Current experimental candidate only; no repository auto-updates. Older candidate URLs "
-            "may disappear after a later build. A checksum-named URL never receives different bytes. "
-            "Direct installation from this source still requires TV acceptance.</p>")
-        development = development.replace("{{NAME}}", name)
     if video_archive is not None:
         name = html.escape(video_archive)
         development += ('<h2>Development video — owner testing only</h2>'
@@ -96,6 +80,30 @@ def _page(version, archive, bootstrap, digest, development_archive=None, video_a
                          ("BOOTSTRAP", bootstrap), ("DIGEST", digest)):
         page = page.replace("{{" + token + "}}", html.escape(value))
     return page
+
+
+def _advanced_page(archive, development_archive=None):
+    downloads = [(archive, 'Manual HomeFX Preview installation; demo data only.')]
+    if development_archive is not None:
+        downloads.append((development_archive, 'Program diagnostics and local disconnect for its own profile; not the video add-on.'))
+    notice = ('<p>Program diagnostics are experimental owner/invited Development testing only. '
+              'They contact Trakt only after explicit consent on the TV and have no repository auto-updates. '
+              'Older experimental candidate URLs may retire; digest-named bytes are never overwritten. '
+              '<a href="https://github.com/susanto-dev/homefx/blob/main/docs/development-device-test.md">'
+              'Program installation and privacy instructions</a>.</p>' if development_archive else '')
+    links = ''.join('<h2>' + html.escape(description) + '</h2><p><a href="' + html.escape(name) + '">'
+                    + html.escape(name) + '</a></p><p><a href="' + html.escape(name)
+                    + '.sha256">SHA-256 checksum</a></p>' for name, description in downloads)
+    return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<title>HomeFX advanced downloads</title><style>body{font:18px/1.6 system-ui;'
+            'max-width:48rem;margin:2rem auto;padding:0 1rem;background:#18263a;color:#eef5fa}'
+            'a{color:#9ce3ef;overflow-wrap:anywhere}h2{font-size:1.2rem}</style></head><body>'
+            '<h1>Advanced downloads</h1><p><a href="../">Back to HomeFX</a></p>'
+            '<p>Use the repository for normal Preview updates. Development Video is on the main source page. '
+            'Do not install the program test when you want real-list video browsing.</p>' + notice + links
+            + '<p>These are byte-identical copies of the existing root downloads. Existing release URLs remain valid. '
+            'Program credentials are never copied to the video add-on. No playback is enabled.</p></body></html>')
 
 
 def build_site(output=None, package_output=None, retain_manifest=None, development_environment=None):
@@ -129,15 +137,16 @@ def build_site(output=None, package_output=None, retain_manifest=None, developme
                                 channel="preview")
         verified = verify_repository.verify(repo, channel="preview")
         bootstrap = "repository.homefx-" + verified["current"]["repository.homefx"] + ".zip"
-        repo_archive = repo / "repository.homefx" / bootstrap
         video_archive = repo / "plugin.video.homefx" / archive.name
         if (archive.read_bytes() != video_archive.read_bytes()
                 or archive.with_suffix(".zip.sha256").read_bytes()
                 != video_archive.with_suffix(".zip.sha256").read_bytes()):
             raise ValueError("Video package differs from repository")
-        for source in (video_archive, repo_archive):
-            shutil.copyfile(source, staged / source.name)
-            shutil.copyfile(source.with_suffix(".zip.sha256"), staged / (source.name + ".sha256"))
+        # Retain root aliases as well as indexed archives; only current choices are listed.
+        for ident in verified['current']:
+            for source in (repo / ident).glob('*.zip'):
+                shutil.copyfile(source, staged / source.name)
+                shutil.copyfile(source.with_suffix('.zip.sha256'), staged / (source.name + '.sha256'))
         shutil.copyfile(ROOT / "LICENSE", staged / "LICENSE.txt")
         digest = archive.with_suffix(".zip.sha256").read_text().split()[0]
         development_archive = video_archive = None
@@ -152,6 +161,13 @@ def build_site(output=None, package_output=None, retain_manifest=None, developme
                     video_archive = verified
                 else:
                     development_archive = verified
+        advanced = staged / 'advanced'
+        advanced.mkdir()
+        for name in (archive.name, development_archive):
+            if name is not None:
+                for suffix in ('', '.sha256'):
+                    shutil.copyfile(staged / (name + suffix), advanced / (name + suffix))
+        (advanced / 'index.html').write_text(_advanced_page(archive.name, development_archive), encoding='utf-8')
         (staged / "index.html").write_text(
             _page(version, archive.name, bootstrap, digest, development_archive, video_archive), encoding="utf-8")
         (staged / "install.html").write_text(guide_page.build(ROOT / "docs/install.md"), encoding="utf-8")

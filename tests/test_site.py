@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import build_site
 import package
 import verify_repository
+import check_published
 
 
 class SiteBoundaryTests(unittest.TestCase):
@@ -22,13 +23,15 @@ class SiteBoundaryTests(unittest.TestCase):
             verified = verify_repository.verify(site / 'repository', channel='preview')
             video = 'plugin.video.homefx-' + package.validate() + '.zip'
             bootstrap = 'repository.homefx-' + verified['current']['repository.homefx'] + '.zip'
-            self.assertEqual({p.name for p in site.iterdir()},
-                             {video, video + '.sha256', bootstrap, bootstrap + '.sha256',
-                              'repository', 'index.html', 'install.html', 'LICENSE.txt'})
-            for ident, name in (('plugin.video.homefx', video), ('repository.homefx', bootstrap)):
+            indexed = list((site / 'repository').glob('*/*.zip'))
+            expected = {'repository', 'advanced', 'index.html', 'install.html', 'LICENSE.txt'}
+            for source in indexed:
                 for suffix in ('', '.sha256'):
-                    self.assertEqual((site / (name + suffix)).read_bytes(),
-                                     (site / 'repository' / ident / (name + suffix)).read_bytes())
+                    expected.add(source.name + suffix)
+                    self.assertEqual((site / (source.name + suffix)).read_bytes(),
+                                     Path(str(source) + suffix).read_bytes())
+            self.assertEqual({p.name for p in site.iterdir()}, expected)
+            self.assertEqual((site / 'advanced' / video).read_bytes(), (site / video).read_bytes())
             page = (site / 'index.html').read_text()
             self.assertIn('href="install.html"', page)
             self.assertIn('Device readiness', (site / 'install.html').read_text())
@@ -42,7 +45,25 @@ class SiteBoundaryTests(unittest.TestCase):
             self.assertFalse((site / 'repository' / 'CANDIDATE.txt').exists())
             self.assertTrue((site / 'repository' / 'CHANNEL.txt').exists())
 
-    def test_kodi_directory_listing_can_discover_both_zip_filenames(self):
+    def test_historical_root_alias_must_remain_identical_to_indexed_archive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            site = build_site.build_site(Path(temporary) / 'site')
+            current = 'plugin.video.homefx-' + package.validate() + '.zip'
+            historical = next(path for path in site.glob('plugin.video.homefx-*.zip') if path.name != current)
+            original = historical.read_bytes()
+            indexed = site / 'repository/plugin.video.homefx' / historical.name
+            for replacement in (None, b'changed old archive'):
+                if replacement is None:
+                    historical.unlink()
+                else:
+                    historical.write_bytes(replacement)
+                with self.assertRaises(check_published.PublishedCheckError):
+                    check_published._expected(site)
+                self.assertEqual(indexed.read_bytes(), original)
+                historical.write_bytes(original)
+            check_published._expected(site)
+
+    def test_kodi_main_listing_keeps_only_repository_with_manual_zip_in_advanced(self):
         # Kodi 21.2 HTTPDirectory requires href first and filename display text.
         # This original HTMLParser fixture checks those documented constraints;
         # it does not reproduce Kodi's parser or constitute a device test.
@@ -71,10 +92,17 @@ class SiteBoundaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             site = build_site.build_site(Path(temporary) / 'site')
             names = {path.name for path in site.glob('*.zip')}
-            self.assertEqual(len(names), 2)
+            self.assertGreaterEqual(len(names), 2)
             parser = ListingLinks()
             parser.feed((site / 'index.html').read_text())
-            self.assertTrue(names <= parser.links)
+            bootstrap = 'repository.homefx-' + verify_repository.verify(site / 'repository', channel='preview')['current']['repository.homefx'] + '.zip'
+            # Only one ZIP is offered on the unconfigured main source page.
+            self.assertEqual({name for name in parser.links if name.endswith('.zip')}, {bootstrap})
+            self.assertIn('advanced/', parser.links)
+            advanced = ListingLinks()
+            advanced.feed((site / 'advanced/index.html').read_text())
+            self.assertEqual({name for name in advanced.links if name.endswith('.zip')},
+                             {'plugin.video.homefx-' + package.validate() + '.zip'})
             # Ensure the fixture rejects the two browser-valid failure modes.
             for name in names:
                 for invalid in ('<a class="download" href="{0}">{0}</a>',

@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import check_published as published
 import repository
+import build_site
 
 
 class PublishedTests(unittest.TestCase):
@@ -26,7 +27,13 @@ class PublishedTests(unittest.TestCase):
             for suffix in ("", ".sha256"):
                 shutil.copyfile(repo / ident / (name + suffix), self.site / (name + suffix))
         (self.site / "LICENSE.txt").write_bytes((ROOT / "LICENSE").read_bytes())
-        (self.site / "index.html").write_text("<!doctype html><title>HomeFX Preview</title>")
+        (self.site / 'index.html').write_text('<a href="advanced/">advanced/</a>')
+        advanced = self.site / 'advanced'
+        advanced.mkdir()
+        video = 'plugin.video.homefx-' + result['current']['plugin.video.homefx'] + '.zip'
+        for suffix in ('', '.sha256'):
+            shutil.copyfile(self.site / (video + suffix), advanced / (video + suffix))
+        (advanced / 'index.html').write_text(build_site._advanced_page(video))
         (self.site / "install.html").write_text("<!doctype html><title>HomeFX installation guide</title>")
         self.files, _ = published.verify_repository._snapshot(self.site)
         self.requests = []
@@ -74,6 +81,21 @@ class PublishedTests(unittest.TestCase):
                 published.check(self.site, fetch=fetch)
             fetch.assert_not_called()
             target.unlink()
+
+    def test_advanced_copy_corruption_or_missing_folder_fails_before_fetch(self):
+        paths = [self.site / 'advanced/index.html', *self.site.glob('advanced/*.zip')]
+        for target in paths:
+            original = target.read_bytes()
+            for replacement in (None, b'changed'):
+                if replacement is None:
+                    target.unlink()
+                else:
+                    target.write_bytes(replacement)
+                fetch = Mock()
+                with self.assertRaises(published.PublishedCheckError):
+                    published.check(self.site, fetch=fetch)
+                fetch.assert_not_called()
+                target.write_bytes(original)
 
     def test_missing_empty_or_oversized_guide_fails_before_network(self):
         target = self.site / 'install.html'
@@ -136,7 +158,7 @@ class PublishedTests(unittest.TestCase):
         for error, category, status in cases:
             self.requests.clear()
             def fail_later(url, limit, timeout):
-                if url.endswith('/index.html'):
+                if url == published.BASE_URL + 'index.html':
                     raise error
                 return self.fetch(url, limit, timeout)
             fetch = Mock(side_effect=fail_later)
@@ -144,12 +166,12 @@ class PublishedTests(unittest.TestCase):
                 published.check(self.site, fetch=fetch)
             self.assertEqual(str(result.exception), "published request failed; file: index.html; category: "
                              + category + "; HTTP status: " + status)
-            self.assertEqual(fetch.call_count, 2)
+            self.assertEqual(fetch.call_count, sorted(self.files).index('index.html') + 1)
             self.assertTrue(result.exception.__suppress_context__)
 
     def test_mismatch_identifies_file_without_printing_received_bytes(self):
         def mismatch(url, limit, timeout):
-            if url.endswith('/index.html'):
+            if url == published.BASE_URL + 'index.html':
                 return b'SECRET private response'
             return self.fetch(url, limit, timeout)
         with self.assertRaises(published.PublishedCheckError) as result:

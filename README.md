@@ -20,18 +20,24 @@ For the separately installed test add-on and its HomeFX source installation step
 [bounded Development device test](docs/development-device-test.md). It does not
 activate live routes in HomeFX Preview or join the public repository channel.
 
-## Published preview: 0.17.8
+## Preview releases and device evidence
 
-HomeFX Preview 0.17.8 and repository 0.2.0 are published after PR #37. Validation
-and security passed; deployed-byte verification passed on a read-only rerun after
-an initial request error. No rebuild or redeployment was performed for that rerun. The owner has
+Last verified publication: **HomeFX Preview 0.17.8 / repository 0.2.0**, including
+post-merge checks after PR #41. The new house/TV icon prepares **0.17.9**; it becomes
+available only after normal publication and hosted-byte verification. The source
+layout offers repository + Development Video, with manual/diagnostic downloads in
+**advanced/**. Existing release URLs remain available. See the
+[current download page](https://susanto-dev.github.io/homefx/) for the installed version to choose.
+
+The owner has
 reported passing private storage checks, **Connection test: authorized** and
 **Refresh rotation: passed** in the separate Development program add-on on TV.
 No list or history request was made by that refresh test.
 
 These are real device observations, not cloud test results. The owner also confirmed restart persistence, cancellation/disconnect and responsive
-offline failure followed by code issuance after networking recovered. Live list/widget
-acceptance remains unverified; offline wait duration was not measured. The
+offline failure followed by code issuance after networking recovered. The owner subsequently selected/saved a real list in Development Video and opened
+over 100 movies successfully. Widget/season navigation, restart persistence in that
+video profile and loading timings remain unverified; offline wait duration was not measured. The
 public video preview still uses demo data and does not inherit the test's tokens.
 See [what to do after successful login](docs/development-device-test.md#after-successful-authorization-and-refresh)
 and [why the test is separate](docs/development-device-test.md#why-a-program-add-on).

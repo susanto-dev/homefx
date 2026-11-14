@@ -1,6 +1,6 @@
 # One real Trakt list in Development Video
 
-**Published Development candidate; TV list/widget acceptance pending.** This is an intentionally installed read-only
+**Published Development candidate; selected-list browsing passed on TV, widget/restart acceptance pending.** This is an intentionally installed read-only
 Development video add-on for the app owner or invited Development users. It is not
 general public Trakt access and does not activate HomeFX Preview. No paid service,
 Production registration, server or Android app is introduced.
@@ -19,14 +19,17 @@ candidate; its verification-only rerun compared all uploaded artifact files with
 the hosted bytes successfully. The initial verification request failure remains
 unexplained; see [publication evidence](releases.md#verified-development-video-delivery-after-pr-37).
 
-Verified current video test ZIP (harness 0.1.0):
+Current video test ZIPs use harness version 0.1.0 and the filename
+`plugin.video.homefx.development-0.1.0-<SHA-256>.zip`. The
+[landing page](https://susanto-dev.github.io/homefx/) and Kodi's main HomeFX source
+show the exact current filename and checksum. Use that video ZIP, not the program
+script or public Preview. The new icon produces a new digest filename only after
+normal publication; no new filename is claimed as hosted in advance.
 
-[`plugin.video.homefx.development-0.1.0-bab63c56e240bc3bcb0f579b3021d03245f90d6bac7bc8de4071f847cdf70d5b.zip`](https://susanto-dev.github.io/homefx/plugin.video.homefx.development-0.1.0-bab63c56e240bc3bcb0f579b3021d03245f90d6bac7bc8de4071f847cdf70d5b.zip)
-
-The filename starts with `plugin.video.homefx.development`, not the program script
-or the public Preview ZIP. The [landing page](https://susanto-dev.github.io/homefx/)
-lists the current download and checksum. Future candidates may change the digest;
-use the then-verified filename rather than assuming this URL is retained forever.
+Older experimental URLs may be retired, but their bytes are never overwritten.
+The program diagnostics and manual Preview download move into **advanced/**;
+Development Video remains on the main source. Existing indexed release archives and
+root release URLs remain available.
 
 The reviewed merge approved distribution of this explicitly labelled candidate.
 It does not initiate an account connection. Installing it is deliberate; the owner
@@ -54,6 +57,25 @@ The video candidate never reads the program test's profile or imports its tokens
 It needs a fresh owner-authorized login. Production packaging and any future choice
 migration require separate review; this candidate does not permanently require a
 second program or an automatic credential migration.
+
+## Reported list result and remaining acceptance
+
+The owner reported selecting and saving a real list, then opening more than 100
+movies from that saved list successfully. No private list contents were supplied.
+This establishes that list journey only; widget navigation, restart persistence,
+season browsing and cold/warm timing have not been reported as passed.
+
+Trakt requests use pages of up to 100 items, combined into a bounded complete list
+before Kodi renders it. Displaying 20 items alone would not reduce those requests.
+No pagination or cache behavior changes are included with the source/icon update.
+Measure real widget and folder loading before choosing lazy pagination or caching;
+a shorter displayed list is not proof of faster network access.
+
+Existing Development Video users can install the new checksum-named ZIP after
+publication and fully restart Kodi. The add-on ID and profile/configuration remain
+unchanged; do not disconnect or reauthorize merely for the icon. Check that the
+existing saved list remains, then continue the uncompleted widget/restart steps
+below. No completed program test needs repeating.
 
 ## Smallest TV checklist
 
