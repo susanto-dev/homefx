@@ -15,6 +15,18 @@ def _text(value):
                    '(' if char == '[' else ')' if char == ']' else char for char in value)
 
 
+def _description(row):
+    parts = []
+    overview = row.get('overview')
+    if overview:
+        parts.append(_text(overview))
+    rating, votes = row.get('trakt_rating'), row.get('trakt_votes')
+    if (type(rating) in (int, float) and 0 <= rating <= 10 and math.isfinite(rating)
+            and type(votes) is int and 0 < votes <= 2147483647):
+        parts.append('Trakt rating: ' + format(rating, '.1f') + '/10 (' + str(votes) + ' votes).')
+    return '\n\n'.join(parts)
+
+
 def _progress_text(row):
     if row.get('kind') != 'episode' or row.get('watched') is True:
         return ''
@@ -156,7 +168,10 @@ class WidgetDirectoryUI:
                 status = 'watched' if watched is True else 'unwatched' if watched is False else 'unknown'
                 release = row.get('release_at')
                 date_text = release.isoformat() if release is not None else 'unknown'
-                tag.setPlot('Watch status: ' + status + '. Release/air date: ' + _text(date_text)
+                description = _description(row)
+                if 'trakt_rating' in row and 'trakt_votes' in row:
+                    tag.setRating(row['trakt_rating'], row['trakt_votes'], 'trakt', True)
+                tag.setPlot((description + '\n\n' if description else '') + 'Watch status: ' + status + '. Release/air date: ' + _text(date_text)
                             + '. ' + _progress_text(row)
                             + ' Date metadata does not establish a playable source.')
                 if row['kind'] == 'episode':
@@ -235,7 +250,8 @@ class WidgetDirectoryUI:
                     status = 'watched' if watched is True else 'unwatched' if watched is False else 'unknown'
                     release = row.get('release_at')
                     date_text = release.isoformat() if release is not None else 'unknown'
-                    body = 'Watch status: ' + status + '\nRelease/air date: ' + _text(date_text)
+                    description = _description(row)
+                    body = (description + '\n\n' if description else '') + 'Watch status: ' + status + '\nRelease/air date: ' + _text(date_text)
                     progress = _progress_text(row)
                     if progress:
                         body += '\n' + progress

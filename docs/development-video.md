@@ -137,3 +137,17 @@ clears its credentials and choices, not the program/Preview profiles. Revoke app
 access separately in Trakt settings if wanted. Uninstall/local disconnect does not
 prove backup erasure or remote revocation. Stored tokens are unencrypted and may be
 accessible to other code running as Kodi or to profile backups.
+
+## Synopsis and Trakt rating candidate
+
+After the metadata candidate is merged and its current Development ZIP is verified,
+update from the HomeFX source and fully restart Kodi. Keep the existing login and
+saved choices. Open a saved list and a movie's details: available synopsis text and
+`Trakt rating: …/10 (… votes)` should appear alongside the existing unknown/known
+watch state and date disclaimer. Missing optional data leaves the title browsable;
+no rating is invented. Posters remain placeholders pending provider setup.
+
+Check the same row in the existing skin; Kodi receives a named Trakt rating but the
+skin chooses how to present it. Report only whether text/rating appears, navigation
+works and elapsed cold/warm times—no list names, title screenshots, tokens or paths
+are needed. This is a new metadata-display check, not a repeat authorization test.

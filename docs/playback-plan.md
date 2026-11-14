@@ -8,7 +8,7 @@ player. Existing widgets and the installed skin remain the browsing surface.
 
 | Component | Responsibility | Current evidence |
 |---|---|---|
-| Trakt | Title identities, personal lists and watch state | Mocked; live routes disabled |
+| Trakt | Title identities, personal lists and watch state | Development Video selected-list reads passed on TV; public Preview remains synthetic |
 | Source input/provider | Locate a specific source the user is authorized to access | Provider and discovery workflow undecided |
 | Real-Debrid | Account authorization and resolution of supplied supported links | Original injected contracts tested with fabricated responses |
 | Playback coordinator | Keep metadata separate from source, check cancellation/account state and call a player adapter once | Inactive mocked contract |
@@ -100,3 +100,22 @@ The explicit [service assembly](service-runtime.md) and
 [account interaction](provider-account-flow.md) now compose the Real-Debrid foundation
 with shared local request limits and injected dialogs. They do not enable the Kodi
 account menu, establish entitlement or select a playback/source strategy.
+
+## Next bounded Real-Debrid milestone
+
+The owner has requested revisiting native Real-Debrid integration. Reuse the existing
+provider auth/storage/session/transport stack; do not add another permanent program
+add-on or copy Trakt credentials. First validate the current registered open-source
+client/device-flow contract, especially pending responses, and prepare an explicitly
+gated Development Video account test (connect, refresh, restart, disconnect). No
+live route is enabled by the metadata-display batch.
+
+Owner input before activation: confirm an application identity registered for this
+use and permission for a bounded device login test. Before resolution/playback,
+choose a supplied authorized supported host link or a separately reviewed source
+provider. A title ID/list entry is not sufficient source input. No real credentials
+or links should be sent to chat or CI. Existing Premium costs are separate; no
+purchase or paid feature is enabled. The official API endpoint returned HTTP 403
+from the development environment during the latest documentation recheck, so its
+current behavior was not reconfirmed and earlier contract evidence is not a live
+service pass.
