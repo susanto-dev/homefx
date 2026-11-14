@@ -144,3 +144,9 @@ The 0.14 preview extends storage checks to the inactive Real-Debrid credential
 store and shared request limits. Refresh expiry is checked after acquiring the
 database write lock; missing stores are not recreated during later operations.
 Live account and playback activation gates remain unchanged.
+
+
+The [real-list widget MVP guide](docs/widget-mvp.md) brings together Development
+installation, existing-account setup, skin-selectable folders and the short TV
+acceptance checklist. The [complete backlog](docs/backlog.md) distinguishes
+published behavior, owner-reported results, candidate work and inactive integrations.

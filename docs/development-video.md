@@ -79,8 +79,11 @@ below. No completed program test needs repeating.
 
 ## Smallest TV checklist
 
-No previously passed program test needs repeating. These checks exercise a new video
-profile, entry point and real-list route, which have not been validated on TV.
+For a new video installation, follow the setup steps below. Existing connected
+users keep their login and saved lists: skip completed setup and use the
+[widget MVP checklist](widget-mvp.md). Do not repeat passed account checks solely
+for an update. Skin-row and restart acceptance remain separate from successful
+list selection/browsing.
 
 1. **Install the verified candidate.** In Kodi choose Add-ons → Install
    from zip file → HomeFX → the newly listed **plugin.video.homefx.development** ZIP.
@@ -173,3 +176,20 @@ replace HomeFX placeholders or automatically configure skin artwork.
 A selected show's context menu offers the [all-regular-seasons unwatched view](show-unwatched.md).
 Normal show clicks still open seasons. This is a read-only browsing view, not playback
 or narrative next-episode selection; larger shows can require many metadata requests.
+
+## Unified widget setup candidate
+
+The root now includes **Widget folders (choose in your skin)**, **Widget setup help**
+and **Device / build information (no network)**. The static folder chooser and help
+work without opening account storage or initiating login. Account-bound list/show
+choices then lead to the existing terminal content routes. This lets a skin picker
+reach cross-season views without relying on a context menu.
+
+Device information reads the installed public build record, source version and
+runtime fingerprint, plus sanitized Kodi/Python/active-skin versions. It does not
+read account configuration/profile files or test storage/network. The fingerprint
+identifies the bundled source/assets, not the ZIP checksum or a signature; installed
+runtime files are not rehashed. Never treat this display as an integrity proof.
+
+See the [exact-skin guide](widget-setup.md) and [MVP acceptance checklist](widget-mvp.md).
+Choosing lists in HomeFX and assigning skin rows remain separate operations.

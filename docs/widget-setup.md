@@ -1,70 +1,108 @@
 # Widget setup with your existing skin
 
-Keep the installed skin. HomeFX supplies folders of titles; the skin controls row
-layout, focus, widget headings and shortcuts. These instructions describe the
-synthetic preview. They do not connect Trakt, start playback or establish a successful
-TV integration.
+Use **HomeFX Development Video** for your real saved Trakt lists. Keep Kodi 21.2
+and the installed Arctic: Zephyr - Reloaded 3.0.3 **Vertical Multi Widget Netflix**
+layout. HomeFX supplies folders; the skin chooses rows, headings, artwork layout
+and focus behavior. **Saving a list in HomeFX does not create a skin row.**
 
-Selecting lists in HomeFX and assigning rows in the skin are **two separate steps**.
-HomeFX selection does not create, remove or rearrange skin rows. Keep saved widget
-routes when upgrading and verify them before recreating shortcuts. The full-list
-folder in HomeFX is always the intended fallback when a skin heading cannot open;
-a menu/submenu shortcut can point to that same folder.
+The owner has already saved a real list and opened more than 100 movies. Continue
+from that selection. Program diagnostics authorization, refresh, credential restart,
+disconnect, cancellation and offline recovery were also reported successful; they
+are separate evidence and do not need repeating for widget setup. Video widget
+navigation, video restart persistence and performance remain unverified on TV.
 
-1. Install the HomeFX repository, then the video add-on using the
-   [repository instructions](releases.md). Open **Device readiness** in HomeFX.
-   Record HomeFX and HomeFX repository versions. **Not installed** means Kodi's
-   local presence check returned false; **unavailable** means the check or version
-   could not be validated. Neither a version nor presence proves updates work.
-2. Open **Select demo widget lists** and choose the lists you want. Open **Widget
-   sources** to check the available list folders and progress/upcoming views.
-3. In the skin's home-menu/widget configuration, browse Video add-ons → HomeFX
-   Preview → Widget sources, then select a list folder as one widget's source.
-   Repeat for other lists or Continue watching, Next aired unwatched episodes and
-   Upcoming episodes. The actual setting names depend on the installed skin.
-4. Choose the skin's poster/thumbnail presentation if available. Every preview
-   title uses original placeholder artwork. Selecting a movie/episode thumbnail
-   shows demo information; selecting a series opens its episode folder.
-5. To open the complete list, browse its folder inside HomeFX or create a separate
-   menu/submenu shortcut to that folder. A clickable widget heading is a skin
-   capability, not something HomeFX can assume. Record the observed behavior.
-6. Use the remote context/menu action (often long-press OK) on a title for local
-   watched changes, search, information and similar movies. These changes stay
-   local to the demo. Refresh the widget if its contents do not update immediately.
+## Real lists in Development Video
 
-**Widget setup** in the HomeFX root provides a shorter two-page guide on the TV.
-It does not read profiles or account configuration. Setup/help rows stay out of
-Widget sources and title-list results.
+The root menu calls the entry **Widget folders (choose in your skin)**; the paths
+below shorten it to **Widget folders**. **Widget setup help** also summarizes the
+steps on the TV.
 
-Use the [TV acceptance checklist](testing-on-tv.md) to record navigation, Back,
-focus, title versus heading clicks, multiple rows, empty views and cold/warm load
-behavior. Do not send a complete Kodi backup, account tokens or unredacted logs.
-Real account lists and playback need separate activation and acceptance tests.
+1. Use the current checksum-named **Development Video** ZIP from the existing
+   HomeFX source, `https://susanto-dev.github.io/homefx/`, after its publication is
+   verified. See [Development Video delivery](development-video.md). This is a direct
+   ZIP install, outside repository auto-updates. A candidate described in source is
+   not necessarily hosted yet. Keep existing credentials and saved selections.
+2. Open Video add-ons → **HomeFX Development Video → Widget folders → Selected
+   lists → your saved list**. Check that the folder opens. If no list is saved,
+   use **Choose personal or liked lists** in the add-on first.
+3. Open **Skin settings → Home → Customise home menu**. Choose the existing home
+   menu item that should own the row, then its **Widgets → Widget 1** slot (or an
+   unused slot). Open the slot's **Widget 1** source chooser.
+4. In that chooser, browse **Video Library → Video Add-On → HomeFX Development
+   Video → Widget folders → Selected lists → your saved list**. Enter the saved
+   list folder, then choose **Use as widget**. Choosing HomeFX's root or an earlier
+   chooser folder would make the row display navigation choices instead of titles.
+5. Back out of customization and allow the skin to rebuild. Check the row on Home.
+   If useful, choose **Widget aspect** in the slot's settings for the skin's poster
+   or thumbnail presentation. Metadata placeholders are expected; tiles do not play.
+6. Open the complete list inside HomeFX, or assign that same list folder to a
+   separate home menu/submenu shortcut. **Create menu item to here** is the Skin
+   Shortcuts folder-picker action for a menu shortcut. Use this fallback if the row
+   heading cannot open the list. On a title, **Open full list** is another fallback.
 
-The local repository-presence check uses Kodi 21.2's documented
-[`System.HasAddon(id)` condition](https://github.com/xbmc/xbmc/blob/21.2-Omega/xbmc/GUIInfoManager.cpp#L1996).
-It reports installation, not whether the repository is enabled, current or reachable.
+The English skin/editor labels and folder-picker behavior above were checked in
+public source, including the exact skin 3.0.3 archive. They have **not been exercised
+on the target TV**. Skin Shortcuts versions and localization can change picker
+labels or grouping. See [source evidence](widget-mvp.md#skin-source-and-license-evidence).
+If a grouping differs, find the video add-on folder in the existing picker; keep
+working rows until the new row is accepted.
+
+## Other real widget folders
+
+Inside **Widget folders**, choose the terminal folder appropriate for the row:
+
+- **Selected lists → saved list** gives the existing mixed movie/show list.
+- **Movie progress (reads Trakt history) → saved list → view** gives a movie-only
+  view. Choose the actual view folder before **Use as widget**; see
+  [movie progress](movie-progress.md) for its filters and history reads.
+- **Shows and episodes (progress views read Trakt history) → saved list → show**
+  offers **Seasons and episodes (reads Trakt history)** and **Aired unwatched
+  episodes — all regular seasons**. The latter is a directly selectable episode
+  folder. For a single season, enter Seasons and episodes, then the season folder
+  before saving the widget source.
+
+The ordinary show click in an existing selected-list row still opens seasons.
+Existing saved routes remain valid; the new picker folders do not require remaking
+working shortcuts. The cross-season view excludes specials, future/unknown dates,
+watched episodes and unknown watched states. It orders unfinished entries first,
+then newest aired first; it is **not Next aired** or narrative episode order.
+See [cross-season scope and cost](show-unwatched.md).
+
+A skin refresh can repeat list/history requests. The cross-season join can inspect
+up to 50 regular seasons and 5,000 episodes and may stop sooner on other limits.
+These are rejection bounds, not a promise that large shows load quickly. Measure
+one row before adding another. No persistent cache or cross-row request sharing is
+claimed.
 
 ## Read-only list journey acceptance
 
-The current public preview remains synthetic. After the [account activation
-gates](account-setup.md), check a personal list and a liked list separately: select
-them in HomeFX, assign each folder to a skin row, browse title and season details,
-then restart Kodi and confirm selections and widget shortcuts persist. Cancelling
-a list-selection dialog must retain the previous choices. An empty successful list,
-a loading operation, offline failure and authorization-needed state must be visibly
-distinct; failure must not masquerade as an empty list or another account's cached
-results. These are pending device acceptance checks, not a claim of live wiring.
+Use the short [one-list, one-row checklist](widget-mvp.md#one-list-one-row-tv-check)
+for the remaining TV checks: focus, Back, return position, cancellation, full-list
+fallback, video restart, cold/warm timing and then two rows. Report fixed outcomes
+and approximate times only; keep list names, titles and history private.
 
-Keep **Continue watching** (unfinished progress), **Next aired unwatched episodes**
-(aired candidates established as unwatched) and **Upcoming** (future date metadata)
-as separate views. A date does not establish a playable source. Trakt's personal
-calendar covers watched/watchlisted shows and individually watchlisted episodes,
-excluding hidden shows; it does not cover every show in arbitrary selected lists.
-See [calendar contracts](calendar-contract.md) and the [staged TV checklist](testing-on-tv.md).
+The Development rows expose metadata and original placeholder artwork. Native Kodi
+IDs support [TMDb Helper compatibility](kodi-metadata.md), including the inspected
+5.4.16 contract, but do not guarantee automatic artwork. No playback, Real-Debrid,
+remote list/history writes or new skin is enabled. Dates are not playable-source
+availability. Continue Watching, Next aired and Upcoming remain distinct concepts;
+the [personal calendar](calendar-contract.md) is not every selected show's schedule.
 
-The [opaque route/renderer preparation](widget-routing.md) is inactive. Once its
-public integration and device gates are satisfied, use a separate full-list shortcut
-or the fixed Open full list action where the skin heading cannot be clicked.
-Account changes or deselection must never redirect an old row to another account's
-list. This describes pending live acceptance, not a menu currently enabled.
+## Existing synthetic Preview widgets
+
+**HomeFX Preview** remains separate: repository **0.2.0**, video **0.17.14** in the
+existing published Preview. Its repository installation and updates do not install
+or update Development Video. Keep any working Preview widget routes.
+
+For that demo only, open **Select demo widget lists**, then browse **Widget
+sources**. In the same skin picker choose **HomeFX Preview → Widget sources →
+demo list/view**, enter it and choose **Use as widget**. Demo title clicks show
+synthetic information; demo watched/context actions stay local. Preview's
+Continue watching, Next aired unwatched episodes and Upcoming episodes are
+synthetic, not real-account Development feeds.
+
+Preview's **Widget setup** and **Device readiness** are demo help/local presence
+checks. They do not establish real account access, repository reachability or TV
+acceptance. The local presence check uses Kodi 21.2's documented
+[`System.HasAddon(id)` condition](https://github.com/xbmc/xbmc/blob/21.2-Omega/xbmc/GUIInfoManager.cpp#L1996).
+See the broader [TV checklist](testing-on-tv.md) for a fresh demo installation.

@@ -354,6 +354,13 @@ class Library:
             self.clear()
             raise
 
+    def widget_shows(self, ref):
+        """Selected-list show folders only; no watched or playback reads."""
+        result = self.widget_list(ref)
+        rows = [row for row in result['items'] if row['kind'] == 'show']
+        result['guard']()
+        return dict(result, items=rows, unsupported_count=0)
+
     def widget_details(self, ref, item_ref, movie_filter=None):
         """Return one list member's metadata; no source lookup or remote mutation."""
         self._widget_reference(item_ref)

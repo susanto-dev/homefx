@@ -6,11 +6,12 @@ from urllib.parse import parse_qsl, urlencode
 from . import development_config, service_runtime, storage_probe, trakt_tokens
 from . import trakt_widget_routes as routes
 from .trakt_video import TraktVideo
+from .trakt_widget_ui import WidgetDirectoryUI
 from .account_flow import FlowResult
 
 ADDON_ID = 'plugin.video.homefx.development'
 TITLE = 'HomeFX Development Video'
-ACTIONS = {'probe', 'status', 'connect', 'choose', 'disconnect'}
+ACTIONS = {'probe', 'status', 'connect', 'choose', 'disconnect', 'widget_help', 'device_info'}
 STATES = {'disconnected': 'disconnected', 'ready': 'credentials stored',
           'refresh_required': 'refresh required', 'refreshing': 'refresh in progress',
           'reauth': 'login required'}
@@ -22,7 +23,7 @@ def _finish(plugin, handle, succeeded):
 
 
 def run(argv, addon, dialog, progress_factory, monitor, plugin, item_factory, translate,
-        *, runtime_factory=service_runtime.build_trakt, probe=storage_probe.report, clock=time.monotonic):
+        *, runtime_factory=service_runtime.build_trakt, probe=storage_probe.report, clock=time.monotonic, local_info=None):
     """Menus open no stores. Account data belongs only to this add-on's own profile.
 
     Directory reads are deliberately silent, including skin widget refreshes.
@@ -44,6 +45,9 @@ def run(argv, addon, dialog, progress_factory, monitor, plugin, item_factory, tr
                 raise ValueError()
             plugin.setPluginCategory(handle, TITLE + ' — read-only; no playback')
             for label, action in (
+                ('Widget folders (choose in your skin)', 'widget_menu'),
+                ('Widget setup help', 'widget_help'),
+                ('Device / build information (no network)', 'device_info'),
                 ('Test this video add-on\'s private storage', 'probe'),
                 ('Local connection status (no network)', 'status'),
                 ('Connect Development Trakt', 'connect'),
@@ -51,9 +55,9 @@ def run(argv, addon, dialog, progress_factory, monitor, plugin, item_factory, tr
                 ('Selected lists / widget sources', 'sources'),
                 ('Movie progress views / widgets (reads Trakt history)', 'movie_sources'),
                 ('Disconnect this video add-on locally', 'disconnect')):
-                target = (routes.url('trakt_' + action, addon_id=ADDON_ID) if action in {'sources', 'movie_sources'}
+                target = (routes.url('trakt_' + action, addon_id=ADDON_ID) if action in {'sources', 'movie_sources', 'widget_menu'}
                           else 'plugin://' + ADDON_ID + '/?' + urlencode({'action': action}))
-                if plugin.addDirectoryItem(handle, target, item_factory(label=label), action in {'sources', 'movie_sources'}) is False:
+                if plugin.addDirectoryItem(handle, target, item_factory(label=label), action in {'sources', 'movie_sources', 'widget_menu'}) is False:
                     raise ValueError()
             _finish(plugin, handle, True)
             return True
@@ -71,6 +75,28 @@ def run(argv, addon, dialog, progress_factory, monitor, plugin, item_factory, tr
         if monitor.abortRequested():
             _finish(plugin, handle, False)
             return False
+
+        if action == 'widget_help':
+            dialog.textviewer(TITLE + ' — Widget setup',
+                '1. Keep your current skin. Choose personal or liked lists in HomeFX first.\n'
+                '2. In the skin widget picker, browse Video add-ons > HomeFX Development Video > Widget folders.\n'
+                '3. Choose Selected lists, Movie progress, or Shows and episodes. Select the final content folder, not a category.\n'
+                '4. Create each skin row separately. HomeFX never edits your skin configuration.\n'
+                'Use a separate full-list menu shortcut if the row heading cannot open it.\n'
+                'Movie progress reads history; show views can read every regular season. Titles are not playable sources.\n'
+                'Keep existing login and lists after updates. Restart Kodi, then check Back, focus and first/repeat load times.\n'
+                'Exact skin picker behavior remains a TV check. No network or account storage was accessed by this help.')
+            _finish(plugin, handle, False)
+            return True
+        if action == 'device_info':
+            message = local_info() if callable(local_info) else 'Local device/build information unavailable.'
+            dialog.textviewer(TITLE + ' — Device / build information', message)
+            _finish(plugin, handle, False)
+            return True
+        if route == 'trakt_widget_menu':
+            result = WidgetDirectoryUI(plugin, item_factory, progress_factory, monitor,
+                dialog=dialog, addon_id=ADDON_ID).render(None, handle, query, widget=True)
+            return result.state == 'ready'
 
         def context():
             config = development_config.load_config(

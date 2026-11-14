@@ -126,8 +126,24 @@ class WidgetDirectoryUI:
 
     @staticmethod
     def _read(library, route, params):
-        if route in {'trakt_sources', 'trakt_movie_sources'}:
+        if route == 'trakt_widget_menu':
+            return {'items': [
+                {'name': 'Selected lists', 'route': 'trakt_sources'},
+                {'name': 'Movie progress (reads Trakt history)', 'route': 'trakt_movie_sources'},
+                {'name': 'Shows and episodes (progress views read Trakt history)', 'route': 'trakt_show_sources'},
+            ], 'unsupported_count': 0, 'guard': lambda: None}
+        if route in {'trakt_sources', 'trakt_movie_sources', 'trakt_show_sources'}:
             return library.widget_sources()
+        if route == 'trakt_shows':
+            return library.widget_shows(params['ref'])
+        if route == 'trakt_show_views':
+            result = library.widget_details(params['ref'], params['item'])
+            if len(result['items']) != 1 or result['items'][0]['kind'] != 'show':
+                raise ApiError('unavailable_selection')
+            return dict(result, items=[
+                {'name': 'Seasons and episodes (reads Trakt history)', 'route': 'trakt_seasons'},
+                {'name': 'Aired unwatched episodes — all regular seasons', 'route': 'trakt_show_unwatched'},
+            ])
         if route == 'trakt_movie_views':
             result = library.widget_sources()
             if not any(row['ref'] == params['ref'] for row in result['items']):
@@ -153,9 +169,16 @@ class WidgetDirectoryUI:
         staged = []
         for row in rows:
             target, folder = '', False
-            if route in {'trakt_sources', 'trakt_movie_sources'}:
+            if route == 'trakt_widget_menu':
                 label = _text(row['name'])
-                destination = 'trakt_movie_views' if route == 'trakt_movie_sources' else 'trakt_list'
+                target, folder = self._url(row['route']), True
+            elif route == 'trakt_show_views':
+                label = _text(row['name'])
+                target, folder = self._url(row['route'], ref=params['ref'], item=params['item']), True
+            elif route in {'trakt_sources', 'trakt_movie_sources', 'trakt_show_sources'}:
+                label = _text(row['name'])
+                destination = {'trakt_movie_sources': 'trakt_movie_views',
+                               'trakt_show_sources': 'trakt_shows'}.get(route, 'trakt_list')
                 target, folder = self._url(destination, ref=row['ref']), True
             elif route == 'trakt_movie_views':
                 label = _text(row['name'])
@@ -166,7 +189,9 @@ class WidgetDirectoryUI:
                 folder = True
             else:
                 label = _text(row['title'])
-                if route == 'trakt_list':
+                if route == 'trakt_shows':
+                    target, folder = self._url('trakt_show_views', ref=params['ref'], item=row['item_ref']), True
+                elif route == 'trakt_list':
                     destination = 'trakt_seasons' if row['kind'] == 'show' else 'trakt_details'
                     target = self._url(destination, ref=params['ref'], item=row['item_ref'],
                                        **({'filter': params['filter']} if 'filter' in params else {}))
@@ -187,7 +212,8 @@ class WidgetDirectoryUI:
                 tag.setSeason(row['season'])
                 tag.setPlot(_season_plot(row))
                 item.addContextMenuItems(_episode_actions(params, row['season'], self._addon_id))
-            if route not in {'trakt_sources', 'trakt_movie_sources', 'trakt_movie_views', 'trakt_seasons'}:
+            if route not in {'trakt_widget_menu', 'trakt_sources', 'trakt_movie_sources', 'trakt_movie_views',
+                             'trakt_show_sources', 'trakt_show_views', 'trakt_seasons'}:
                 tag = item.getVideoInfoTag()
                 tag.setTitle(label)
                 tag.setMediaType('tvshow' if row['kind'] == 'show' else row['kind'])

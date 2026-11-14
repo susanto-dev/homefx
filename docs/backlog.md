@@ -1,11 +1,12 @@
 # Complete project backlog
 
 Status checked on 14 November 2026: published **video 0.17.14 / repository 0.2.0**.
-PR #47 merged as `c52760f184f70dc6b938ef964aedadc34d1f2c19`; Validation, Security,
-configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43571506572) passed.
-Publication verified 129 public files; fresh hosted index/current ZIP checks match
-retained bytes. Cross-season aired-unwatched browsing and native Kodi identities
-are published, not yet TV-validated. Direct TMDB integration remains deferred.
+PR #48 merged as `7870a1f0652c6b2ce8b128a03bbc0fede91bc69e`; Validation, Security,
+configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43574173173) passed.
+Publication verified 129 public files. The Development-only demo-module cleanup is
+published; Preview/repository versions and retained bytes are unchanged. Selected
+real-list browsing passed on TV; skin widget/restart/performance acceptance remains
+open. Direct TMDB integration and public/Production activation remain deferred.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -17,8 +18,8 @@ provider or release choice. The current public add-on remains synthetic.
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
-| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
-| B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development read-only browser; synthetic integration tests passed | Live episode identity/status, season navigation and refresh behavior on TV |
+| B02 | Multiple selected list widgets and folder browsing | Published in Development Video; unified widget folder picker candidate added; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
+| B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development season and cross-season read-only browser; picker candidate added | Live episode identity/status, season navigation and refresh behavior on TV |
 | B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; global/episode Continue Watching and Next aired remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
@@ -77,8 +78,8 @@ This repair does not alter private account stores or enable live services.
 
 | ID | Item | Status | Remaining work / acceptance |
 |---|---|---|---|
-| R01 | Reproducible manual ZIP and public Pages preview | Published 0.17.8; Development video/program downloads byte-verified | Development video TV acceptance pending |
-| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | 0.17.8 deployed-byte verification passed; clean repository-first install still needs TV evidence |
+| R01 | Reproducible manual ZIP and public Pages preview | Published 0.17.14; Development video/program downloads byte-verified | Development video TV acceptance pending |
+| R02 | Repository package/index/checksums, retained packages and verifier | Implemented; experimental repository channel published (0.9) | Current deployed-byte verification passed; clean repository-first install still needs TV evidence |
 | R03 | Repository hosting, upgrades and rollback | Experimental Pages channel, immutable history and local release preparation implemented; HTTP verification passed; TV acceptance pending | Verify each new publication; test clean install/upgrade and documented rollback on TV |
 | Q01 | Python 3.11/3.12, manifests/XML, packaging/repeatability checks | Implemented; aggregate results, boundary regressions and whole-journey integration coverage | Continue regression coverage; cloud tests never replace TV tests |
 | Q02 | Weekly security/dependency/Action update checks and SHA pins | Implemented; GitHub graph verified and offline inventory consistency guard added | Manual issue triage; no automatic update PRs or PR comments |
@@ -445,3 +446,30 @@ Both packages receive isolated complete-runtime import checks. This avoids shipp
 unused demo behavior without deleting shared inactive integrations or retiring the
 program test add-on before its existing gates. No runtime feature, public package
 version, credential or skin change. TV speed benefits are not claimed.
+
+## Current MVP batch: widget picker, local build information and skin guide
+
+This batch joins three implementation tracks into one candidate and one reviewed
+release. It keeps the current Python add-on and installed skin; it does not create
+a skin or activate public service access.
+
+| Work item | Current status | Evidence still needed |
+|---|---|---|
+| B02/T03: real personal/liked list selection and folder browsing | Published; owner-reported saved selection and 100+ movie browsing passed | Saved video selection after full restart and actual skin row |
+| B02/B10: unified skin-selectable widget folders | Candidate implemented with static menu and selected-list/show choices | Choose terminal folder with Use as widget on TV |
+| B03: seasons and all-regular-season aired unwatched | Published; now reachable through candidate picker without context menus | Correct live statuses, Back and return position |
+| T04: selected-list movie progress views | Published; picker reuses stable routes | Actual watched/paused endpoint and filtering on TV |
+| Q04: Development build/device information | Candidate local-only source version/fingerprint and Kodi/skin report | Installed display; no storage/auth test implied |
+| B10/Q04: exact-skin setup guide | Source-verified 3.0.3 navigation; candidate documented | Actual remote labels, focus, heading behavior |
+| T07: cold/warm and multiple-row performance | Request limits and invocation cache implemented | TV timings; no speed or cross-row cache claim |
+| R01–R03: installation/update | Public Preview repository and experimental Development ZIP paths published | Development remains deliberate ZIP update; not repository auto-update |
+| T08: general public live access | Inactive, external approval/configuration gate | Owner/service requirements; do not infer from Development tests |
+| B04/B11: global Continue Watching, narrative Next aired, personal calendar | Shared contracts inactive; selected-list views only | Separate product integration and TV acceptance |
+| B05–B08/T06: remote list/history writes, live search/related UI | Demo/local or inactive contracts | Separate consent, service and UI gates |
+| D01–D06/P01–P06: Real-Debrid, sources, playback and scrobbling | Inactive; no playable source catalogue assumed | Registration, authorized source decision, single-owner playback/device checks |
+| Artwork | Trakt text/ratings and local placeholders; native Kodi IDs published | Skin/Helper behavior on TV; direct TMDB deferred |
+
+The detailed tables above remain the complete backlog. No completed account test
+must be repeated solely for this batch. Start with one selected list and one skin
+row using the [MVP acceptance guide](widget-mvp.md), then measure a second row.
+A successful synthetic test or source inspection is not a TV pass.

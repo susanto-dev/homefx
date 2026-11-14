@@ -666,3 +666,27 @@ independent deployment. Updating Development Video from the current source ZIP a
 restarting Kodi is sufficient to receive the leaner package; no login reset,
 profile cleanup or repeat of completed account tests is requested. This cleanup
 introduces no new product flow or TV performance claim.
+
+## Widget MVP setup proposal (0.17.15)
+
+One candidate combines a skin-browsable widget folder tree, Development on-screen
+setup/help and local build information, and a source-verified guide for the existing
+Arctic Zephyr Reloaded 3.0.3 layout. Existing terminal widget URLs, account profiles
+and saved selections are preserved. Static setup menus do not read accounts; real
+list/show choices retain membership and final-render guards. No skin settings are
+modified. Public/Production live activation, playback and new providers stay inactive.
+
+Normal merge-triggered Pages publication prepares video 0.17.15 and new
+content-addressed Development ZIPs. Repository 0.2.0 and all 28 prior package
+records/bytes remain unchanged. The Development video package adds a deterministic
+public build record, excluding app configuration from its runtime fingerprint;
+this is descriptive identity, not a signature or a check of installed files.
+The diagnostic program remains separate and receives shared-runtime changes only.
+No credentials are migrated or embedded and no new paid dependency is introduced.
+
+Verify the actual uploaded artifact against hosted bytes after merge. Then update
+Development Video from the existing HomeFX source and fully restart Kodi, retaining
+current login/selections. Follow [one list and one skin row](widget-mvp.md) before
+adding a second row. Source inspection and synthetic tests do not establish TV
+navigation, persistence, artwork or performance. No independent deployment or
+repeat of completed account tests is requested.

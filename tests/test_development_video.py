@@ -57,7 +57,7 @@ class DevelopmentVideoTests(unittest.TestCase):
             self.addCleanup(guard.stop)
             self.addCleanup(mocked.assert_not_called)
 
-    def invoke(self, query='', *, confirm=True, addon_id=video.ADDON_ID, probe=None, abort_on_consent=False):
+    def invoke(self, query='', *, confirm=True, addon_id=video.ADDON_ID, probe=None, abort_on_consent=False, local_info=None):
         screen = VideoScreen(self.service)
         screen.confirm = confirm
         original_confirm = screen.yesno
@@ -81,13 +81,14 @@ class DevelopmentVideoTests(unittest.TestCase):
                 monotonic=lambda: self.service.elapsed, connection_factory=self.service)
         result = video.run(['plugin://' + addon_id + '/', '1', query], Addon(), screen,
             lambda: screen, screen, screen, screen.item, translate, runtime_factory=factory,
-            probe=probe or (lambda profile: 'Overall: passed'), clock=lambda: self.service.elapsed)
+            probe=probe or (lambda profile: 'Overall: passed'), clock=lambda: self.service.elapsed,
+            local_info=local_info)
         return result, screen
 
     def test_root_invalid_and_declined_actions_have_no_storage_or_network(self):
         result, screen = self.invoke()
         self.assertTrue(result)
-        self.assertEqual(len(screen.rows), 7)
+        self.assertEqual(len(screen.rows), 10)
         for query in ('?action=connect', '?action=choose', '?action=status', '?action=probe'):
             self.invoke(query, confirm=False)
         for query in ('?action=connect&action=choose', '?action=write', '?route=trakt_sources&private=1'):
@@ -97,6 +98,53 @@ class DevelopmentVideoTests(unittest.TestCase):
         self.assertEqual(self.factories, [])
         self.assertEqual(self.paths, [])
         self.assertEqual(self.service.requests, [])
+
+    def test_widget_setup_and_local_info_work_without_configuration_or_account_io(self):
+        (self.install / 'resources/development.json').unlink()
+        success, menu = self.invoke('?route=trakt_widget_menu')
+        self.assertTrue(success)
+        self.assertEqual(len(menu.rows), 3)
+        self.assertTrue(all(folder for _, _, folder in menu.rows))
+        self.assertEqual(menu.details, [])
+        self.assertTrue(self.invoke('?action=widget_help')[0])
+        success, info = self.invoke('?action=device_info', local_info=lambda: 'Local synthetic build information')
+        self.assertTrue(success)
+        self.assertEqual(info.details[-1][1], 'Local synthetic build information')
+        self.assertEqual(self.paths, [])
+        self.assertEqual(self.factories, [])
+        self.assertEqual(self.service.requests, [])
+        self.assertFalse(self.profile.exists())
+
+    def test_widget_picker_reaches_saved_show_terminal_and_reopens_after_restart(self):
+        self.invoke('?action=connect')
+        self.invoke('?action=choose')
+        start = len(self.service.requests)
+        success, menu = self.invoke('?route=trakt_widget_menu')
+        self.assertTrue(success)
+        self.assertEqual(len(self.service.requests), start)
+        show_source = next(target for target, _, _ in menu.rows if 'route=trakt_show_sources' in target)
+        success, lists = self.invoke('?' + urlsplit(show_source).query)
+        self.assertTrue(success)
+        success, shows = self.invoke('?' + urlsplit(lists.rows[0][0]).query)
+        self.assertTrue(success)
+        self.assertEqual(len(shows.rows), 1)
+        success, views = self.invoke('?' + urlsplit(shows.rows[0][0]).query)
+        self.assertTrue(success)
+        self.assertEqual(len(views.rows), 2)
+        self.assertFalse(any('/progress/' in row[2] or '/sync/playback' in row[2]
+                             for row in self.service.requests[start:]))
+        target = next(target for target, _, _ in views.rows if 'route=trakt_show_unwatched' in target)
+        # Every invoke constructs a new runtime from the same persisted selection.
+        for _ in range(2):
+            success, episodes = self.invoke('?' + urlsplit(target).query)
+            self.assertTrue(success)
+            self.assertEqual(len(episodes.rows), 1)
+            self.assertEqual(episodes.rows[0][1].tag.values['episode'], 1)
+            self.assertFalse(any(event[0] in {'confirm', 'open'} for event in episodes.events))
+        self.invoke('?action=disconnect')
+        success, stale = self.invoke('?' + urlsplit(target).query)
+        self.assertFalse(success)
+        self.assertEqual(stale.rows, [])
 
     def test_abort_during_local_confirmation_does_not_open_storage(self):
         for action in ('probe', 'status'):
@@ -209,11 +257,12 @@ sys.modules['xbmcvfs'] = types.SimpleNamespace(translatePath=forbidden)
 sys.path.insert(0, str(root))
 sys.argv = ['plugin://' + ident + '/', '1', '']
 exec(compile((root / 'default.py').read_bytes(), str(root / 'default.py'), 'exec'), {'__name__': '__main__'})
-assert len(rows) == 7 and ends == [(True, False)]
+assert len(rows) == 10 and ends == [(True, False)]
 assert all(url.startswith('plugin://' + ident + '/?') for url, _ in rows)
 assert {url for url, folder in rows if folder} == {
     'plugin://' + ident + '/?route=trakt_sources',
-    'plugin://' + ident + '/?route=trakt_movie_sources'}
+    'plugin://' + ident + '/?route=trakt_movie_sources',
+    'plugin://' + ident + '/?route=trakt_widget_menu'}
 """
         result = subprocess.run([sys.executable, '-c', child, str(installed)],
                                 capture_output=True, timeout=15, check=False)
