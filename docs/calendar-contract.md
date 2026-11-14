@@ -1,7 +1,7 @@
 # Metadata enrichment and personal episode calendars
 
-These contracts remain inactive: no Kodi route constructs a live service connection.
-Tests use fabricated responses. Title identity, dates and partial progress are metadata;
+The calendar is used by the [Development widget candidate](calendar-widget.md).
+Public Preview does not activate it. Tests use fabricated responses. Title identity, dates and partial progress are metadata;
 they do not prove playable sources, watched state or access to a particular service.
 
 ## Primary source evidence
@@ -71,3 +71,15 @@ playback or service mutation is introduced.
 Client/session/HTTP-framing fixtures exercise identity mismatch, malformed or nullable
 metadata, UTC boundaries, calendar scope, incomplete responses, no-I/O input rejection
 and account replacement. These are offline contract checks, not live integration tests.
+
+## Current calendar contract recheck
+
+On 14 November 2026, the official contract was rechecked at calendar revision
+[`b2308e4a078e4f4779871580bc7895f0e8b6a98d`](https://github.com/trakt/trakt-api/tree/b2308e4a078e4f4779871580bc7895f0e8b6a98d/projects/api/src/contracts/calendars).
+The GET show calendar still specifies a UTC date window and array response. The
+[request schema](https://github.com/trakt/trakt-api/blob/b2308e4a078e4f4779871580bc7895f0e8b6a98d/projects/api/src/contracts/calendars/schema/request/calendarParamsSchema.ts)
+still describes `my` as watched, collected or watchlisted items plus individual
+watchlisted episodes. HomeFX omits the optional grouping parameter so entries remain
+per episode. No upstream code/assets were copied and no service terms were accepted.
+This source inspection is not a live entitlement or TV check. The Development
+candidate uses a fixed seven-date window; public/Production activation remains gated.

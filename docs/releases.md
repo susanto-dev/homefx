@@ -718,3 +718,16 @@ No independent publication is authorized. Verify the hosted artifact after merge
 then update Development Video and fully restart Kodi while retaining the existing
 login and lists. Follow the [short feed check](continue-widget.md); no repeated
 authentication test is needed solely for this change.
+
+## Personal calendar widget proposal (0.17.18)
+
+Normal merge-triggered Pages publication prepares video 0.17.18 and content-addressed
+Development downloads after all gates. Repository 0.2.0 and all 31 prior package
+records/bytes remain unchanged. The calendar uses the existing read-only endpoint;
+public Preview stays synthetic, with no public/Production activation or independent
+deployment. No schema migration, credential transfer or new provider is introduced.
+
+After verified publication, update Development Video from the current source ZIP and
+fully restart Kodi, retaining the existing login/lists. Follow the [calendar TV
+check](calendar-widget.md). Calendar scope, service entitlement, navigation and timing
+remain unverified on TV; a date never establishes playable availability.

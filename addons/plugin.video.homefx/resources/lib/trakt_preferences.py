@@ -185,7 +185,7 @@ class AccountPreferences:
 
     @staticmethod
     def _widget_feed(feed):
-        if type(feed) is not str or feed != 'continue':
+        if type(feed) is not str or feed not in {'continue', 'calendar'}:
             raise PreferencesError('invalid_widget_reference')
         return feed
 
@@ -203,10 +203,12 @@ class AccountPreferences:
         """Derive bounded locators; callers must recheck current feed membership."""
         account = _account_key(uuid)
         feed = self._widget_feed(feed)
+        limit = 1000 if feed == 'calendar' else 50
+        kinds = ('episode',) if feed == 'calendar' else ('movie', 'episode')
         if (not _integer(expected_epoch) or type(identities) not in (list, tuple)
-                or len(identities) > 50 or any(
+                or len(identities) > limit or any(
                     type(pair) not in (list, tuple) or len(pair) != 2
-                    or type(pair[0]) is not str or pair[0] not in ('movie', 'episode')
+                    or type(pair[0]) is not str or pair[0] not in kinds
                     or type(pair[1]) is not int or not 1 <= pair[1] <= _MAX_INTEGER
                     for pair in identities)):
             raise PreferencesError('invalid_widget_reference')

@@ -1,4 +1,5 @@
 """Inactive Kodi-shaped read directory renderer with no imports or activation of Kodi."""
+from datetime import date, timedelta
 import math
 import unicodedata
 
@@ -69,6 +70,19 @@ def _media_identity(tag, row):
         tag.setTvShowTitle(_text(row['show_title']))
 
 
+def _calendar_title(row):
+    return (_text(row['show_title']) + ' — S' + str(row['season']) + 'E' +
+            str(row['episode']) + ' — ' + _text(row['title']))
+
+
+def _calendar_window(payload):
+    start, days = payload['start_date'], payload['days']
+    if type(start) is not str or len(start) != 10 or type(days) is not int or days != 7:
+        raise ValueError('invalid_calendar_window')
+    begin = date.fromisoformat(start)
+    return begin.isoformat() + ' through ' + (begin + timedelta(days=days - 1)).isoformat()
+
+
 def _episode_actions(params, season, addon_id):
     return [(label, 'Container.Update(' + routes.url('trakt_episodes', addon_id=addon_id, ref=params['ref'],
              item=params['item'], season=season, filter=selection) + ')')
@@ -132,7 +146,14 @@ class WidgetDirectoryUI:
                 {'name': 'Movie progress (reads Trakt history)', 'route': 'trakt_movie_sources'},
                 {'name': 'Shows and episodes (progress views read Trakt history)', 'route': 'trakt_show_sources'},
                 {'name': 'Continue watching (account-wide; reads history)', 'route': 'trakt_continue_sources'},
+                {'name': 'Upcoming episodes (personal calendar)', 'route': 'trakt_calendar_sources'},
             ], 'unsupported_count': 0, 'guard': lambda: None}
+        if route == 'trakt_calendar_sources':
+            return library.widget_calendar_sources()
+        if route == 'trakt_calendar':
+            return library.widget_calendar(params['ref'])
+        if route == 'trakt_calendar_details':
+            return library.widget_calendar_details(params['ref'], params['item'])
         if route == 'trakt_continue_sources':
             return library.widget_continue_sources()
         if route == 'trakt_continue':
@@ -187,9 +208,10 @@ class WidgetDirectoryUI:
                 label = _text(row['name'])
                 target, folder = self._url(row['route'], ref=params['ref'], item=params['item'],
                     **({'view': row['view']} if 'view' in row else {})), True
-            elif route == 'trakt_continue_sources':
+            elif route in {'trakt_continue_sources', 'trakt_calendar_sources'}:
                 label = _text(row['name'])
-                target, folder = self._url('trakt_continue', ref=row['ref']), True
+                destination = 'trakt_calendar' if route == 'trakt_calendar_sources' else 'trakt_continue'
+                target, folder = self._url(destination, ref=row['ref']), True
             elif route in {'trakt_sources', 'trakt_movie_sources', 'trakt_show_sources'}:
                 label = _text(row['name'])
                 destination = {'trakt_movie_sources': 'trakt_movie_views',
@@ -204,7 +226,10 @@ class WidgetDirectoryUI:
                 folder = True
             else:
                 label = _text(row['title'])
-                if route == 'trakt_continue':
+                if route == 'trakt_calendar':
+                    label = _calendar_title(row)
+                    target = self._url('trakt_calendar_details', ref=params['ref'], item=row['item_ref'])
+                elif route == 'trakt_continue':
                     target = self._url('trakt_continue_details', ref=params['ref'], item=row['item_ref'])
                     if row['kind'] == 'episode':
                         label = 'S' + str(row['season']) + 'E' + str(row['episode']) + ' — ' + label
@@ -232,7 +257,7 @@ class WidgetDirectoryUI:
                 tag.setPlot(_season_plot(row))
                 item.addContextMenuItems(_episode_actions(params, row['season'], self._addon_id))
             if route not in {'trakt_widget_menu', 'trakt_sources', 'trakt_movie_sources', 'trakt_movie_views',
-                             'trakt_show_sources', 'trakt_show_views', 'trakt_seasons', 'trakt_continue_sources'}:
+                             'trakt_show_sources', 'trakt_show_views', 'trakt_seasons', 'trakt_continue_sources', 'trakt_calendar_sources'}:
                 tag = item.getVideoInfoTag()
                 tag.setTitle(label)
                 tag.setMediaType('tvshow' if row['kind'] == 'show' else row['kind'])
@@ -255,7 +280,7 @@ class WidgetDirectoryUI:
                 if row['kind'] == 'episode':
                     tag.setSeason(row['season'])
                     tag.setEpisode(row['episode'])
-                    if route != 'trakt_continue':
+                    if route not in {'trakt_continue', 'trakt_calendar'}:
                         item.addContextMenuItems(_episode_actions(params, row['season'], self._addon_id))
             if route == 'trakt_list' and row.get('kind') == 'show':
                 show_view = self._url('trakt_show_unwatched', ref=params['ref'], item=row['item_ref'])
@@ -265,7 +290,10 @@ class WidgetDirectoryUI:
                 show_view = self._url('trakt_show_unwatched', ref=params['ref'], item=params['item'])
                 item.addContextMenuItems([('Aired unwatched episodes — all regular seasons',
                                           'Container.Update(' + show_view + ')')])
-            if route == 'trakt_continue':
+            if route == 'trakt_calendar':
+                full_feed = self._url('trakt_calendar', ref=params['ref'])
+                item.addContextMenuItems([('Open personal calendar', 'Container.Update(' + full_feed + ')')])
+            elif route == 'trakt_continue':
                 full_feed = self._url('trakt_continue', ref=params['ref'])
                 item.addContextMenuItems([('Open Continue watching', 'Container.Update(' + full_feed + ')')])
             elif 'ref' in params:
@@ -283,7 +311,7 @@ class WidgetDirectoryUI:
             if type(handle) is not int or handle < 0 or type(widget) is not bool:
                 raise ValueError('invalid_ui_configuration')
             route, params = routes.parse(query)
-            details = route in {'trakt_details', 'trakt_episode_details', 'trakt_continue_details'}
+            details = route in {'trakt_details', 'trakt_episode_details', 'trakt_continue_details', 'trakt_calendar_details'}
             if details and widget:
                 raise ValueError('invalid_widget_action')
             if self.cancelled():
@@ -336,7 +364,9 @@ class WidgetDirectoryUI:
                 if successful:
                     row = detail_rows[0]
                     title = _text(row['title'])
-                    if route == 'trakt_continue_details' and row['kind'] == 'episode':
+                    if route == 'trakt_calendar_details':
+                        title = _calendar_title(row)
+                    elif route == 'trakt_continue_details' and row['kind'] == 'episode':
                         title = 'S' + str(row['season']) + 'E' + str(row['episode']) + ' — ' + title
                     watched = row.get('watched')
                     status = 'watched' if watched is True else 'unwatched' if watched is False else 'unknown'
@@ -367,6 +397,12 @@ class WidgetDirectoryUI:
             if successful and route in {'trakt_continue_sources', 'trakt_continue'}:
                 category = ('Continue watching — this account, not limited to selected lists. '
                             'Reads paused titles, details and watched history; unknown watched status remains unknown. ' + category)
+            if successful and route in {'trakt_calendar_sources', 'trakt_calendar'}:
+                category = ('Upcoming episodes — personal calendar, next 7 UTC dates. '
+                            'Watched/collected/watchlisted scope; not every selected-list show. '
+                            'Watched status unknown; dates do not establish playable availability. ' + category)
+                if route == 'trakt_calendar':
+                    category += ' UTC dates: ' + _calendar_window(payload) + '.'
             self._plugin.setPluginCategory(handle, category)
             self._plugin.setContent(handle, 'videos')
             if successful:

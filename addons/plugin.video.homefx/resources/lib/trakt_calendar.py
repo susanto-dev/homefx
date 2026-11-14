@@ -1,4 +1,4 @@
-"""Inactive personal-calendar projection; no accounts, player or persistent cache.
+"""Bounded personal-calendar projection; no player or persistent cache.
 
 A personal calendar is the service's calendar scope, not a catalogue of every show
 in selected or liked lists. Optional show filtering only intersects that response.

@@ -66,7 +66,7 @@ class ContinueWidgetUITests(WidgetDirectoryFixture, unittest.TestCase):
         result = self.ui.render(Forbidden(), 1, '?route=trakt_widget_menu', widget=True)
         self.assertEqual(result.state, 'ready')
         self.assertEqual([routes.parse(urlsplit(url).query)[0] for url, _, _ in self.rows],
-                         ['trakt_sources', 'trakt_movie_sources', 'trakt_show_sources', 'trakt_continue_sources'])
+                         ['trakt_sources', 'trakt_movie_sources', 'trakt_show_sources', 'trakt_continue_sources', 'trakt_calendar_sources'])
         self.assertEqual(self.calls, [])
         target = self.feed()
         self.assertEqual(routes.parse(urlsplit(target).query)[0], 'trakt_continue')

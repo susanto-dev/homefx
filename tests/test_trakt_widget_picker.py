@@ -51,7 +51,7 @@ class WidgetPickerTests(WidgetDirectoryFixture, unittest.TestCase):
         result = self.ui.render(Forbidden(), 1, 'route=trakt_widget_menu', widget=True)
         self.assertEqual(result.state, 'ready')
         self.assertEqual([routes.parse(urlsplit(url).query)[0] for url, _, _ in self.rows],
-                         ['trakt_sources', 'trakt_movie_sources', 'trakt_show_sources', 'trakt_continue_sources'])
+                         ['trakt_sources', 'trakt_movie_sources', 'trakt_show_sources', 'trakt_continue_sources', 'trakt_calendar_sources'])
         self.assertTrue(all(folder for _, _, folder in self.rows))
         self.assertEqual(self.calls, [])
         self.assertEqual(self.events, [])

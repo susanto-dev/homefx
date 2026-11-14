@@ -1,4 +1,5 @@
 """Real Development video adapter with fabricated grants and isolated profiles."""
+from datetime import datetime, timezone
 import hashlib
 import io
 import subprocess
@@ -103,7 +104,7 @@ class DevelopmentVideoTests(unittest.TestCase):
         (self.install / 'resources/development.json').unlink()
         success, menu = self.invoke('?route=trakt_widget_menu')
         self.assertTrue(success)
-        self.assertEqual(len(menu.rows), 4)
+        self.assertEqual(len(menu.rows), 5)
         self.assertTrue(all(folder for _, _, folder in menu.rows))
         self.assertEqual(menu.details, [])
         self.assertTrue(self.invoke('?action=widget_help')[0])
@@ -242,6 +243,83 @@ class DevelopmentVideoTests(unittest.TestCase):
         success, empty = self.invoke('?' + urlsplit(feed).query)
         self.assertTrue(success)
         self.assertEqual(empty.rows, [])
+        self.invoke('?action=disconnect')
+        before = len(self.service.requests)
+        self.assertFalse(self.invoke('?' + urlsplit(feed).query)[0])
+        self.assertEqual(len(self.service.requests), before)
+
+    def test_personal_calendar_reopens_without_lists_and_rechecks_current_details(self):
+        self.invoke('?action=connect')
+        original = self.service.respond
+        calendar_path = '/calendars/my/shows/2026-11-14/7?extended=full'
+        state = ['content']
+        future = [
+            {'first_aired': '2026-11-15T18:00:00Z',
+             'show': {'ids': {'trakt': 20}, 'title': 'Synthetic show A', 'year': 2026},
+             'episode': {'ids': {'trakt': 21}, 'title': 'Synthetic episode A',
+                         'season': 1, 'number': 2, 'first_aired': '2026-11-15T18:00:00Z'}},
+            {'first_aired': '2026-11-14T13:00:00Z',
+             'show': {'ids': {'trakt': 30}, 'title': 'Synthetic show B', 'year': 2026},
+             'episode': {'ids': {'trakt': 31}, 'title': 'Synthetic episode B',
+                         'season': 2, 'number': 3, 'first_aired': '2026-11-14T13:00:00Z'}}]
+        def respond(host, method, path, body, headers):
+            if path == calendar_path:
+                if state[0] == 'failed':
+                    return 403, {}
+                return 200, future if state[0] == 'content' else []
+            return original(host, method, path, body, headers)
+        self.service.respond = respond
+        start = len(self.service.requests)
+        with patch('resources.lib.trakt_library.trakt_views._now',
+                   return_value=datetime(2026, 11, 14, 12, tzinfo=timezone.utc)):
+            success, sources = self.invoke('?route=trakt_calendar_sources')
+            self.assertTrue(success)
+            self.assertEqual(len(sources.rows), 1)
+            self.assertTrue(all(request[2] == '/users/settings'
+                                for request in self.service.requests[start:]))
+            feed = sources.rows[0][0]
+            self.assertIn('route=trakt_calendar&', feed)
+            self.assertNotIn('2026-', feed)
+            for _ in range(2):
+                success, rows = self.invoke('?' + urlsplit(feed).query)
+                self.assertTrue(success)
+                self.assertEqual(len(rows.rows), 2)
+                self.assertIn('Synthetic show B', rows.rows[0][1].label)
+                self.assertIn('Synthetic show A', rows.rows[1][1].label)
+                self.assertEqual([item.tag.values['episode'] for _, item, _ in rows.rows], [3, 2])
+                self.assertEqual([item.tag.values['season'] for _, item, _ in rows.rows], [2, 1])
+                self.assertEqual([item.tag.values['ids'] for _, item, _ in rows.rows],
+                                 [({'trakt': '31', 'tvshow.trakt': '30'}, 'trakt'),
+                                  ({'trakt': '21', 'tvshow.trakt': '20'}, 'trakt')])
+                for _, item, folder in rows.rows:
+                    self.assertFalse(folder)
+                    self.assertEqual(item.tag.values['type'], 'episode')
+                    self.assertNotIn('playcount', item.tag.values)
+                self.assertFalse(any(event[0] in {'confirm', 'open'} for event in rows.events))
+            detail = rows.rows[0][0]
+            self.assertIn('route=trakt_calendar_details', detail)
+            success, screen = self.invoke('?' + urlsplit(detail).query)
+            self.assertTrue(success)
+            self.assertTrue(screen.details)
+            self.assertIn('Synthetic episode B', screen.details[-1][0])
+            self.assertFalse(any(event[0] == 'confirm' for event in screen.events))
+            self.assertEqual(sum(event[0] == 'open' for event in screen.events), 1)
+            self.assertEqual(sum(event[0] == 'close' for event in screen.events), 1)
+            self.assertEqual(self.invoke('?route=trakt_calendar_sources')[1].rows[0][0], feed)
+            state[0] = 'empty'
+            self.assertFalse(self.invoke('?' + urlsplit(detail).query)[0])
+            success, empty = self.invoke('?' + urlsplit(feed).query)
+            self.assertTrue(success)
+            self.assertEqual(empty.rows, [])
+            state[0] = 'failed'
+            success, failed = self.invoke('?' + urlsplit(feed).query)
+            self.assertFalse(success)
+            self.assertEqual(failed.rows, [])
+            self.assertFalse(failed.ends[-1][0])
+        reads = self.service.requests[start:]
+        self.assertTrue(reads)
+        self.assertTrue(all(request[1] == 'GET' for request in reads))
+        self.assertTrue(all(request[2] in {'/users/settings', calendar_path} for request in reads))
         self.invoke('?action=disconnect')
         before = len(self.service.requests)
         self.assertFalse(self.invoke('?' + urlsplit(feed).query)[0])

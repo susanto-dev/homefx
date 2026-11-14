@@ -138,7 +138,7 @@ def run(argv, addon, dialog, progress_factory, monitor, plugin, item_factory, tr
                          clock=clock, addon_id=ADDON_ID, art_root=str(Path(addon.getAddonInfo('path')) / 'resources' / 'art') + '/')
         if action == 'browse':
             # Widget refresh must never open consent/progress/error dialogs.
-            details = route in {'trakt_details', 'trakt_episode_details', 'trakt_continue_details'}
+            details = route in {'trakt_details', 'trakt_episode_details', 'trakt_continue_details', 'trakt_calendar_details'}
             result = app.dispatch('browse', handle=handle, query=query, widget=not details)
             return result.state in {'ready', 'partial', 'empty'}
         result = app.dispatch(action)
