@@ -28,7 +28,8 @@ class ReproducibilityTests(unittest.TestCase):
                 patch.object(checker.verify_repository, "verify",
                              wraps=checker.verify_repository.verify) as verify:
             result = checker.check()
-        self.assertEqual(verify.call_count, 6)
+        # Each build also verifies the complete public topology and alias copies.
+        self.assertEqual(verify.call_count, 8)
         self.assertGreater(result["site_files"], result["repository_files"])
         inventory = checker.package.ROOT / "releases" / "inventory.json"
         identities = {(row["id"], row["version"]) for row in

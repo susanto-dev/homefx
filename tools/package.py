@@ -4,6 +4,8 @@ import hashlib
 import os
 import re
 import stat
+import struct
+import zlib
 import tempfile
 from defusedxml import ElementTree as ET
 from pathlib import Path
@@ -47,6 +49,42 @@ def _regular_source(path):
     _no_symlinks(path)
     if not stat.S_ISREG(path.stat().st_mode):
         raise ValueError("Unsafe packaged source file")
+
+
+def validate_icon(data):
+    """Validate HomeFX's opaque 512px RGB PNG without adding an image dependency."""
+    def require(condition):
+        if not condition:
+            raise ValueError('Invalid HomeFX icon PNG')
+
+    require(type(data) is bytes and 0 < len(data) <= 1024 * 1024 and data[:8] == b'\x89PNG\r\n\x1a\n')
+    offset, chunks, compressed = 8, [], bytearray()
+    while offset < len(data):
+        require(offset + 12 <= len(data))
+        size = int.from_bytes(data[offset:offset + 4], 'big')
+        require(size <= len(data) - offset - 12)
+        kind = data[offset + 4:offset + 8]
+        payload = data[offset + 8:offset + 8 + size]
+        crc = int.from_bytes(data[offset + 8 + size:offset + 12 + size], 'big')
+        require(zlib.crc32(kind + payload) == crc and kind in {b'IHDR', b'IDAT', b'IEND'})
+        chunks.append(kind)
+        if kind == b'IHDR':
+            require(len(chunks) == 1 and payload == struct.pack('>IIBBBBB', 512, 512, 8, 2, 0, 0, 0))
+        elif kind == b'IDAT':
+            compressed.extend(payload)
+        else:
+            require(size == 0 and offset + 12 == len(data))
+        offset += size + 12
+    require(len(chunks) >= 3 and chunks[0] == b'IHDR' and chunks[-1] == b'IEND'
+            and all(kind == b'IDAT' for kind in chunks[1:-1]))
+    expected = 512 * (1 + 512 * 3)
+    try:
+        decoder = zlib.decompressobj()
+        pixels = decoder.decompress(compressed, expected + 1)
+    except zlib.error:
+        raise ValueError('Invalid HomeFX icon PNG') from None
+    require(len(pixels) == expected and decoder.eof and not decoder.unused_data and not decoder.unconsumed_tail)
+    require(all(pixels[row * (1 + 512 * 3)] <= 4 for row in range(512)))
 
 
 def validate(source=ADDON):
@@ -107,6 +145,9 @@ def validate(source=ADDON):
         _regular_source(file)
         if path.endswith(".py"):
             ast.parse(file.read_text(encoding="utf-8"), feature_version=(3, 11))
+    icon = source / 'resources/art/icon.png'
+    with icon.open('rb') as stream:
+        validate_icon(stream.read(1024 * 1024 + 1))
     for asset in manifest.findall("./extension[@point='xbmc.addon.metadata']/assets/*"):
         if asset.text not in FILES:
             raise ValueError("Manifest asset not in package allowlist")

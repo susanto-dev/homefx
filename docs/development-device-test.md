@@ -80,14 +80,14 @@ The installation path is:
 
 1. Keep the existing File manager source `https://susanto-dev.github.io/homefx/`,
    named **HomeFX**. No new source, computer download or file transfer is needed.
-2. Open **Add-ons → Install from zip file → HomeFX**. Review the Unknown sources
+2. After the source-layout update publishes, open **Add-ons → Install from zip file → HomeFX → advanced/**. Review the Unknown sources
    warning if prompted; proceed only if you trust the project and have checked the
    source address. Do not bypass certificate or package-validation errors.
 3. Select **`script.homefx.development-0.1.0-<SHA-256>.zip`** from the same source
-   listing. The actual filename ends with its 64-character checksum; choose the
+   listing. The new folder navigation is not yet TV-verified. The actual filename ends with its 64-character checksum; choose the
    script ZIP, not the `.sha256` sidecar, repository ZIP or video ZIP. The
-   [download page](https://susanto-dev.github.io/homefx/) labels it as the
-   **Development test** and shows the exact current filename.
+   [advanced download page](https://susanto-dev.github.io/homefx/advanced/) labels it as
+   **Program diagnostics** and shows the exact current filename.
 4. Wait for the installation notification. Open **HomeFX Development Test** under
    **Program add-ons**, then run **Test this add-on's private storage** first.
    The owner confirmed this source-install/menu path on the target TV; skin labels

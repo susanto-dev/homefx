@@ -83,28 +83,44 @@ def _fetch(url, limit, timeout):
 def _expected(site):
     result = verify_repository.verify(Path(site) / "repository", channel="preview")
     files, directories = verify_repository._snapshot(site)
-    roots = {"index.html", "install.html", "LICENSE.txt"}
+    roots = {'index.html', 'install.html', 'LICENSE.txt', 'advanced/index.html'}
+    current_video = 'plugin.video.homefx-' + result['current']['plugin.video.homefx'] + '.zip'
+    advanced_names = {current_video}
     for video, prefix in ((False, development_download.PREFIX),
-                          (True, development_download.builder.VIDEO_ID + "-")):
+                          (True, development_download.builder.VIDEO_ID + '-')):
         development_archive = development_download.verify(files, video=video)
+        page = 'index.html' if video else 'advanced/index.html'
         if development_archive is not None:
-            roots.update({development_archive, development_archive + ".sha256"})
-            link = ('<a href="' + development_archive + '">' + development_archive + '</a>').encode("ascii")
-            _require(link in files.get("index.html", b""), "local Development download link")
+            roots.update({development_archive, development_archive + '.sha256'})
+            link = ('<a href="' + development_archive + '">' + development_archive + '</a>').encode('ascii')
+            _require(link in files.get(page, b''), 'local Development download link')
+            if not video:
+                advanced_names.add(development_archive)
+                _require(('href="' + development_archive + '"').encode('ascii') not in files['index.html'],
+                         'diagnostic download on main page')
         else:
-            _require(('href="' + prefix).encode("ascii") not in files.get("index.html", b""),
-                     "missing local Development download")
-    for ident, version in result["current"].items():
-        name = ident + "-" + version + ".zip"
-        for suffix in ("", ".sha256"):
-            target = name + suffix
+            _require(('href="' + prefix).encode('ascii') not in files.get(page, b''),
+                     'missing local Development download')
+    # Every validated indexed package keeps an identical root URL, including old versions.
+    for name, data in files.items():
+        parts = name.split('/')
+        if len(parts) == 3 and parts[0] == 'repository' and name.endswith(('.zip', '.zip.sha256')):
+            roots.add(parts[-1])
+            _require(files.get(parts[-1]) == data, 'local download mismatch')
+    for name in advanced_names:
+        for suffix in ('', '.sha256'):
+            target = 'advanced/' + name + suffix
             roots.add(target)
-            _require(files.get(target) == files.get("repository/" + ident + "/" + target),
-                     "local download mismatch")
-    _require({name for name in files if not name.startswith("repository/")} == roots,
-             "local site topology")
-    _require(all(name == "repository" or name.startswith("repository/") for name in directories),
-             "local site topology")
+            _require(files.get(target) == files.get(name + suffix), 'advanced download mismatch')
+        _require(('<a href="' + name + '">' + name + '</a>').encode('ascii')
+                 in files.get('advanced/index.html', b''), 'advanced download link')
+    _require(b'<a href="advanced/">advanced/</a>' in files['index.html'], 'advanced folder link')
+    _require(('href="' + current_video + '"').encode('ascii') not in files['index.html'],
+             'manual download on main page')
+    _require({name for name in files if not name.startswith('repository/')} == roots, 'local site topology')
+    _require(all(name in {'repository', 'advanced'} or name.startswith('repository/') for name in directories),
+             'local site topology')
+    _require(0 < len(files['advanced/index.html']) <= guide_page.MAX_PAGE_BYTES, 'advanced page bounds')
     _require(files["LICENSE.txt"] == (package.ROOT / "LICENSE").read_bytes(), "local site licence")
     _require(bool(files["index.html"]), "local site page")
     _require(0 < len(files["install.html"]) <= guide_page.MAX_PAGE_BYTES, "local guide bounds")

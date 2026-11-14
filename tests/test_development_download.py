@@ -65,10 +65,10 @@ class DevelopmentDownloadTests(unittest.TestCase):
         self.assertEqual(directories, plain_dirs)
         video_name = download.verify(files, video=True)
         self.assertIsNotNone(video_name)
-        self.assertEqual(set(files) - set(plain_files), set(self.pair) | {video_name, video_name + '.sha256'})
+        self.assertEqual(set(files) - set(plain_files), set(self.pair) | {'advanced/' + name for name in self.pair} | {video_name, video_name + '.sha256'})
         self.assertNotIn(b'plugin.video.homefx.development', files['repository/addons.xml'])
         for name, data in plain_files.items():
-            if name != 'index.html':
+            if name not in {'index.html', 'advanced/index.html'}:
                 self.assertEqual(files[name], data)
         self.assertNotIn(b'script.homefx.development', files['repository/addons.xml'])
         self.assertEqual(download.verify(plain_files), None)
@@ -96,10 +96,16 @@ class DevelopmentDownloadTests(unittest.TestCase):
 
         links = Links()
         links.feed(files['index.html'].decode('utf-8'))
-        self.assertIn(self.name, links.found)
+        self.assertNotIn(self.name, links.found)
+        self.assertIn('advanced/', links.found)
+        self.assertEqual({name for name in links.found if name.endswith('.zip')},
+                         {video_name, 'repository.homefx-0.2.0.zip'})
+        advanced = Links()
+        advanced.feed(files['advanced/index.html'].decode('utf-8'))
+        self.assertIn(self.name, advanced.found)
+        self.assertEqual(files['advanced/' + self.name], files[self.name])
         self.assertIn(video_name, links.found)
-        self.assertIn('Development account test', files['index.html'].decode('utf-8'))
-        self.assertIn('No file transfer is needed', files['index.html'].decode('utf-8'))
+        self.assertIn('Program diagnostics', files['advanced/index.html'].decode('utf-8'))
         self.assertNotIn(CONFIG['TRAKT_CLIENT_ID'], files['index.html'].decode('utf-8'))
         self.assertEqual(build_site.build_site(self.site, development_environment=CONFIG), self.site)
 

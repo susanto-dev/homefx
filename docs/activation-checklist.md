@@ -123,3 +123,11 @@ refresh experiment is requested. Video entry and immutable Development configura
 [separate video candidate](development-video.md). With its hosted bytes verified,
 the next owner step is its own-profile storage/login and one read-only list/widget
 journey; the public Preview remains inactive.
+
+## Latest selected-list evidence
+
+The owner reported successful selection/save and opening a real list containing
+more than 100 movies in Development Video. This is not widget, season-navigation,
+restart-persistence or performance acceptance. The source/icon update preserves its
+profile and selections; no fresh login is required merely for that artwork update.
+Continue the outstanding [video checks](development-video.md#smallest-tv-checklist).
