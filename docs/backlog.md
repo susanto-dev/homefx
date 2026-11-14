@@ -365,3 +365,20 @@ Original house/TV artwork prepares video 0.17.9; repository 0.2.0 stays unchange
 The icon is a 512×512 opaque RGB PNG with no third-party logo or new paid asset.
 Normal post-merge publication and TV icon/folder navigation remain to be verified.
 List loading/pagination is unchanged; measure first/warm loads before tuning it.
+
+## Verified PR #42 and next metadata batch
+
+PR #42 merged as `22b5f8ae87fcdab6bf1c6cdcc85d1e368b58495b`.
+Validation, Security, configuration preflight and publication passed, including
+[deployed-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43552506209).
+Fresh HTTP checks confirmed source/advanced folder access, indexed video 0.17.9 /
+repository 0.2.0, and both current root ZIPs matching retained archive bytes.
+The source layout and icon remain unverified on TV.
+
+The next candidate adds existing Trakt synopsis/community-rating fields to selected
+movie/show list cards and movie details, with no extra requests. Public Preview
+remains synthetic; Development Video receives the behavior through its normal
+content-addressed package. Artwork-provider registration/terms and Real-Debrid
+activation remain separate gates; see [metadata provider decisions](metadata-contract.md#next-metadata-provider-decision).
+No new login or repeat of completed lifecycle checks is required solely for this
+metadata update. Saved-list restart/widget acceptance and timings remain pending.

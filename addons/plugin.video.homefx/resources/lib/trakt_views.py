@@ -72,6 +72,23 @@ def _row(item, kind, watched, pause, now):
             "aired_unwatched": status == "aired" and watched is False}
 
 
+def _list_description(media):
+    """Optional display data must not make an otherwise valid title unavailable.
+
+    Only list responses already requesting extended=full supply these fields.
+    Scores retain their Trakt identity and require a positive vote count.
+    """
+    result = {}
+    overview = media.get("overview")
+    if type(overview) is str and len(overview) <= 4096 and overview.strip():
+        result["overview"] = overview
+    rating, votes = media.get("rating"), media.get("votes")
+    if (type(rating) in (int, float) and 0 <= rating <= 10 and math.isfinite(rating)
+            and type(votes) is int and 0 < votes <= 2147483647):
+        result.update(trakt_rating=float(rating), trakt_votes=votes)
+    return result
+
+
 def browse_list(items, now=None):
     """Normalize movie/show entries in list order without inventing watch state.
 
@@ -99,6 +116,7 @@ def browse_list(items, now=None):
             raise ApiError("invalid_metadata")
         seen.add(identity)
         media = item[kind]
+        row.update(_list_description(media))
         release = _stamp(media.get("released" if kind == "movie" else "first_aired"),
                          date_only=kind == "movie")
         row.update(id="trakt:" + kind + ":" + str(row["trakt_id"]),

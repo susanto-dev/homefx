@@ -75,3 +75,45 @@ then test TV navigation, keyboard entry, stale results, and context-menu behavio
 Similar movie suggestions remain metadata from Trakt's related endpoint, not a
 promise of recommendation quality, playback availability, regional release,
 watch status, or permission to reuse artwork.
+
+## Selected-list descriptions and ratings
+
+The Development Video selected-list request already uses `extended=full`. Its
+normalized movie/show rows now retain an optional synopsis (up to 4,096 characters)
+and a finite 0–10 Trakt rating with a positive integer vote count. Missing or invalid
+optional fields are omitted without making a valid title unavailable. No additional
+per-title request is made. Search/related routes and episode metadata are unchanged.
+
+The existing folder/widget adapter supplies the synopsis and named `trakt` rating
+to Kodi, and labels the score and vote count in the plot and movie detail dialog.
+Service text cannot inject Kodi formatting. Watch state, dates, account isolation,
+opaque routes and non-playable behavior are unchanged. Actual score presentation
+is skin-dependent and has not been tested on TV. No IMDb or critic score is inferred
+from a Trakt community rating. Artwork remains the local placeholder.
+
+## Next metadata provider decision
+
+Provider documentation inspected on 14 November 2026:
+
+- [TMDB API FAQ](https://developer.themoviedb.org/docs/faq): non-commercial use is
+  free with attribution; commercial use needs a licence discussion. Registration
+  requires the owner to accept service terms. Its required approved logo and
+  non-endorsement notice belong in an About/Credits surface before activation.
+  Recommend this provider for posters/backdrops, matched by IDs rather than title
+  guesses, after reviewing credential distribution and image/cache requirements.
+- [IMDb non-commercial datasets](https://developer.imdb.com/non-commercial-datasets/):
+  personal/non-commercial subsets include title IDs and ratings, but the listed
+  datasets do not supply poster images or plot summaries. Their terms do not grant
+  unrestricted redistribution. Do not scrape IMDb pages or bundle their images.
+- [Rotten Tomatoes licensing](https://www.rottentomatoes.com/help_desk/licensing):
+  application/API/data-feed use requires submitting the proposed use for review;
+  attribution and links back are required. No approval or free licence is assumed.
+- The official Trakt response contract above exposes `overview`, `rating` and
+  `votes` under `full`, with images as a separate extension. An image field alone
+  is not proof of entitlement or permission to reuse its upstream artwork.
+
+No new provider credentials, network endpoints, third-party artwork or paid service
+are introduced in this batch. Original source licensing does not relicense service
+metadata. The owner must register/accept any new provider terms; credentials must
+not be pasted into chat or committed. A build secret embedded in a public ZIP would
+still be public, so it is not a credential-distribution solution.

@@ -27,6 +27,28 @@ def pause(ident, show=10, progress=35, when="2026-11-11T21:00:00Z", kind="episod
 
 
 class ViewTests(unittest.TestCase):
+    def test_list_optional_details_preserve_identity_and_ignore_invalid_values(self):
+        base = {'ids': {'trakt': 1}, 'title': 'Synthetic', 'year': 2026}
+        for rating, votes in [(7.5, 12), (0, 1), (10, 2147483647)]:
+            row = views.browse_list([{'type': 'movie', 'movie': dict(
+                base, overview='Synthetic plot', rating=rating, votes=votes)}], NOW)['items'][0]
+            self.assertEqual((row['overview'], row['trakt_rating'], row['trakt_votes']),
+                             ('Synthetic plot', rating, votes))
+            self.assertIsNone(row['watched'])
+            self.assertFalse(row['playable'])
+        for rating, votes in [(True, 1), ('8', 1), (8, True), (8, 0), (8, -1),
+                              (8, 2147483648), (-1, 1), (11, 1), (float('nan'), 1),
+                              (float('inf'), 1), (10**1000, 1), (None, None)]:
+            with self.subTest(rating_type=type(rating).__name__, votes=votes):
+                row = views.browse_list([{'type': 'show', 'show': dict(
+                    base, overview=None, rating=rating, votes=votes)}], NOW)['items'][0]
+                self.assertNotIn('trakt_rating', row)
+                self.assertNotIn('trakt_votes', row)
+                self.assertNotIn('overview', row)
+        for overview in ('', '   ', [], 'x' * 4097):
+            row = views.browse_list([{'type': 'movie', 'movie': dict(base, overview=overview)}], NOW)['items'][0]
+            self.assertNotIn('overview', row)
+
     def test_episode_folder_is_narrative_and_widgets_prioritize_unfinished(self):
         source = {"show_id": 10, "episodes": [episode(3), episode(1), episode(2)]}
         result = views.episodes(source, snapshot([(1, True), (2, False), (3, False)]),

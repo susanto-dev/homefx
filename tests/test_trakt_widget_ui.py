@@ -26,6 +26,9 @@ class Tag:
     def setYear(self, value): self.values['year'] = value
     def setPlaycount(self, value): self.values['playcount'] = value
     def setPlot(self, value): self.values['plot'] = value
+    def setRating(self, rating, votes, source, default):
+        self.values['rating'] = (rating, votes, source, default)
+
     def setSeason(self, value): self.values['season'] = value
     def setEpisode(self, value): self.values['episode'] = value
 
@@ -171,6 +174,41 @@ class WidgetDirectoryTests(unittest.TestCase):
         self.assertEqual(self.details[0][0], '(B)Synthetic movie(/B)')
         self.assertIn('No playable source', self.details[0][1])
         self.assertNotIn('Synthetic', repr(self.ui))
+
+    def test_list_descriptions_and_named_ratings_use_existing_reads_only(self):
+        target = self.source()
+        self.library = self.reopen()
+        self.calls.clear()
+        self.render(target, widget=True)
+        original_calls = list(self.calls)
+        self.calls.clear()
+        self.library = self.reopen()
+        for row in self.items:
+            row[row['type']].update(overview='An original [B]synopsis[/B].\nSecond line.',
+                                   rating=7.25, votes=123)
+        self.assertEqual(self.render(target, widget=True).state, 'ready')
+        self.assertEqual(self.calls, original_calls)
+        for _, item, _ in self.rows:
+            self.assertEqual(item.tag.values['rating'], (7.25, 123, 'trakt', True))
+            self.assertIn('Trakt rating: 7.2/10 (123 votes).', item.tag.values['plot'])
+            self.assertIn('(B)synopsis(/B). Second line.', item.tag.values['plot'])
+            self.assertIn('Watch status: unknown', item.tag.values['plot'])
+        movie_target = self.rows[0][0]
+        self.assertEqual(self.render(movie_target).state, 'ready')
+        self.assertIn('Trakt rating:', self.details[-1][1])
+        self.assertIn('synopsis', self.details[-1][1])
+        self.assertNotIn('[B]', self.details[-1][1])
+        self.assertIn('No playable source', self.details[-1][1])
+
+    def test_optional_bad_metadata_does_not_break_list_or_invent_rating(self):
+        self.items[0]['movie'].update(overview='x' * 4097, rating=8, votes=0)
+        self.items[1]['show'].update(overview={'bad': 'value'}, rating=True, votes=100)
+        self.assertEqual(self.render(self.source(), widget=True).state, 'ready')
+        for _, item, _ in self.rows:
+            self.assertNotIn('rating', item.tag.values)
+            self.assertNotIn('Trakt rating:', item.tag.values['plot'])
+        self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
+        self.assertNotIn('Trakt rating:', self.details[-1][1])
 
     def test_widget_has_no_modal_dialogs_and_uri_survives_reopen(self):
         target = self.source()

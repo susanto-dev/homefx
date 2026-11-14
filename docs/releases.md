@@ -592,3 +592,14 @@ no Kodi/third-party logo. The existing manifest asset path is retained. Build ch
 validate dimensions, RGB opacity, PNG chunks/checksums and bounded image data;
 historical archive artwork policy remains unchanged. No new paid asset/library or
 licence change is introduced. Other title placeholders are unchanged.
+
+## 0.17.10 list-description proposal
+
+PR #42 publication passed for video 0.17.9 / repository 0.2.0, including hosted-byte
+verification. The next candidate changes runtime metadata display and therefore
+prepares video 0.17.10 without replacing 0.17.9. All 23 previous package records and
+bytes remain; repository 0.2.0 is unchanged. Normal merge publication creates new
+Development digest ZIPs because shared runtime bytes change. Add-on IDs/profiles
+remain the same; no credential migration or fresh login is needed solely for this
+update. Public Preview stays synthetic. No new provider is activated or artwork
+redistributed. Publication and TV presentation of this candidate remain pending.
