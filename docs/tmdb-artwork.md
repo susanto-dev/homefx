@@ -54,7 +54,11 @@ is set to 128 KiB, with memory mapping disabled. These are bounds on this path c
 **not** a cap on all Kodi memory, image files or Kodi's texture database. The least
 recently used entries are evicted; access does not extend freshness or hard expiry.
 A 2,000-key read batch uses one transaction. An all-fresh refresh also uses one
-transaction, not one write/commit per title. Unsafe paths, linked/nonregular files,
+transaction, not one write/commit per title. If a peer changes eligibility or
+acquires a lease after that snapshot, the refresh stops on the declined claim
+instead of scanning every remaining key with writes. Zero attempts does not mean
+all requested artwork exists; callers must inspect cache coverage before reporting
+warm-up completion. Unsafe paths, linked/nonregular files,
 foreign databases and overlarge files fail closed with fixed errors.
 
 Only one refresh claim is active per local cache. HTTP runs outside SQLite locks,

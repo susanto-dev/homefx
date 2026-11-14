@@ -213,6 +213,19 @@ class CacheTests(unittest.TestCase):
         self.assertEqual(self.cache.read_many([KEY]), {})
         self.assertEqual(self.cache.refresh([KEY], lambda _: self.fail('unauthorized retry'))['attempted'], 0)
 
+    def test_contention_after_snapshot_stops_without_one_transaction_per_title(self):
+        keys = [('movie', i, 'en-US') for i in range(1, 101)]
+        original = self.cache._eligible
+        def eligible(values):
+            result = original(values)
+            self.reopen()._claim(keys[0])
+            return result
+        with patch.object(self.cache, '_eligible', side_effect=eligible), patch.object(
+                self.cache, '_transaction', wraps=self.cache._transaction) as transactions:
+            result = self.cache.refresh(keys, lambda _: self.fail('competing request'))
+        self.assertEqual(result, {'attempted': 0, 'stored': 0})
+        self.assertLessEqual(transactions.call_count, 2)
+
     def test_warm_refresh_batches_database_work_instead_of_one_commit_per_title(self):
         keys = [('movie', i, 'en-US') for i in range(1, 101)]
         for _ in range(5):

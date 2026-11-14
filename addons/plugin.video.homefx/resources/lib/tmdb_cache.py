@@ -270,7 +270,9 @@ class ArtworkCache:
                 break
             claim = self._claim(lookup)
             if claim is None:
-                continue
+                # A peer changed freshness or the global lease/cooldown after
+                # eligibility. Stop rather than write once per remaining title.
+                break
             attempted += 1
             value = error = None
             try:
