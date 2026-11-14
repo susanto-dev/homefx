@@ -8,8 +8,8 @@ import re
 import time
 
 from .trakt_auth import AuthError, _number
-from .trakt_client import ApiError, ListRef, search_arguments, metadata_id, metadata_rows, season_arguments, episode_arguments
-from . import trakt_views
+from .trakt_client import ApiError, ListRef, search_arguments, metadata_id, metadata_rows, season_arguments, episode_arguments, calendar_arguments
+from . import trakt_views, trakt_calendar
 from .trakt_preferences import PreferencesError, account_uuid
 
 
@@ -328,7 +328,7 @@ class Library:
             self.clear()
             raise
 
-    def _continue_widget_context(self):
+    def _account_widget_context(self, feed='continue'):
         """Pin the account feed without enumerating or requiring saved lists."""
         if self._preferences is None:
             raise PreferencesError('widget_storage_required')
@@ -339,14 +339,14 @@ class Library:
         self._assert_view(generation, revision)
         self._revision = revision
         account = self._account
-        epoch, ref = self._preferences.widget_feed_snapshot(account)
+        epoch, ref = self._preferences.widget_feed_snapshot(account, feed)
         if epoch != self._preferences_epoch:
             raise PreferencesError('preferences_changed')
 
         def guard():
             try:
                 self._assert_view(generation, revision)
-                current_epoch, current_ref = self._preferences.widget_feed_snapshot(account)
+                current_epoch, current_ref = self._preferences.widget_feed_snapshot(account, feed)
                 if current_epoch != epoch or not hmac.compare_digest(current_ref, ref):
                     raise PreferencesError('preferences_changed')
                 self._assert_view(generation, revision)
@@ -360,7 +360,7 @@ class Library:
     def widget_continue_sources(self):
         """Expose one account-bound folder; do not read pauses or history yet."""
         try:
-            _, _, ref, guard = self._continue_widget_context()
+            _, _, ref, guard = self._account_widget_context()
             guard()
             return {'items': [{'name': 'Continue watching — this account', 'ref': ref}],
                     'unsupported_count': 0, 'guard': guard}
@@ -372,7 +372,7 @@ class Library:
         """Complete account-wide pause enrichment, with opaque current item refs."""
         self._widget_reference(ref)
         try:
-            account, epoch, current_ref, guard = self._continue_widget_context()
+            account, epoch, current_ref, guard = self._account_widget_context()
             if not hmac.compare_digest(ref, current_ref):
                 raise ApiError('unavailable_selection')
             rows = self.enriched_continue_view()
@@ -398,6 +398,57 @@ class Library:
                 raise ApiError('unavailable_selection')
             result['guard']()
             return {'items': matches, 'unsupported_count': 0, 'guard': result['guard']}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_calendar_sources(self):
+        """Expose a personal-calendar folder without reading calendar entries."""
+        try:
+            _, _, ref, guard = self._account_widget_context('calendar')
+            guard()
+            return {'items': [{'name': 'Upcoming episodes — personal calendar, next 7 UTC dates', 'ref': ref}],
+                    'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_calendar(self, ref, now=None):
+        """Future personal-calendar metadata, not every show in selected lists."""
+        self._widget_reference(ref)
+        # Fix and validate the UTC window before account activation or refresh.
+        try:
+            current = trakt_views._now(now)
+        except (ValueError, OverflowError):
+            raise ApiError('invalid_clock') from None
+        start, days = calendar_arguments(current.date().isoformat(), 7)
+        try:
+            account, epoch, current_ref, guard = self._account_widget_context('calendar')
+            if not hmac.compare_digest(ref, current_ref):
+                raise ApiError('unavailable_selection')
+            rows = trakt_calendar.upcoming(self._session, start, days, now=current)
+            guard()
+            refs = self._preferences.widget_feed_item_refs(account, 'calendar',
+                [('episode', row['trakt_id']) for row in rows], expected_epoch=epoch)
+            rows = [dict(row, item_ref=item_ref, show_trakt_id=row['show_id'])
+                    for row, item_ref in zip(rows, refs)]
+            guard()
+            return {'items': rows, 'unsupported_count': 0, 'guard': guard,
+                    'start_date': start, 'days': days}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_calendar_details(self, ref, item_ref, now=None):
+        """Recheck current future-window membership, including across midnight."""
+        self._widget_reference(item_ref)
+        try:
+            result = self.widget_calendar(ref, now=now)
+            matches = [row for row in result['items'] if hmac.compare_digest(row['item_ref'], item_ref)]
+            if len(matches) != 1:
+                raise ApiError('unavailable_selection')
+            result['guard']()
+            return dict(result, items=matches)
         except (AuthError, ApiError):
             self.clear()
             raise

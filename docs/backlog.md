@@ -1,11 +1,12 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.16 / repository 0.2.0**.
-PR #51 merged as `db9db3b8aae80f2b1b116ad55d927835aa735a0a`; Validation,
-Security, configuration and [publication/hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43597291985)
-passed. Its per-show Continue/Next/Upcoming folders are published; their live TV
-acceptance remains pending. Real saved-list selection and 100+ movie browsing passed
-on TV. Direct TMDB and public/Production activation remain deferred.
+Status checked on 14 November 2026: published **video 0.17.17 / repository 0.2.0**.
+PR #52 merged as `695b4c46cfdd8e58235a934093a99408fe56a03c`. Its
+[publication and hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43599571288)
+passed, comparing 141 hosted files with the uploaded artifact. Account-wide Continue
+Watching is published; its real-account/skin acceptance remains pending. Real
+saved-list selection and 100+ movie browsing passed on TV. Direct TMDB and
+public/Production activation remain deferred.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -19,7 +20,7 @@ provider or release choice. The current public add-on remains synthetic.
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
 | B02 | Multiple selected list widgets and folder browsing | Published in Development Video; unified widget folder picker published; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development season and cross-season read-only browser; picker published | Live episode identity/status, season navigation and refresh behavior on TV |
-| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; per-show episode Continue/Next/Upcoming published; account-wide Continue candidate; global Next/Upcoming inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
+| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; per-show episode Continue/Next/Upcoming published; account-wide Continue published; personal calendar candidate; global Next inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
 | B07 | Title search | Demo implemented; Trakt title-search contracts mocked/inactive (0.9) | Live literal-query behavior, entitlement, keyboard/context-menu UI and TV integration |
@@ -521,7 +522,7 @@ clear epoch, with no schema migration or saved history.
 
 | Work item | Status | Remaining acceptance |
 |---|---|---|
-| Account-wide Continue Watching | Candidate implemented across reference, library and UI layers | Real mixed-feed correctness, details/Back, restart and load times |
+| Account-wide Continue Watching | Published in 0.17.17 | Real mixed-feed correctness, details/Back, restart and load times |
 | Per-show Continue / Next / Upcoming | Published in 0.17.16 | Existing TV checklist, no repeat login |
 | Global Next aired / personal calendar | Inactive | Separate bounded integration; calendar is not a complete selected-list schedule |
 | Playback and public live release | Inactive | Source/provider decisions, device playback/state checks and public service gates |
@@ -529,3 +530,25 @@ clear epoch, with no schema migration or saved history.
 This advances the read-only widget milestone. It does not complete a playable video
 add-on. No new provider registration, credentials, remote writes or skin change is
 needed for the candidate. Current account tests remain valid.
+
+## Personal Upcoming calendar candidate
+
+The [personal calendar widget](calendar-widget.md) provides a distinct account-wide
+Upcoming row for seven UTC calendar dates starting today. It includes only entries
+strictly after now, using the existing complete bounded calendar response. It is
+not a selected-list schedule, a watched snapshot or a playable-source catalogue.
+Current feed membership is rechecked for details; account/epoch/revision guards and
+separate feed-reference domains remain in place. Continue Watching references and
+existing selected-list routes are unchanged.
+
+| Work item | Status | Remaining acceptance |
+|---|---|---|
+| Personal Upcoming calendar | Candidate implemented; source contract rechecked | Live entitlement/data, dates, details/Back, skin row and timing |
+| Account-wide Continue Watching | Published in 0.17.17 | Mixed-feed correctness and TV behavior |
+| Global Next aired | Inactive | Bounded aggregation semantics and performance design |
+| Playback / remote writes / public live release | Inactive | Existing source, service, consent and device gates |
+
+The source picker does not fetch calendar entries. The terminal view performs one
+calendar read plus account/refresh work when needed, with no list or history reads.
+No persistent cache or speed benefit is claimed. No completed login/storage test
+needs repeating solely for this candidate.
