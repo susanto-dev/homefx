@@ -1,11 +1,11 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.12 / repository 0.2.0**.
-PR #45 merged as `fb86c90315330f4be1465909d389cb1504b3e252`; Validation, Security,
-configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43563091592) passed.
-Publication verified 121 public files; fresh index/current-ZIP checks also matched
-retained bytes. Direct TMDB integration remains deferred. The owner identified
-TMDb Helper 5.4.16; its optional compatibility work does not activate a provider.
+Status checked on 14 November 2026: published **video 0.17.13 / repository 0.2.0**.
+PR #46 merged as `413da5ccf141f3a2d40baa47c932fc139db445ed`; Validation, Security,
+configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43569717493) passed.
+Publication verified 125 public files; fresh hosted index/current ZIP checks match
+retained bytes. Native Kodi identities are published, not yet TV-validated with
+Helper/skin. Direct TMDB integration remains deferred; no provider activation.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -426,3 +426,13 @@ adds no HomeFX network requests and does not enable the Helper service or replac
 whole-row artwork. See [evidence and acceptance](kodi-metadata.md). Current Trakt
 views remain usable, direct TMDB integration deferred, and Real-Debrid/skin work
 subject to their existing gates. Helper/skin behavior and performance need TV evidence.
+
+## Selected-show cross-season unwatched candidate
+
+The Development context menu now offers aired, known-unwatched episodes across one
+selected show's regular seasons. It reuses the bounded complete series join, keeps
+unfinished-first/newest-air-date ordering and retains account/selection guards.
+See [scope, request costs and TV acceptance](show-unwatched.md). This advances B03;
+it does not complete global Continue Watching, narrative Next aired, playback or
+skin-widget acceptance. No new account setup is required. Large-show load times
+and the new context-menu path remain unverified on TV.

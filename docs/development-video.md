@@ -167,3 +167,9 @@ Movie/show and parent-show identities are exposed through standard Kodi metadata
 without additional HomeFX requests or a Helper dependency. See the
 [TMDb Helper compatibility evidence and TV check](kodi-metadata.md). This does not
 replace HomeFX placeholders or automatically configure skin artwork.
+
+## Cross-season aired unwatched episodes
+
+A selected show's context menu offers the [all-regular-seasons unwatched view](show-unwatched.md).
+Normal show clicks still open seasons. This is a read-only browsing view, not playback
+or narrative next-episode selection; larger shows can require many metadata requests.

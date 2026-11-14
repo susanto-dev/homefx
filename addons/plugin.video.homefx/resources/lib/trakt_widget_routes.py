@@ -9,6 +9,7 @@ _FIELDS = {
     'trakt_movie_views': {'ref'},
     'trakt_list': {'ref'},
     'trakt_seasons': {'ref', 'item'},
+    'trakt_show_unwatched': {'ref', 'item'},
     'trakt_episodes': {'ref', 'item', 'season'},
     'trakt_details': {'ref', 'item'},
     'trakt_episode_details': {'ref', 'item', 'season', 'episode'},

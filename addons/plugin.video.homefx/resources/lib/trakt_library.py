@@ -394,6 +394,18 @@ class Library:
             self.clear()
             raise
 
+    def widget_show_unwatched(self, ref, item_ref):
+        """Complete regular-season view for one selected show, never playback."""
+        try:
+            show, guard = self._widget_show(ref, item_ref)
+            rows = self.series_view(show['trakt_id'], episode_filter='aired_unwatched')
+            rows = self._with_show_identity(rows, show)
+            guard()
+            return {'items': rows, 'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
     def widget_episodes(self, ref, item_ref, season, episode_filter="all"):
         # Validate local choices before authenticated work.
         if not isinstance(episode_filter, str) or episode_filter not in {"all", "aired_unwatched"}:

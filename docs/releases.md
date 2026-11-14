@@ -641,3 +641,12 @@ No independent deployment is authorized. Verify the uploaded artifact against
 hosted bytes after merge. Existing video-profile credentials and saved routes are
 retained; update Development Video and restart Kodi for the bounded
 [metadata compatibility check](kodi-metadata.md).
+
+## Selected-show unwatched proposal (0.17.14)
+
+The candidate adds a read-only cross-season context route to Development Video.
+Normal merge-triggered Pages publication prepares video 0.17.14 and new
+checksum-named Development downloads; repository 0.2.0 and all 27 prior package
+records/bytes remain unchanged. No independent publication or public/Production
+activation. Verify hosted bytes after merge, then update Development Video and
+restart Kodi for the [bounded TV check](show-unwatched.md); retain current login/lists.
