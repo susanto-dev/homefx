@@ -603,3 +603,14 @@ Development digest ZIPs because shared runtime bytes change. Add-on IDs/profiles
 remain the same; no credential migration or fresh login is needed solely for this
 update. Public Preview stays synthetic. No new provider is activated or artwork
 redistributed. Publication and TV presentation of this candidate remain pending.
+
+## 0.17.11 inactive artwork-cache proposal
+
+PR #43 published video 0.17.10 / repository 0.2.0; all post-merge checks and deployed
+artifact verification passed. The next proposal adds packaged inactive TMDB client/
+cache modules and retains optional list TMDB IDs, so video advances to 0.17.11.
+All 24 prior records/bytes remain and repository 0.2.0 is unchanged. Normal merge
+publication generates new Development digest ZIPs; no publication is dispatched.
+Neither Kodi entry point constructs the provider or cache. No new TV test, login,
+credential migration or paid provider is required for this inactive preparation.
+Actual artwork integration remains gated as described in [TMDB artwork](tmdb-artwork.md).

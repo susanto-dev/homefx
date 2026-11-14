@@ -117,3 +117,11 @@ are introduced in this batch. Original source licensing does not relicense servi
 metadata. The owner must register/accept any new provider terms; credentials must
 not be pasted into chat or committed. A build secret embedded in a public ZIP would
 still be public, so it is not a credential-distribution solution.
+
+## TMDB artwork cache candidate
+
+TMDB is now the owner's chosen artwork direction. The [bounded artwork cache](tmdb-artwork.md)
+retains paths only and is not yet wired into Kodi. List normalization retains an
+optional validated TMDB ID without additional reads or altering Trakt identity.
+Registration/terms, credential delivery, attribution and image-retention decisions
+remain activation gates. Existing synopsis and Trakt-rating display is unchanged.

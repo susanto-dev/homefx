@@ -1,11 +1,10 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.8 / repository 0.2.0**.
-PR #39 is merged as `238bc3b86888d21e2dd688257196fbced8bf49f9`; its post-merge
-validation, Security, CodeQL, Development preflight and
-[publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43545085858)
-passed. Fresh hosted index/package checks matched video 0.17.8, repository 0.2.0
-and both Development downloads. No version or archive bytes changed. **Implemented** means source and automated checks exist; **published** means
+Status checked on 14 November 2026: published **video 0.17.10 / repository 0.2.0**.
+PR #43 merged as `dd7f5bfe6e7d46042d99269902757ccd7d1b38a9`; validation, Security,
+configuration preflight and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43555687977) passed.
+Publication checked 113 public files; fresh root ZIP checks matched retained archives.
+**Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
 means work or external evidence is still required. **Decision** needs a product,
@@ -382,3 +381,20 @@ content-addressed package. Artwork-provider registration/terms and Real-Debrid
 activation remain separate gates; see [metadata provider decisions](metadata-contract.md#next-metadata-provider-decision).
 No new login or repeat of completed lifecycle checks is required solely for this
 metadata update. Saved-list restart/widget acceptance and timings remain pending.
+
+## TMDB artwork preparation
+
+The owner selected TMDB and requested bounded caching, but has not registered the
+application or accepted its terms. The next candidate supplies an inactive fixed-host
+client and private artwork-path cache, with seven-day freshness, one-day negative
+cache, thirty-day hard expiry, 1,000-row / 1 MiB database bounds, request coordination
+and fabricated workload measurements. Optional TMDB IDs are retained from selected
+list metadata; there is no title guessing or additional list request.
+
+See [implementation and remaining gates](tmdb-artwork.md). No current Kodi route
+opens this cache or calls TMDB, and no remote image is displayed. Owner registration,
+private credential delivery, required attribution, image/texture retention and
+cancellable first-load UI remain the next bounded activation work. No further
+provider-only infrastructure should be added as a substitute for those decisions.
+Current saved-list/widget acceptance remains useful; no completed auth test must
+be repeated for this inactive cache batch.
