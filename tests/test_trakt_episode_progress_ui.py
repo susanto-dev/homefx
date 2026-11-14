@@ -93,6 +93,58 @@ class EpisodeProgressUITests(unittest.TestCase):
         self.rows, self.ends = [], []
         return self.ui.render(self.library, 1, urlsplit(target).query, widget=widget)
 
+    def show_target(self):
+        return routes.url('trakt_show_unwatched', ref=self.ref, item=self.item_ref)
+
+    def test_show_view_spans_regular_seasons_and_keeps_episode_detail_scope(self):
+        original = self.api
+        def api(method, path, headers, body=None):
+            if path == '/shows/22/seasons?extended=full':
+                self.calls.append(path)
+                return Response(200, body=[{'number': n, 'ids': {'trakt': 220 + n},
+                    'episode_count': count} for n, count in [(0, 1), (1, 7), (2, 1)]])
+            if path == '/shows/22/seasons/2?extended=full':
+                self.calls.append(path)
+                return Response(200, body=[{'ids': {'trakt': 201}, 'title': 'Synthetic later season',
+                    'season': 2, 'number': 1, 'first_aired': '2026-11-09T00:00:00Z'}])
+            response = original(method, path, headers, body)
+            if path.startswith('/shows/22/progress/watched?'):
+                response.body['seasons'].append({'number': 2, 'episodes': [{'number': 1, 'completed': False}]})
+            return response
+        self.library._session._api = api
+        # Install the alternate fixture at the session transport boundary.
+        self.library.clear()
+        self.assertEqual(self.render(self.show_target()).state, 'ready')
+        self.assertEqual([(item.tag.values['season'], item.tag.values['episode'])
+                         for _, item, _ in self.rows], [(1, 3), (2, 1), (1, 7), (1, 2)])
+        self.assertTrue(self.rows[1][1].label.startswith('S2E1'))
+        route, params = routes.parse(urlsplit(self.rows[1][0]).query)
+        self.assertEqual((route, params['season'], params['episode']), ('trakt_episode_details', 2, 1))
+        self.assertFalse(any('/seasons/0?' in path for path in self.calls))
+        self.assertEqual(self.ends, [(True, False)])
+
+    def test_show_view_empty_unknown_and_failed_snapshots_are_not_invented_unwatched(self):
+        self.progress = [{'number': n, 'completed': True} for n in range(1, 8)]
+        self.assertEqual(self.render(self.show_target(), widget=True).state, 'empty')
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.dialogs, [])
+        self.library.clear()
+        self.progress = []
+        self.assertEqual(self.render(self.show_target(), widget=True).state, 'empty')
+        self.library.clear()
+        self.episodes.pop()
+        self.assertEqual(self.render(self.show_target(), widget=True).state, 'failed')
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.ends, [(False, False)])
+
+    def test_show_route_rejects_deselected_refs_and_extra_choices(self):
+        query = self.show_target()
+        self.assertEqual(self.render(query + '&season=1').state, 'failed')
+        self.assertEqual(self.calls, [])
+        self.library.select_lists([])
+        self.assertNotEqual(self.render(query).state, 'ready')
+        self.assertEqual(self.rows, [])
+
     def test_legacy_url_is_unchanged_and_filter_is_optional(self):
         expected = ('plugin://plugin.video.homefx/?route=trakt_episodes&ref=' + self.ref
                     + '&item=' + self.item_ref + '&season=1')

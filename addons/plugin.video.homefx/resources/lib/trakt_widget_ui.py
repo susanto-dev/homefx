@@ -139,6 +139,8 @@ class WidgetDirectoryUI:
                     if 'filter' in params else library.widget_list(params['ref']))
         if route == 'trakt_seasons':
             return library.widget_seasons(params['ref'], params['item'])
+        if route == 'trakt_show_unwatched':
+            return library.widget_show_unwatched(params['ref'], params['item'])
         if route == 'trakt_episodes':
             return library.widget_episodes(params['ref'], params['item'], params['season'],
                                            episode_filter=params.get('filter', 'all'))
@@ -169,9 +171,11 @@ class WidgetDirectoryUI:
                     target = self._url(destination, ref=params['ref'], item=row['item_ref'],
                                        **({'filter': params['filter']} if 'filter' in params else {}))
                     folder = row['kind'] == 'show'
-                elif route == 'trakt_episodes':
+                elif route in {'trakt_episodes', 'trakt_show_unwatched'}:
                     target = self._url('trakt_episode_details', ref=params['ref'], item=params['item'],
-                                        season=params['season'], episode=row['episode'])
+                                        season=row['season'], episode=row['episode'])
+                    if route == 'trakt_show_unwatched':
+                        label = 'S' + str(row['season']) + 'E' + str(row['episode']) + ' — ' + label
             item = self._item(label=label)
             if self._art:
                 item.setArt(dict(self._art))
@@ -206,7 +210,15 @@ class WidgetDirectoryUI:
                 if row['kind'] == 'episode':
                     tag.setSeason(row['season'])
                     tag.setEpisode(row['episode'])
-                    item.addContextMenuItems(_episode_actions(params, params['season'], self._addon_id))
+                    item.addContextMenuItems(_episode_actions(params, row['season'], self._addon_id))
+            if route == 'trakt_list' and row.get('kind') == 'show':
+                show_view = self._url('trakt_show_unwatched', ref=params['ref'], item=row['item_ref'])
+                item.addContextMenuItems([('Aired unwatched episodes — all regular seasons',
+                                          'Container.Update(' + show_view + ')')])
+            elif route in {'trakt_seasons', 'trakt_episodes', 'trakt_show_unwatched'}:
+                show_view = self._url('trakt_show_unwatched', ref=params['ref'], item=params['item'])
+                item.addContextMenuItems([('Aired unwatched episodes — all regular seasons',
+                                          'Container.Update(' + show_view + ')')])
             if 'ref' in params:
                 full_list = self._url('trakt_list', ref=params['ref'])
                 item.addContextMenuItems([('Open full list', 'Container.Update(' + full_list + ')')])
@@ -295,6 +307,8 @@ class WidgetDirectoryUI:
             category = result.message
             if successful and route == 'trakt_list' and 'filter' in params:
                 category = routes.MOVIE_FILTERS[params['filter']] + ' — this selected list only. ' + category
+            if successful and route == 'trakt_show_unwatched':
+                category = 'Aired unwatched — this show, regular seasons only. ' + category
             self._plugin.setPluginCategory(handle, category)
             self._plugin.setContent(handle, 'videos')
             if successful:
