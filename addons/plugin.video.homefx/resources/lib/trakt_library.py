@@ -413,6 +413,21 @@ class Library:
             self.clear()
             raise
 
+    def widget_show_progress(self, ref, item_ref, view):
+        """Read-only progress rows for one selected show, never automatic playback."""
+        if type(view) is not str or view not in {"continue", "next", "upcoming"}:
+            raise ApiError("invalid_filter")
+        try:
+            show, guard = self._widget_show(ref, item_ref)
+            rows = self.series_view(show['trakt_id'])
+            rows = trakt_views.show_progress(rows, view)
+            rows = self._with_show_identity(rows, show)
+            guard()
+            return {'items': rows, 'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
     def widget_episodes(self, ref, item_ref, season, episode_filter="all"):
         # Validate local choices before authenticated work.
         if not isinstance(episode_filter, str) or episode_filter not in {"all", "aired_unwatched"}:

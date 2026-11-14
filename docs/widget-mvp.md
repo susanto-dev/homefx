@@ -24,7 +24,7 @@ do not prove a new ZIP is hosted. This add-on has no repository auto-update path
 Keep the existing login and selections when installing a same-ID update.
 
 HomeFX Preview (`plugin.video.homefx`) remains synthetic and separately installed
-through Preview repository 0.2.0. Its existing published video is 0.17.14. The program
+through Preview repository 0.2.0. Its existing published video is 0.17.15. The program
 diagnostics add-on has its own profile; do not transfer tokens or databases between
 them. See [Development delivery and scope](development-video.md).
 
@@ -91,6 +91,15 @@ collection, one episode collection per regular season, watched progress and paus
 pages, in addition to normal account/list reads. Bounds of 50 seasons / 5,000 episodes
 reject oversized or incomplete results; other limits can stop sooner. Fresh opens
 and additional rows can repeat the work. See [show view limits](show-unwatched.md).
+
+The selected-show progress candidate also exposes **Continue watching episodes**,
+**Next aired unwatched episode** and **Upcoming episodes** in the same show-view
+chooser. Choose the terminal folder before **Use as widget**. Continue watching
+uses resumable aired pauses; Next aired chooses at most one known-unwatched episode
+in season/episode order; Upcoming shows known future dates while preserving unknown
+watched status. None is a global feed or a playback action. See the [per-show rules,
+request costs and short acceptance check](show-progress.md). Install only after its
+normal publication is verified; no completed authentication check needs repeating.
 
 Metadata uses original placeholders. Standard Kodi IDs are exposed for the
 [TMDb Helper 5.4.16 contract](kodi-metadata.md); installed Helper support is not a
