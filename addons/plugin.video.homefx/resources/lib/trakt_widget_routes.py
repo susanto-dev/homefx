@@ -33,9 +33,11 @@ def _validate(route, params):
             raise ValueError('invalid_widget_route')
 
 
-def url(route, **params):
+def url(route, *, addon_id='plugin.video.homefx', **params):
+    if addon_id not in {'plugin.video.homefx', 'plugin.video.homefx.development'}:
+        raise ValueError('invalid_widget_addon')
     _validate(route, params)
-    return BASE + '?' + urlencode(dict(route=route, **params))
+    return 'plugin://' + addon_id + '/' + '?' + urlencode(dict(route=route, **params))
 
 
 def parse(query):

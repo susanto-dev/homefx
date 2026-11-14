@@ -115,6 +115,17 @@ Already connected? Follow the [post-login checklist](https://github.com/susanto-
 The separate program is a temporary validation tool; the intended everyday
 list/widget experience belongs in the video add-on, with its own account storage.
 
+## Optional Development video candidate
+
+The [Development video checklist](https://github.com/susanto-dev/homefx/blob/main/docs/development-video.md)
+describes the separately identified read-only list/widget candidate. It is not yet
+published. After its reviewed merge and verified publication, its checksum-named
+`plugin.video.homefx.development` ZIP will be listed on the same source. It requires
+a fresh owner-authorized login and has its own profile; the program test is not a
+dependency. HomeFX Preview and existing demo widget URLs stay separate. No playback
+or remote list/history writes are enabled. Do not reinstall old tests to repeat
+already completed checks.
+
 ## 4. Restart Kodi fully
 
 Do this after installing or updating HomeFX, before the first-use checks.

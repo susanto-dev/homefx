@@ -1,9 +1,10 @@
-# Inactive device-login dialog adapter
+# Shared device-login dialog adapter
 
 `AccountUI(provider, dialog, progress_factory, monitor)` adapts injected Kodi-shaped
 objects to `AccountFlow`. Providers are `trakt` and `realdebrid`. Construction opens
-no UI, reads no profile and contacts no service. The preview entry point does not
-construct this adapter or expose live account actions.
+no UI, reads no profile and contacts no service. The public Preview entry point does not
+construct this adapter or expose live account actions. The deliberately installed
+Development video candidate uses it after explicit owner consent.
 
 The adapter provides `confirm_replace()`, `show_code(code, url)`, `close()` and
 `confirm_disconnect()`, plus `cancelled()` and `wait(seconds)` callbacks for the

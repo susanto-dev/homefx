@@ -1,7 +1,8 @@
 # Bounded Development Trakt test on Kodi
 
 **This is a separate experimental test add-on, not live mode for HomeFX Preview.**
-HomeFX Preview 0.17.6 and repository 0.2.0 are published. PR #34 merged as
+HomeFX Preview 0.17.7 and repository 0.2.0 are published after PR #36. The earlier
+login-repair PR #34 merged as
 `e860684c06551de7fd203096f9e4f0816fe0a531`; its validation, security, publication
 and deployed-byte verification passed. The owner installed the program add-on from
 the HomeFX source and reported its private storage checks passing.
@@ -56,7 +57,8 @@ cases **not run**. Do not corrupt a live token store or repeatedly refresh to te
 
 ## Next milestone: one real list in the video add-on
 
-After the remaining gates are reviewed, the smallest integration is an explicit,
+The [separate Development video candidate](development-video.md) now prepares the
+next step after reviewed publication: an explicit,
 read-only video account connection, one real personal or liked list, a stable widget
 route, title/season browsing and selections surviving restart. Existing inactive
 account/list assemblies are the starting point; another demo subsystem is unnecessary.

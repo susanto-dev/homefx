@@ -116,8 +116,8 @@ def build_trakt(profile, client_id, redirect_uri, *, clock=time.time,
                 connection_factory=http.client.HTTPSConnection):
     """Explicitly open local stores and assemble read-only services, never sign in.
 
-    Callbacks are trusted bounded code, not settings or service responses. No live
-    menu invokes this factory. A failure may leave empty private stores, but never
+    Callbacks are trusted bounded code, not settings or service responses. The public Preview
+    menu does not invoke this factory; the explicit Development video candidate does. A failure may leave empty private stores, but never
     causes login, refresh, network access or cleanup of unrelated profile files.
     """
     if type(client_id) is not str or not trakt_auth._text(client_id, 256) or not _redirect(redirect_uri):

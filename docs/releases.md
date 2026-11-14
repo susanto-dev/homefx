@@ -513,3 +513,24 @@ The additional recovery test uses synthetic token stores and actual child-proces
 exit. It does not contact Trakt or establish live interrupted-refresh acceptance.
 See [video integration](video-integration.md) for the remaining configuration-delivery
 and deliberate real-list TV acceptance work.
+
+## 0.17.8 Development video candidate
+
+PR #36 merged as `5338ef6e6ca30eaecc69c7a984a8c308a73d333f`; post-merge Validation,
+Security, configuration preflight and normal Pages publication passed for video
+0.17.7. The new proposal preserves all 21 prior archive records and adds video
+0.17.8 for shared configuration/routing changes. Repository 0.2.0 stays unchanged.
+The public preview's entry point remains synthetic and keeps its existing URLs.
+
+After a reviewed merge, the existing Development-bound Pages build will publish
+both program and video experimental ZIP/checksum pairs. No workflow dispatch or
+independent deployment is needed. Each uses a separate add-on ID and content-addressed
+filename; neither enters the repository index or auto-updates. The video candidate
+is labelled owner/invited-user testing and requires fresh own-profile login plus
+list-read consent. Publishing or installing does not start login. Production is not
+selected. Real accounts remain outside CI; PR builds use fabricated public config.
+
+The artifact verifier compares every candidate member with the reviewed source and
+canonical public configuration, and the normal hosted-byte check covers both pairs.
+No previous recorded release is rebuilt or overwritten. Experimental candidate
+URLs may be retired; the same digest URL must never serve different bytes.

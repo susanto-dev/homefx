@@ -40,7 +40,7 @@ def _tree_bytes(root):
     return files, directories
 
 
-def _page(version, archive, bootstrap, digest, development_archive=None):
+def _page(version, archive, bootstrap, digest, development_archive=None, video_archive=None):
     page = '''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HomeFX — Kodi preview repository</title>
@@ -81,6 +81,16 @@ def _page(version, archive, bootstrap, digest, development_archive=None):
             "may disappear after a later build. A checksum-named URL never receives different bytes. "
             "Direct installation from this source still requires TV acceptance.</p>")
         development = development.replace("{{NAME}}", name)
+    if video_archive is not None:
+        name = html.escape(video_archive)
+        development += ('<h2>Development video — owner testing only</h2>'
+            '<p>Separate video add-on and private profile. Fresh explicit login and list-read consent required. '
+            'Read-only metadata and widgets; no playback or remote writes. Not general public Trakt access.</p>'
+            '<p><a href="' + name + '">' + name + '</a></p>'
+            '<p><a href="' + name + '.sha256">SHA-256</a></p>'
+            '<p>Install from zip file → HomeFX, then Video add-ons → HomeFX Development Video. '
+            'No repository auto-updates; existing Preview and widgets stay separate.</p>'
+            '<p><a href="https://github.com/susanto-dev/homefx/blob/main/docs/development-video.md">Video test checklist</a></p>')
     page = page.replace("{{DEVELOPMENT}}", development)
     for token, value in (("VERSION", version), ("ARCHIVE", archive),
                          ("BOOTSTRAP", bootstrap), ("DIGEST", digest)):
@@ -130,16 +140,20 @@ def build_site(output=None, package_output=None, retain_manifest=None, developme
             shutil.copyfile(source.with_suffix(".zip.sha256"), staged / (source.name + ".sha256"))
         shutil.copyfile(ROOT / "LICENSE", staged / "LICENSE.txt")
         digest = archive.with_suffix(".zip.sha256").read_text().split()[0]
-        development_archive = None
+        development_archive = video_archive = None
         if development_environment is not None:
-            test_archive = build_development_test.build(temporary / "development", development_environment)
-            for source in (test_archive, test_archive.with_suffix(".zip.sha256")):
-                shutil.copyfile(source, staged / source.name)
-            development_archive = development_download.verify({
-                source.name: source.read_bytes() for source in
-                (test_archive, test_archive.with_suffix(".zip.sha256"))})
+            for video, folder in ((False, "development"), (True, "development-video")):
+                test_archive = build_development_test.build(temporary / folder, development_environment, video=video)
+                pair = (test_archive, test_archive.with_suffix(".zip.sha256"))
+                for source in pair:
+                    shutil.copyfile(source, staged / source.name)
+                verified = development_download.verify({source.name: source.read_bytes() for source in pair}, video=video)
+                if video:
+                    video_archive = verified
+                else:
+                    development_archive = verified
         (staged / "index.html").write_text(
-            _page(version, archive.name, bootstrap, digest, development_archive), encoding="utf-8")
+            _page(version, archive.name, bootstrap, digest, development_archive, video_archive), encoding="utf-8")
         (staged / "install.html").write_text(guide_page.build(ROOT / "docs/install.md"), encoding="utf-8")
         if site.exists():
             if _tree_bytes(site) != _tree_bytes(staged):

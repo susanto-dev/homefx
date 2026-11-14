@@ -62,11 +62,13 @@ def _build(root, development_environment=None):
     expected_files = {"repository/" + name for name in public_files}
     expected_files.update({archive, archive + ".sha256", bootstrap, bootstrap + ".sha256",
                            "LICENSE.txt", "index.html", "install.html"})
-    development_archive = development_download.verify(site_files)
-    if (development_environment is None) != (development_archive is None):
-        raise ReproducibilityError("invalid Development output")
-    if development_archive is not None:
-        expected_files.update({development_archive, development_archive + ".sha256"})
+    for video in (False, True):
+        development_archive = development_download.verify(site_files, video=video)
+        if (development_environment is None) != (development_archive is None):
+            raise ReproducibilityError("invalid Development output")
+        if development_archive is not None:
+            expected_files.update({development_archive, development_archive + ".sha256"})
+    if development_environment is not None:
         check_published._expected(site)
     expected_dirs = {"repository"} | {"repository/" + name for name in public_dirs}
     if set(site_files) != expected_files or site_dirs != expected_dirs:

@@ -20,9 +20,9 @@ For the separately installed test add-on and its HomeFX source installation step
 [bounded Development device test](docs/development-device-test.md). It does not
 activate live routes in HomeFX Preview or join the public repository channel.
 
-## Published preview: 0.17.6
+## Published preview: 0.17.7
 
-HomeFX Preview 0.17.6 and repository 0.2.0 are published. PR #34 post-merge
+HomeFX Preview 0.17.7 and repository 0.2.0 are published. PR #36 post-merge
 validation, security, publication and deployed-byte checks passed. The owner has
 reported passing private storage checks, **Connection test: authorized** and
 **Refresh rotation: passed** in the separate Development program add-on on TV.
@@ -35,10 +35,11 @@ public video preview still uses demo data and does not inherit the test's tokens
 See [what to do after successful login](docs/development-device-test.md#after-successful-authorization-and-refresh)
 and [why the test is separate](docs/development-device-test.md#why-a-program-add-on).
 
-The **0.17.7 candidate** joins shared login, selection and directory components in
-one [video dispatcher](docs/video-integration.md). Public live routes remain inactive;
-no program credentials are migrated. Automated crash/reopen recovery tests use
-synthetic tokens, not a destructive real-account experiment.
+PR #36's video dispatcher and synthetic process-interruption regression are merged;
+post-merge validation and publication passed for **0.17.7**. The next **0.17.8 candidate**
+adds a deliberately installed [Development video list/widget test](docs/development-video.md)
+with its own profile and routes. The public Preview remains synthetic. The new
+Development video ZIP is not yet published; no credentials are migrated.
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

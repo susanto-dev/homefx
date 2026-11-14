@@ -16,6 +16,7 @@ import package
 
 ROOT = package.ROOT
 ADDON_ID = "script.homefx.development"
+VIDEO_ID = "plugin.video.homefx.development"
 VERSION = "0.1.0"
 MAX_FILE = 1024 * 1024
 MAX_TOTAL = 32 * 1024 * 1024
@@ -59,9 +60,11 @@ def _configuration(environment):
     return data
 
 
-def _manifest(data):
+def _manifest(data, video=False):
+    addon_id = VIDEO_ID if video else ADDON_ID
+    extension = "xbmc.python.pluginsource" if video else "xbmc.python.script"
     manifest = package.parse_manifest(data)
-    _require(manifest.tag == "addon" and manifest.get("id") == ADDON_ID
+    _require(manifest.tag == "addon" and manifest.get("id") == addon_id
              and manifest.get("version") == VERSION
              and manifest.get("provider-name") == "susanto-dev"
              and bool(manifest.get("name", "").strip()))
@@ -73,11 +76,11 @@ def _manifest(data):
              and dependency.get("optional", "false") == "false")
     extensions = manifest.findall("extension")
     _require(len(extensions) == 2 and {item.get("point") for item in extensions} == {
-        "xbmc.python.script", "xbmc.addon.metadata"})
-    script = manifest.find("./extension[@point='xbmc.python.script']")
+        extension, "xbmc.addon.metadata"})
+    script = manifest.find("./extension[@point='" + extension + "']")
     _require(script.get("library") == "default.py")
     _require(not len(script) or (len(script) == 1 and script[0].tag == "provides"
-                                and script[0].text == "executable" and not len(script[0])))
+                                and script[0].text == ("video" if video else "executable") and not len(script[0])))
     metadata = manifest.find("./extension[@point='xbmc.addon.metadata']")
     for name, expected in (("license", "MIT"), ("platform", "all")):
         nodes = metadata.findall(name)
@@ -87,23 +90,25 @@ def _manifest(data):
              and assets[0][0].text == "resources/art/icon.png" and not len(assets[0][0]))
 
 
-def _sources(root, configuration):
-    script = root / "addons" / ADDON_ID
+def _sources(root, configuration, video=False):
+    script = root / "addons" / (VIDEO_ID if video else ADDON_ID)
     runtime = root / "addons" / "plugin.video.homefx"
-    files = {name: _read(script / name) for name in SCRIPT_FILES}
-    files.update({name: _read(runtime / name) for name in RUNTIME_FILES})
+    source_files = ("addon.xml", "default.py", "resources/lib/development_video.py") if video else SCRIPT_FILES
+    files = {name: _read(script / name) for name in source_files}
+    runtime_files = RUNTIME_FILES + (("resources/art/poster.png", "resources/art/fanart.png") if video else ())
+    files.update({name: _read(runtime / name) for name in runtime_files})
     files["LICENSE"] = _read(root / "LICENSE")
     _require(files["LICENSE"] == _read(runtime / "LICENSE"))
     files["resources/development.json"] = configuration
     _require(len(files) <= 128 and sum(map(len, files.values())) <= MAX_TOTAL)
-    _manifest(files["addon.xml"])
+    _manifest(files["addon.xml"], video)
     for name, data in files.items():
         if name.endswith(".py"):
             ast.parse(data.decode("utf-8"), filename=name, feature_version=(3, 11))
     return files
 
 
-def build(output, environment):
+def build(output, environment, *, video=False):
     """Write a fresh or identical complete ZIP/sidecar directory, with public config.
 
     Only explicit allowlisted original project files enter the archive. No account
@@ -111,6 +116,8 @@ def build(output, environment):
     Existing differing or partial output is never repaired or overwritten.
     """
     try:
+        _require(type(video) is bool)
+        addon_id = VIDEO_ID if video else ADDON_ID
         configuration = _configuration(environment)
         root = Path(ROOT).absolute()
         _no_symlinks(root)
@@ -118,11 +125,11 @@ def build(output, environment):
         _no_symlinks(output)
         _require(".." not in output.parts and output != root)
         _require(root not in output.parents or root / "dist" in output.parents)
-        files = _sources(root, configuration)
+        files = _sources(root, configuration, video)
         stream = io.BytesIO()
         with ZipFile(stream, "w", compression=ZIP_DEFLATED) as archive:
             for name, data in sorted(files.items()):
-                entry = ZipInfo(ADDON_ID + "/" + name, date_time=(2026, 1, 1, 0, 0, 0))
+                entry = ZipInfo(addon_id + "/" + name, date_time=(2026, 1, 1, 0, 0, 0))
                 entry.compress_type = ZIP_DEFLATED
                 entry.create_system = 3
                 entry.external_attr = 0o100644 << 16
@@ -131,9 +138,9 @@ def build(output, environment):
         _require(len(data) <= MAX_ZIP)
         with ZipFile(io.BytesIO(data)) as archive:
             _require(archive.testzip() is None and len(archive.infolist()) == len(files))
-            _manifest(archive.read(ADDON_ID + "/addon.xml"))
+            _manifest(archive.read(addon_id + "/addon.xml"), video)
         digest = hashlib.sha256(data).hexdigest()
-        name = ADDON_ID + "-" + VERSION + "-" + digest + ".zip"
+        name = addon_id + "-" + VERSION + "-" + digest + ".zip"
         checksum = (digest + "  " + name + "\n").encode("ascii")
         expected = {name: data, name + ".sha256": checksum}
         if output.exists():
