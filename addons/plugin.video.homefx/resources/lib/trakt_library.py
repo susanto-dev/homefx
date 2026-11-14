@@ -328,6 +328,80 @@ class Library:
             self.clear()
             raise
 
+    def _continue_widget_context(self):
+        """Pin the account feed without enumerating or requiring saved lists."""
+        if self._preferences is None:
+            raise PreferencesError('widget_storage_required')
+        generation = self._session.cache_key()
+        revision = self._data_revision()
+        if generation != self._generation:
+            self._activate(generation, revision)
+        self._assert_view(generation, revision)
+        self._revision = revision
+        account = self._account
+        epoch, ref = self._preferences.widget_feed_snapshot(account)
+        if epoch != self._preferences_epoch:
+            raise PreferencesError('preferences_changed')
+
+        def guard():
+            try:
+                self._assert_view(generation, revision)
+                current_epoch, current_ref = self._preferences.widget_feed_snapshot(account)
+                if current_epoch != epoch or not hmac.compare_digest(current_ref, ref):
+                    raise PreferencesError('preferences_changed')
+                self._assert_view(generation, revision)
+            except (AuthError, ApiError):
+                self.clear()
+                raise
+
+        guard()
+        return account, epoch, ref, guard
+
+    def widget_continue_sources(self):
+        """Expose one account-bound folder; do not read pauses or history yet."""
+        try:
+            _, _, ref, guard = self._continue_widget_context()
+            guard()
+            return {'items': [{'name': 'Continue watching — this account', 'ref': ref}],
+                    'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_continue(self, ref):
+        """Complete account-wide pause enrichment, with opaque current item refs."""
+        self._widget_reference(ref)
+        try:
+            account, epoch, current_ref, guard = self._continue_widget_context()
+            if not hmac.compare_digest(ref, current_ref):
+                raise ApiError('unavailable_selection')
+            rows = self.enriched_continue_view()
+            guard()
+            refs = self._preferences.widget_feed_item_refs(account, 'continue',
+                [(row['kind'], row['trakt_id']) for row in rows], expected_epoch=epoch)
+            rows = [dict(row, item_ref=item_ref,
+                         **({'show_trakt_id': row['show_id']} if row['kind'] == 'episode' else {}))
+                    for row, item_ref in zip(rows, refs)]
+            guard()
+            return {'items': rows, 'unsupported_count': 0, 'guard': guard}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
+    def widget_continue_details(self, ref, item_ref):
+        """Revalidate current feed membership, never trust a caller media ID."""
+        self._widget_reference(item_ref)
+        try:
+            result = self.widget_continue(ref)
+            matches = [row for row in result['items'] if hmac.compare_digest(row['item_ref'], item_ref)]
+            if len(matches) != 1:
+                raise ApiError('unavailable_selection')
+            result['guard']()
+            return {'items': matches, 'unsupported_count': 0, 'guard': result['guard']}
+        except (AuthError, ApiError):
+            self.clear()
+            raise
+
     def widget_list(self, ref, movie_filter=None):
         """Resolve selected membership before reading; never accept a caller list ID."""
         self._widget_reference(ref)

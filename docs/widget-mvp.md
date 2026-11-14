@@ -24,7 +24,7 @@ do not prove a new ZIP is hosted. This add-on has no repository auto-update path
 Keep the existing login and selections when installing a same-ID update.
 
 HomeFX Preview (`plugin.video.homefx`) remains synthetic and separately installed
-through Preview repository 0.2.0. Its existing published video is 0.17.15. The program
+through Preview repository 0.2.0. Its existing published video is 0.17.16. The program
 diagnostics add-on has its own profile; do not transfer tokens or databases between
 them. See [Development delivery and scope](development-video.md).
 
@@ -140,3 +140,6 @@ remain **untested until reported**.
   here**. Its English strings identify **Video Library**, **Video Add-On** and
   **Use as widget**. This is supporting evidence, not confirmation that 2.0.3 is
   installed on the TV. Its manifest declares GPL-2.0-only; no code is reused.
+
+For a mixed movie/episode feed independent of saved lists, see the
+[account-wide Continue Watching candidate](continue-widget.md).

@@ -184,6 +184,44 @@ class AccountPreferences:
         return self._transaction(read)
 
     @staticmethod
+    def _widget_feed(feed):
+        if type(feed) is not str or feed != 'continue':
+            raise PreferencesError('invalid_widget_reference')
+        return feed
+
+    def widget_feed_snapshot(self, uuid, feed='continue'):
+        """Read a restart-stable account feed locator without storing history."""
+        account = _account_key(uuid)
+        feed = self._widget_feed(feed)
+        def read(conn):
+            epoch = self._epoch(conn)
+            secret = self._widget_key(conn)
+            return epoch, self._reference(secret, 'homefx-widget-feed-v1', account, epoch, feed)
+        return self._transaction(read)
+
+    def widget_feed_item_refs(self, uuid, feed, identities, expected_epoch):
+        """Derive bounded locators; callers must recheck current feed membership."""
+        account = _account_key(uuid)
+        feed = self._widget_feed(feed)
+        if (not _integer(expected_epoch) or type(identities) not in (list, tuple)
+                or len(identities) > 50 or any(
+                    type(pair) not in (list, tuple) or len(pair) != 2
+                    or type(pair[0]) is not str or pair[0] not in ('movie', 'episode')
+                    or type(pair[1]) is not int or not 1 <= pair[1] <= _MAX_INTEGER
+                    for pair in identities)):
+            raise PreferencesError('invalid_widget_reference')
+        if len({tuple(pair) for pair in identities}) != len(identities):
+            raise PreferencesError('invalid_widget_reference')
+        def read(conn):
+            epoch = self._epoch(conn)
+            if epoch != expected_epoch:
+                raise PreferencesError('preferences_changed')
+            secret = self._widget_key(conn)
+            return [self._reference(secret, 'homefx-widget-feed-item-v1', account, epoch,
+                                    feed, kind, ident) for kind, ident in identities]
+        return self._transaction(read)
+
+    @staticmethod
     def _epoch(conn):
         rows = conn.execute('SELECT id,epoch FROM preference_state LIMIT 2').fetchall()
         if len(rows) != 1 or type(rows[0][0]) is not int or rows[0][0] != 1 or not _integer(rows[0][1]):

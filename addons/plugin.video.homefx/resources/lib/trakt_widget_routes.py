@@ -6,6 +6,9 @@ BASE = 'plugin://plugin.video.homefx/'
 _FIELDS = {
     'trakt_widget_menu': set(),
     'trakt_show_sources': set(),
+    'trakt_continue_sources': set(),
+    'trakt_continue': {'ref'},
+    'trakt_continue_details': {'ref', 'item'},
     'trakt_shows': {'ref'},
     'trakt_show_views': {'ref', 'item'},
     'trakt_sources': set(),

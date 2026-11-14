@@ -176,6 +176,12 @@
       "version": "0.17.16"
     },
     {
+      "id": "plugin.video.homefx",
+      "path": "archives/plugin.video.homefx-0.17.17.zip",
+      "sha256": "9805d8bd15005835140f348c4093967e4463cb0924ffe2d942c4925324a38825",
+      "version": "0.17.17"
+    },
+    {
       "id": "repository.homefx",
       "version": "0.2.0",
       "path": "archives/repository.homefx-0.2.0.zip",

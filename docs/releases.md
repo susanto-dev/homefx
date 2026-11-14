@@ -706,3 +706,15 @@ Then update Development Video from the existing source and fully restart Kodi, k
 the existing login. See the [short progress-row check](show-progress.md). No repeat
 authentication test is required; skin behavior, live progress and timing need TV
 evidence. Unknown dates/watch state do not become playable or unwatched claims.
+
+## Account-wide Continue Watching proposal (0.17.17)
+
+Normal merge-triggered publication prepares video 0.17.17 and new content-addressed
+Development downloads after tests and package gates. All 30 prior archive records
+and bytes remain unchanged, as does repository 0.2.0. Public Preview stays synthetic.
+The account-wide widget uses existing read-only endpoints and private account storage;
+there is no schema migration, credential transfer or public/Production activation.
+No independent publication is authorized. Verify the hosted artifact after merge,
+then update Development Video and fully restart Kodi while retaining the existing
+login and lists. Follow the [short feed check](continue-widget.md); no repeated
+authentication test is needed solely for this change.
