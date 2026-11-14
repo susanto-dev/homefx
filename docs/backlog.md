@@ -456,11 +456,11 @@ a skin or activate public service access.
 | Work item | Current status | Evidence still needed |
 |---|---|---|
 | B02/T03: real personal/liked list selection and folder browsing | Published; owner-reported saved selection and 100+ movie browsing passed | Saved video selection after full restart and actual skin row |
-| B02/B10: unified skin-selectable widget folders | Candidate implemented with static menu and selected-list/show choices | Choose terminal folder with Use as widget on TV |
-| B03: seasons and all-regular-season aired unwatched | Published; now reachable through candidate picker without context menus | Correct live statuses, Back and return position |
+| B02/B10: unified skin-selectable widget folders | Published in 0.17.15 with static menu and selected-list/show choices | Choose terminal folder with Use as widget on TV |
+| B03: seasons and all-regular-season aired unwatched | Published; now reachable through published picker without context menus | Correct live statuses, Back and return position |
 | T04: selected-list movie progress views | Published; picker reuses stable routes | Actual watched/paused endpoint and filtering on TV |
-| Q04: Development build/device information | Candidate local-only source version/fingerprint and Kodi/skin report | Installed display; no storage/auth test implied |
-| B10/Q04: exact-skin setup guide | Source-verified 3.0.3 navigation; candidate documented | Actual remote labels, focus, heading behavior |
+| Q04: Development build/device information | Published local-only source version/fingerprint and Kodi/skin report | Installed display; no storage/auth test implied |
+| B10/Q04: exact-skin setup guide | Source-verified 3.0.3 navigation; published guide | Actual remote labels, focus, heading behavior |
 | T07: cold/warm and multiple-row performance | Request limits and invocation cache implemented | TV timings; no speed or cross-row cache claim |
 | R01–R03: installation/update | Public Preview repository and experimental Development ZIP paths published | Development remains deliberate ZIP update; not repository auto-update |
 | T08: general public live access | Inactive, external approval/configuration gate | Owner/service requirements; do not infer from Development tests |
@@ -473,3 +473,17 @@ The detailed tables above remain the complete backlog. No completed account test
 must be repeated solely for this batch. Start with one selected list and one skin
 row using the [MVP acceptance guide](widget-mvp.md), then measure a second row.
 A successful synthetic test or source inspection is not a TV pass.
+
+## Test maintenance batch
+
+PR #49 merged as `1ddc26eb15c4ca0e08a94e401c748f17c1049fa4`; post-merge
+Validation and publication passed. The publication verifier compared all 133 hosted
+files with its uploaded artifact. Preview 0.17.15 and repository 0.2.0 are published;
+this does not establish the outstanding widget TV checks above.
+
+The maintenance candidate separates shared widget stand-ins from test case modules,
+removes redundant per-test verifier package builds using isolated copies, and supports
+multiple focused discovery patterns without duplicate execution. Existing regression
+cases remain; no obsolete boundary coverage was identified for deletion. Full-suite
+and independent review gates remain required. No runtime, archive or version change
+is needed; existing installations require no update solely for this cleanup.
