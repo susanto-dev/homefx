@@ -1,9 +1,10 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.10 / repository 0.2.0**.
-PR #43 merged as `dd7f5bfe6e7d46042d99269902757ccd7d1b38a9`; validation, Security,
-configuration preflight and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43555687977) passed.
-Publication checked 113 public files; fresh root ZIP checks matched retained archives.
+Status checked on 14 November 2026: published **video 0.17.11 / repository 0.2.0**.
+PR #44 merged as `24f7910677419c5c4bf4efb485ac4e7a8f0e2c0f`; Validation, Security,
+configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43559265739) passed.
+Publication verified 117 public files. TMDB remains inactive and is now deferred
+by owner direction; existing Trakt metadata and the installed skin remain the focus.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -17,7 +18,7 @@ provider or release choice. The current public add-on remains synthetic.
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
 | B02 | Multiple selected list widgets and folder browsing | Published in Development Video; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development read-only browser; synthetic integration tests passed | Live episode identity/status, season navigation and refresh behavior on TV |
-| B04 | Continue watching, unfinished first, next aired unwatched | Implemented in demo; bounded series joins, continuation candidates and enriched paused metadata mocked (0.11) | Live metadata, resume reconciliation and performance |
+| B04 | Continue watching, unfinished first, next aired unwatched | Candidate adds selected-list unfinished movie rows; global/episode Continue Watching and Next aired remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
 | B07 | Title search | Demo implemented; Trakt title-search contracts mocked/inactive (0.9) | Live literal-query behavior, entitlement, keyboard/context-menu UI and TV integration |
@@ -43,7 +44,7 @@ This repair does not alter private account stores or enable live services.
 | T01 | Device login, refresh, protected token store, HTTPS/session guards | Shared implementation; program lifecycle passed on TV; Development identity/redirect owner-confirmed | Fresh video-profile login/storage acceptance; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed. Do not repeat completed program checks |
 | T02 | Account connect/cancel/switch/disconnect UI | Shared UI and Development video entry published | Program consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
 | T03 | Personal/liked lists and saved account-bound selections | Published in Development Video; synthetic end-to-end acceptance passed | Selection/save and opening a real 100+ movie list passed; verify widget and saved selection after restart on TV |
-| T04 | Complete movie watched snapshot and filtered joins | Mocked/inactive (0.8) | Bounded full snapshot; no missing-response-to-unwatched fallback; live validation still pending |
+| T04 | Complete movie watched snapshot and filtered joins | Development movie-progress candidate wired; synthetic adapter tests passed | Actual endpoint/entitlement, filter and performance acceptance on TV; failed snapshots never mean unwatched |
 | T05 | Live Trakt read views | Read-only selected-list Development candidate published; public/Production inactive | Validate candidate on TV; Continue Watching, Next aired and Upcoming need separate future integration |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
 | T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache and shared request limits wired in Development Video; persistent metadata cache pending | Validate shared limits and cold/warm/multiple-row load times on TV; use measurements to decide cache retention/invalidation |
@@ -398,3 +399,19 @@ cancellable first-load UI remain the next bounded activation work. No further
 provider-only infrastructure should be added as a substitute for those decisions.
 Current saved-list/widget acceptance remains useful; no completed auth test must
 be repeated for this inactive cache batch.
+
+## Current direction: Trakt movie progress, no TMDB wait
+
+The owner deferred TMDB/provider selection and requested the next workable item.
+Retain Trakt synopsis/ratings, original placeholder artwork and the current skin.
+The inactive TMDB foundation is preserved but no longer blocks other progress.
+Real-Debrid still requires its registered device-flow and authorized source-input
+checks. No demonstrated skin limitation justifies starting a new skin now.
+
+The [movie-progress candidate](movie-progress.md) adds all/progress, unwatched,
+released-unwatched, unfinished-released and upcoming movie views within each saved
+list. These reuse existing complete history/paused joins and account-bound refs.
+They are not the global Continue Watching feed, next episodes or a personal calendar.
+Existing mixed-list/series widgets are unchanged. No playback, remote write or
+provider activation is included. Next owner acceptance is one movie view and one
+skin row using the existing Development account, not another login/storage test.

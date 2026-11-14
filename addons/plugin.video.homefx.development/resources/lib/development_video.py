@@ -49,10 +49,11 @@ def run(argv, addon, dialog, progress_factory, monitor, plugin, item_factory, tr
                 ('Connect Development Trakt', 'connect'),
                 ('Choose personal or liked lists', 'choose'),
                 ('Selected lists / widget sources', 'sources'),
+                ('Movie progress views / widgets (reads Trakt history)', 'movie_sources'),
                 ('Disconnect this video add-on locally', 'disconnect')):
-                target = (routes.url('trakt_sources', addon_id=ADDON_ID) if action == 'sources'
+                target = (routes.url('trakt_' + action, addon_id=ADDON_ID) if action in {'sources', 'movie_sources'}
                           else 'plugin://' + ADDON_ID + '/?' + urlencode({'action': action}))
-                if plugin.addDirectoryItem(handle, target, item_factory(label=label), action == 'sources') is False:
+                if plugin.addDirectoryItem(handle, target, item_factory(label=label), action in {'sources', 'movie_sources'}) is False:
                     raise ValueError()
             _finish(plugin, handle, True)
             return True

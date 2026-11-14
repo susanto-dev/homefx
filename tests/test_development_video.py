@@ -87,7 +87,7 @@ class DevelopmentVideoTests(unittest.TestCase):
     def test_root_invalid_and_declined_actions_have_no_storage_or_network(self):
         result, screen = self.invoke()
         self.assertTrue(result)
-        self.assertEqual(len(screen.rows), 6)
+        self.assertEqual(len(screen.rows), 7)
         for query in ('?action=connect', '?action=choose', '?action=status', '?action=probe'):
             self.invoke(query, confirm=False)
         for query in ('?action=connect&action=choose', '?action=write', '?route=trakt_sources&private=1'):
@@ -139,6 +139,33 @@ class DevelopmentVideoTests(unittest.TestCase):
         self.assertEqual((self.program / 'sentinel').read_bytes(), b'synthetic unrelated profile')
         self.assertEqual(routes.url('trakt_sources'), 'plugin://plugin.video.homefx/?route=trakt_sources')
 
+    def test_movie_progress_route_runs_in_own_video_profile_without_playback(self):
+        self.invoke('?action=connect')
+        self.invoke('?action=choose')
+        original = self.service.respond
+        def respond(host, method, path, body, headers):
+            if path == '/users/me/watched/movies':
+                return 200, []
+            return original(host, method, path, body, headers)
+        self.service.respond = respond
+        start = len(self.service.requests)
+        success, sources = self.invoke('?route=trakt_movie_sources')
+        self.assertTrue(success)
+        success, choices = self.invoke('?' + urlsplit(sources.rows[0][0]).query)
+        self.assertTrue(success)
+        self.assertEqual(len(choices.rows), 5)
+        self.assertFalse(any('/watched/' in row[2] or '/sync/playback' in row[2]
+                             for row in self.service.requests[start:]))
+        success, movies = self.invoke('?' + urlsplit(choices.rows[0][0]).query)
+        self.assertTrue(success)
+        self.assertEqual(len(movies.rows), 1)
+        self.assertEqual(movies.rows[0][1].tag.values['playcount'], 0)
+        self.assertIn('filter=all', movies.rows[0][0])
+        self.assertTrue(all(row[1] == 'GET' for row in self.service.requests[start:]))
+        self.assertFalse(any(event[0] in {'confirm', 'open'} for event in movies.events))
+        # A fresh invocation resolves the saved account-bound route, not an old in-memory result.
+        self.assertTrue(self.invoke('?' + urlsplit(choices.rows[0][0]).query)[0])
+
     def test_failed_storage_and_invalid_public_config_never_connect(self):
         _, screen = self.invoke('?action=connect', probe=lambda profile: 'Overall: not passed')
         self.assertTrue(any('Overall: not passed' in body for _, body in screen.details))
@@ -182,9 +209,11 @@ sys.modules['xbmcvfs'] = types.SimpleNamespace(translatePath=forbidden)
 sys.path.insert(0, str(root))
 sys.argv = ['plugin://' + ident + '/', '1', '']
 exec(compile((root / 'default.py').read_bytes(), str(root / 'default.py'), 'exec'), {'__name__': '__main__'})
-assert len(rows) == 6 and ends == [(True, False)]
+assert len(rows) == 7 and ends == [(True, False)]
 assert all(url.startswith('plugin://' + ident + '/?') for url, _ in rows)
-assert sum(folder for _, folder in rows) == 1
+assert {url for url, folder in rows if folder} == {
+    'plugin://' + ident + '/?route=trakt_sources',
+    'plugin://' + ident + '/?route=trakt_movie_sources'}
 """
         result = subprocess.run([sys.executable, '-c', child, str(installed)],
                                 capture_output=True, timeout=15, check=False)

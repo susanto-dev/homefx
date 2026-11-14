@@ -151,3 +151,12 @@ Check the same row in the existing skin; Kodi receives a named Trakt rating but 
 skin chooses how to present it. Report only whether text/rating appears, navigation
 works and elapsed cold/warm times—no list names, title screenshots, tokens or paths
 are needed. This is a new metadata-display check, not a repeat authorization test.
+
+## Movie progress views candidate
+
+The next version adds **Movie progress views / widgets (reads Trakt history)** to
+the Development video menu. Choose one of your already saved lists, then a movie
+view. Choosing a list in HomeFX and creating a skin row remain separate operations.
+The original **Selected lists / widget sources** route still includes movies/shows
+without implicitly adding history reads. See [scope, filters and short TV check](movie-progress.md).
+TMDB, Real-Debrid, playback and remote history/list writes remain inactive.

@@ -328,16 +328,20 @@ class Library:
             self.clear()
             raise
 
-    def widget_list(self, ref):
+    def widget_list(self, ref, movie_filter=None):
         """Resolve selected membership before reading; never accept a caller list ID."""
         self._widget_reference(ref)
+        if movie_filter is not None and (type(movie_filter) is not str or movie_filter not in
+                {"all", "unwatched", "released_unwatched", "unfinished", "upcoming"}):
+            raise ApiError("invalid_filter")
         try:
             account, epoch, selected, refs, _, guard = self._widget_context()
             key = next((key for key, candidate in zip(selected, refs)
                         if hmac.compare_digest(ref, candidate)), None)
             if key is None:
                 raise ApiError('unavailable_selection')
-            result = self.browse_list(key)
+            result = (self.browse_list(key) if movie_filter is None else
+                      {'items': self.movie_view(key, movie_filter=movie_filter), 'unsupported_count': 0})
             guard()
             rows = result['items']
             item_refs = self._preferences.widget_item_refs(account, key,
@@ -350,11 +354,11 @@ class Library:
             self.clear()
             raise
 
-    def widget_details(self, ref, item_ref):
+    def widget_details(self, ref, item_ref, movie_filter=None):
         """Return one list member's metadata; no source lookup or remote mutation."""
         self._widget_reference(item_ref)
         try:
-            result = self.widget_list(ref)
+            result = self.widget_list(ref, movie_filter=movie_filter)
             matches = [row for row in result['items'] if hmac.compare_digest(row['item_ref'], item_ref)]
             if len(matches) != 1:
                 raise ApiError('unavailable_selection')
@@ -546,25 +550,29 @@ class Library:
         Snapshot failures propagate; absence means unwatched only after a complete
         authenticated response. These are metadata views, not playable catalogues.
         """
-        if not isinstance(movie_filter, str) or movie_filter not in {"all", "unwatched", "released_unwatched", "upcoming"}:
+        if not isinstance(movie_filter, str) or movie_filter not in {"all", "unwatched", "released_unwatched", "unfinished", "upcoming"}:
             raise ApiError("invalid_filter")
         try:
             generation = self._session.cache_key()
             revision = self._data_revision()
             source = self.list_items(key)
             self._assert_view(generation, revision)
+            trakt_views.browse_list(source, now)  # Validate complete list, including mixed types.
             metadata = []
             for item in source:
                 if not isinstance(item, dict):
                     raise ApiError("invalid_metadata")
                 if item.get("type") == "movie":
                     metadata.append(item.get("movie"))
+            if not metadata:
+                self._assert_view(generation, revision)
+                return []
             pauses = self._read("paused", expected_generation=generation,
                                 expected_revision=revision)
             watched = self._read("watched_movies", expected_generation=generation,
                                  expected_revision=revision)
             rows = trakt_views.movie_filter(
-                trakt_views.movies(metadata, frozenset(watched), pauses, now), movie_filter)
+                trakt_views.movies(metadata, frozenset(watched), pauses, now, strict_pauses=True), movie_filter)
             self._assert_view(generation, revision)
             return rows
         except (AuthError, ApiError):

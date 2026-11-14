@@ -5,6 +5,8 @@ from urllib.parse import parse_qsl, urlencode
 BASE = 'plugin://plugin.video.homefx/'
 _FIELDS = {
     'trakt_sources': set(),
+    'trakt_movie_sources': set(),
+    'trakt_movie_views': {'ref'},
     'trakt_list': {'ref'},
     'trakt_seasons': {'ref', 'item'},
     'trakt_episodes': {'ref', 'item', 'season'},
@@ -13,16 +15,24 @@ _FIELDS = {
 }
 
 
+MOVIE_FILTERS = {
+    'all': 'All movies with progress',
+    'unwatched': 'Unwatched movies',
+    'released_unwatched': 'Released unwatched movies',
+    'unfinished': 'Unfinished released movies',
+    'upcoming': 'Upcoming movies',
+}
+
 def _validate(route, params):
     if type(route) is not str or route not in _FIELDS:
         raise ValueError('invalid_widget_route')
     expected = _FIELDS[route]
-    if route == 'trakt_episodes' and 'filter' in params:
+    if route in {'trakt_episodes', 'trakt_list', 'trakt_details'} and 'filter' in params:
         expected = expected | {'filter'}
     if set(params) != expected:
         raise ValueError('invalid_widget_route')
-    if 'filter' in params and (type(params['filter']) is not str or
-                               params['filter'] not in {'all', 'aired_unwatched'}):
+    filters = {'all', 'aired_unwatched'} if route == 'trakt_episodes' else MOVIE_FILTERS
+    if 'filter' in params and (type(params['filter']) is not str or params['filter'] not in filters):
         raise ValueError('invalid_widget_route')
     for key in ('ref', 'item'):
         if key in params and (type(params[key]) is not str or

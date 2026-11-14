@@ -106,7 +106,9 @@ class EpisodeProgressUITests(unittest.TestCase):
     def test_filter_schema_rejects_other_routes_duplicates_and_invalid_values_before_reads(self):
         queries = [self.target() + '&filter=' + value for value in ('', 'ALL', 'unwatched', '1')]
         queries += [self.target(filter='all') + '&filter=all',
-                    routes.url('trakt_list', ref=self.ref) + '&filter=all',
+                    routes.url('trakt_list', ref=self.ref) + '&filter=aired_unwatched',
+                    routes.url('trakt_sources') + '&filter=all',
+                    routes.url('trakt_seasons', ref=self.ref, item=self.item_ref) + '&filter=all',
                     routes.url('trakt_episode_details', ref=self.ref, item=self.item_ref, season=1, episode=3) + '&filter=all']
         for query in queries:
             self.assertEqual(self.render(query).state, 'failed')

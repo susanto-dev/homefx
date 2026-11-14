@@ -138,6 +138,22 @@ class ViewTests(unittest.TestCase):
             with self.assertRaisesRegex(ApiError, "invalid_filter"):
                 views.movie_filter(unknown, mode)
 
+    def test_strict_movie_progress_supersedes_old_pauses_and_watched_wins(self):
+        movie = {'ids': {'trakt': 1}, 'title': 'Synthetic', 'released': '2026-01-01'}
+        older = pause(1, kind='movie', progress=40, when='2026-11-10T12:00:00Z')
+        for progress in (0, 100):
+            newer = dict(older, progress=progress, paused_at='2026-11-11T12:00:00Z')
+            rows = views.movies([movie], set(), [older, newer], NOW, strict_pauses=True)
+            self.assertEqual(views.movie_filter(rows, 'unfinished'), [])
+        rows = views.movies([movie], {1}, [older], NOW, strict_pauses=True)
+        self.assertEqual(rows[0]['progress'], 0)
+        self.assertEqual(views.movie_filter(rows, 'unfinished'), [])
+        for bad in (dict(older, progress=float('nan')), dict(older, progress=True),
+                    dict(older, paused_at='2099-01-01T00:00:00Z')):
+            with self.assertRaises(ApiError): views.movies([movie], set(), [bad], NOW, strict_pauses=True)
+        with self.assertRaisesRegex(ApiError, 'conflicting_progress'):
+            views.movies([movie], set(), [older, dict(older, progress=50)], NOW, strict_pauses=True)
+
     def test_continued_uses_latest_valid_pause_and_keeps_watch_unknown(self):
         older = pause(101, when="2026-11-11T21:00:00Z")
         older["episode"] = episode(1)
