@@ -150,6 +150,34 @@ class TestRunnerTests(unittest.TestCase):
         self.assertTrue(report["success"])
         self.assertIn("test_", process.stderr)
 
+    def test_documentation_missing_group_fails_with_empty_summary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'summary.json'
+            groups = [unittest.TestSuite([unittest.FunctionTestCase(lambda: None)]), unittest.TestSuite()]
+            with mock.patch.object(run_tests, 'discover_suite', side_effect=groups), \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                status = run_tests.main(['--documentation', '--summary', str(target)])
+            report = json.loads(target.read_text())
+        self.assertEqual(status, 1)
+        self.assertEqual(report['run'], 0)
+        self.assertFalse(report['success'])
+
+    def test_documentation_cli_runs_links_and_rendering_without_runtime_tests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'summary.json'
+            process = subprocess.run(
+                [sys.executable, str(run_tests.ROOT / 'tools/run_tests.py'),
+                 '--documentation', '--summary', str(target)],
+                cwd=directory, capture_output=True, text=True, check=False, timeout=30)
+            report = json.loads(target.read_text())
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertTrue(report['success'])
+        self.assertEqual(report['skipped'], 0)
+        self.assertIn('test_documentation.', process.stderr)
+        self.assertIn('test_guide_page.', process.stderr)
+        self.assertNotIn('test_model.', process.stderr)
+        self.assertNotIn('test_trakt_', process.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

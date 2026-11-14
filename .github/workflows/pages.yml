@@ -16,6 +16,9 @@ jobs:
   build:
     if: github.ref == 'refs/heads/main'
     environment: Development
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -26,6 +29,14 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Select checks since the last verified publication
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          baseline="$(gh api "repos/$GH_REPO/actions/workflows/pages.yml/runs?status=success&branch=main&per_page=1" --jq '.workflow_runs[0].head_sha // ""' 2>/dev/null)" || baseline=""
+          PUBLISHED_BASE="$baseline" python tools/ci_scope.py --publication
       - name: Validate declared dependency inventories
         run: python tools/check_dependencies.py
       - name: Install audit dependencies
@@ -34,6 +45,7 @@ jobs:
       - name: Validate external Action pins
         run: python3 tools/action_audit.py
       - name: Check Python correctness
+        if: steps.scope.outputs.mode != 'docs'
         run: python3 tools/check_quality.py
       - name: Protect published release history
         env:
@@ -47,7 +59,11 @@ jobs:
           esac
           python3 tools/release_history.py releases/inventory.json --base-ref "$base"
       - name: Test preview
+        if: steps.scope.outputs.mode != 'docs'
         run: python3 tools/run_tests.py --summary dist/tests/summary.json
+      - name: Check documentation links and rendering
+        if: steps.scope.outputs.mode == 'docs'
+        run: python3 tools/run_tests.py --documentation --summary dist/tests/summary.json
       - name: Summarize automated tests
         if: always()
         run: |
