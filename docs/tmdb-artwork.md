@@ -1,6 +1,8 @@
 # TMDB artwork and bounded cache
 
-TMDB is the chosen artwork candidate. **It is not activated yet.** The owner has
+TMDB is an artwork candidate. **It is not activated yet and is currently deferred.**
+The owner chose to keep Trakt metadata and move other usable features forward;
+registration or identifying an installed helper must not block that work. The owner has
 not registered the application or accepted its API terms. This batch supplies a
 provider-specific client and cache with fabricated tests; neither Kodi entry point
 constructs them. There is no new login, network traffic, artwork download, menu or

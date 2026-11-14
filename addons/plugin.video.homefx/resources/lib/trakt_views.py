@@ -256,7 +256,29 @@ def continuation(rows, current_id, include_specials=False):
     return immediate, unwatched
 
 
-def movies(metadata, watched_ids=None, paused=(), now=None):
+def _movie_pauses(rows, now):
+    latest = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ApiError("invalid_progress")
+        if row.get("type") != "movie":
+            continue
+        ident = _id(row.get("movie"))
+        progress, when = row.get("progress"), _stamp(row.get("paused_at"))
+        if (ident is None or ident >= 2**63 or type(progress) not in (int, float)
+                or not 0 <= progress <= 100 or not math.isfinite(progress)
+                or when is None or when > now):
+            raise ApiError("invalid_progress")
+        previous = latest.get(ident)
+        if previous is not None and previous[1] == when and previous[0] != progress:
+            raise ApiError("conflicting_progress")
+        if previous is None or when > previous[1]:
+            latest[ident] = progress, when
+    # A newer zero/complete event supersedes an older unfinished pause.
+    return {ident: value for ident, value in latest.items() if 0 < value[0] < 100}
+
+
+def movies(metadata, watched_ids=None, paused=(), now=None, *, strict_pauses=False):
     """watched_ids is a complete watched snapshot, or None if not fetched.
 
 The supplied movie release date is metadata, not regional streaming availability.
@@ -265,15 +287,20 @@ The supplied movie release date is metadata, not regional streaming availability
     if watched_ids is not None and (not isinstance(watched_ids, (set, frozenset)) or
                                    any(type(i) is not int or i <= 0 for i in watched_ids)):
         raise ApiError("invalid_progress")
-    pauses = _pause_map(paused, "movie")
+    if type(strict_pauses) is not bool:
+        raise ApiError("invalid_progress")
+    pauses = _movie_pauses(paused, now) if strict_pauses else _pause_map(paused, "movie")
+    basics = metadata_rows(metadata, "movie")
     result, seen = [], set()
-    for item in metadata:
+    for item, basic in zip(metadata, basics):
         ident = _id(item)
         if ident in seen:
             raise ApiError("duplicate_metadata")
         seen.add(ident)
         watched = ident in watched_ids if watched_ids is not None else None
-        result.append(_row(item, "movie", watched, pauses.get(ident), now))
+        row = dict(basic, **_row(item, "movie", watched, pauses.get(ident), now))
+        row.update(_list_description(item))
+        result.append(row)
     return result
 
 
@@ -303,15 +330,17 @@ def movie_filter(rows, selection="all"):
     unwatched view. Empty rows alone are not evidence of such a snapshot, so the
     Library layer also rejects those views when no watched endpoint is available.
     """
-    if not isinstance(selection, str) or selection not in {"all", "unwatched", "released_unwatched", "upcoming"}:
+    if not isinstance(selection, str) or selection not in {"all", "unwatched", "released_unwatched", "unfinished", "upcoming"}:
         raise ApiError("invalid_filter")
-    if selection in {"unwatched", "released_unwatched"} and any(
+    if selection in {"unwatched", "released_unwatched", "unfinished"} and any(
             row["watched"] is None for row in rows):
         raise ApiError("watched_status_unavailable")
     if selection == "unwatched":
         rows = [row for row in rows if row["watched"] is False]
     elif selection == "released_unwatched":
         rows = [row for row in rows if row["aired_unwatched"]]
+    elif selection == "unfinished":
+        rows = [row for row in rows if row["aired_unwatched"] and row["progress"] > 0]
     elif selection == "upcoming":
         rows = [row for row in rows if row["release_status"] == "upcoming"]
     return widget_order(rows)

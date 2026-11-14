@@ -56,6 +56,18 @@ class WidgetRouteTests(unittest.TestCase):
                 preview_routes.parse(query)
         self.assertEqual(preview_routes.parse('?route=continue&id='), ('continue', {}))
 
+    def test_movie_filters_are_explicit_and_bad_values_rejected(self):
+        for mode in routes.MOVIE_FILTERS:
+            for route, params in [('trakt_list', {'ref': 'a' * 64}),
+                                  ('trakt_details', {'ref': 'a' * 64, 'item': 'b' * 64})]:
+                params = dict(params, filter=mode)
+                self.assertEqual(routes.parse(urlsplit(routes.url(route, **params)).query), (route, params))
+        for query in ('route=trakt_list&ref=' + 'a' * 64 + '&filter=aired_unwatched',
+                      'route=trakt_movie_views&ref=' + 'a' * 64 + '&filter=all',
+                      'route=trakt_movie_sources&ref=' + 'a' * 64):
+            with self.assertRaises(ValueError): routes.parse(query)
+        self.assertEqual(routes.parse('route=trakt_sources'), ('trakt_sources', {}))
+
     def test_malformed_or_extra_route_fields_are_rejected(self):
         ref, item = 'a' * 64, 'b' * 64
         bad = ['', '?route=home', '?route=trakt_list', '?route=trakt_sources&ref=' + ref,
@@ -209,6 +221,101 @@ class WidgetDirectoryTests(unittest.TestCase):
             self.assertNotIn('Trakt rating:', item.tag.values['plot'])
         self.assertEqual(self.render(self.rows[0][0]).state, 'ready')
         self.assertNotIn('Trakt rating:', self.details[-1][1])
+
+    def movie_fixture(self):
+        self.items = [{'type': 'movie', 'movie': {'ids': {'trakt': ident},
+            'title': 'Movie ' + str(ident), 'released': released, 'overview': 'Synthetic plot',
+            'rating': 8, 'votes': 10}} for ident, released in
+            [(10, '2020-01-01'), (11, '2099-01-01'), (12, '2020-01-01'), (13, None)]]
+        self.items.append({'type': 'show', 'show': {'ids': {'trakt': 20}, 'title': 'Show'}})
+        self.watched = [12]
+        def replies(path):
+            if path == '/users/me/watched/movies':
+                return Response(200, body=[{'plays': 1, 'movie': {'ids': {'trakt': ident}}} for ident in self.watched])
+            if path.startswith('/sync/playback?'):
+                return Response(200, body=[{'type': 'movie', 'movie': {'ids': {'trakt': ident}},
+                    'progress': 42, 'paused_at': '2020-03-01T12:00:00Z'} for ident in (10, 12)])
+            return None
+        self.intercept = replies
+
+    def test_movie_sources_and_views_preserve_plain_list_and_do_not_read_history_early(self):
+        self.movie_fixture()
+        self.assertEqual(self.render(routes.url('trakt_movie_sources')).state, 'ready')
+        choices = self.rows[0][0]
+        self.assertEqual(self.render(choices).state, 'ready')
+        self.assertEqual(len(self.rows), 5)
+        self.assertTrue(all(folder for _, _, folder in self.rows))
+        self.assertFalse(any('/watched/' in p or '/sync/playback' in p for p in self.calls))
+        self.assertEqual(self.render(self.source()).state, 'ready')
+        self.assertEqual(len(self.rows), 5)  # Original mixed movie/show list stays unchanged.
+        self.assertTrue(all('playcount' not in row[1].tag.values for row in self.rows))
+
+    def test_movie_filters_and_details_share_progress_without_per_title_reads(self):
+        self.movie_fixture()
+        ref = self.library.widget_sources()['items'][0]['ref']
+        expected = {'all': ['Movie 10', 'Movie 11', 'Movie 13', 'Movie 12'],
+                    'unwatched': ['Movie 10', 'Movie 11', 'Movie 13'],
+                    'released_unwatched': ['Movie 10'], 'unfinished': ['Movie 10'],
+                    'upcoming': ['Movie 11']}
+        for mode, titles in expected.items():
+            self.assertEqual(self.render(routes.url('trakt_list', ref=ref, filter=mode), widget=True).state, 'ready')
+            self.assertEqual([row[1].label for row in self.rows], titles)
+            self.assertTrue(all(not folder for _, _, folder in self.rows))
+        self.assertEqual(self.calls.count('/users/me/watched/movies'), 1)
+        self.assertEqual(sum('/sync/playback?' in path for path in self.calls), 1)
+        self.assertFalse(any(path.startswith('/movies/') for path in self.calls))
+        self.render(routes.url('trakt_list', ref=ref, filter='unfinished'), widget=True)
+        target, item, _ = self.rows[0]
+        self.assertIn('Unfinished progress: 42%', item.tag.values['plot'])
+        self.assertEqual(item.tag.values['rating'], (8.0, 10, 'trakt', True))
+        self.assertIn('filter=unfinished', target)
+        self.assertEqual(self.render(target).state, 'ready')
+        self.assertIn('Unfinished progress: 42%', self.details[-1][1])
+        self.assertIn('Watch status: unwatched', self.details[-1][1])
+        self.assertIn('No playable source', self.details[-1][1])
+
+    def test_movie_view_refetches_progress_after_reopen_and_rejects_old_account_ref(self):
+        self.movie_fixture()
+        ref = self.library.widget_sources()['items'][0]['ref']
+        target = routes.url('trakt_list', ref=ref, filter='unfinished')
+        self.assertEqual(self.render(target, widget=True).state, 'ready')
+        self.watched = [10, 12]
+        self.library = self.reopen()
+        self.assertEqual(self.render(target, widget=True).state, 'empty')
+        self.assertEqual(self.rows, [])
+        self.store.install(TokenSet('synthetic-b', 'synthetic-refresh-b', 10000))
+        self.library = self.reopen()
+        before = self.calls.count('/users/me/watched/movies')
+        self.assertEqual(self.render(target, widget=True).state, 'unavailable')
+        self.assertEqual(self.calls.count('/users/me/watched/movies'), before)
+        self.assertEqual(self.rows, [])
+
+    def test_failed_or_paginated_history_never_becomes_all_unwatched(self):
+        self.movie_fixture()
+        original = self.intercept
+        for response in (Response(503), Response(200, {'x-pagination-page': '1'}, [])):
+            self.intercept = lambda path: response if path == '/users/me/watched/movies' else original(path)
+            self.library = self.reopen()
+            ref = self.library.widget_sources()['items'][0]['ref']
+            self.assertNotIn(self.render(routes.url('trakt_list', ref=ref, filter='unwatched'), widget=True).state,
+                             {'ready', 'empty', 'partial'})
+            self.assertEqual(self.rows, [])
+            self.assertEqual(self.ends, [(False, False)])
+
+    def test_movie_view_for_show_only_list_does_not_fetch_history(self):
+        self.items = [{'type': 'show', 'show': {'ids': {'trakt': 20}, 'title': 'Synthetic show'}}]
+        ref = self.library.widget_sources()['items'][0]['ref']
+        self.assertEqual(self.render(routes.url('trakt_list', ref=ref, filter='all'), widget=True).state, 'empty')
+        self.assertFalse(any('/watched/' in path or '/sync/playback' in path for path in self.calls))
+        self.assertEqual(self.rows, [])
+
+    def test_movie_rows_are_not_submitted_after_account_change_during_staging(self):
+        self.movie_fixture()
+        ref = self.library.widget_sources()['items'][0]['ref']
+        self.on_item = lambda: self.store.install(TokenSet('synthetic-b', 'synthetic-refresh-b', 10000))
+        self.assertEqual(self.render(routes.url('trakt_list', ref=ref, filter='all'), widget=True).state, 'changed')
+        self.assertEqual(self.rows, [])
+        self.assertEqual(self.ends, [(False, False)])
 
     def test_widget_has_no_modal_dialogs_and_uri_survives_reopen(self):
         target = self.source()

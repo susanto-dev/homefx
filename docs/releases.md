@@ -614,3 +614,18 @@ publication generates new Development digest ZIPs; no publication is dispatched.
 Neither Kodi entry point constructs the provider or cache. No new TV test, login,
 credential migration or paid provider is required for this inactive preparation.
 Actual artwork integration remains gated as described in [TMDB artwork](tmdb-artwork.md).
+
+## 0.17.12 selected-list movie-progress proposal
+
+PR #44 published video 0.17.11 / repository 0.2.0 with successful post-merge and
+hosted-byte checks. The next proposal changes shared runtime code and the
+Development video menu, preparing video 0.17.12 plus new content-addressed
+Development ZIPs. All 25 prior inventory records/archive bytes remain; repository
+0.2.0 is unchanged. Normal publication occurs after maintainer merge and checks;
+no independent dispatch or deployment is requested.
+
+Only the deliberately installed Development Video gains the new read-only movie
+progress views. Public Preview and Production remain inactive. Existing profile,
+account, selected-list refs and normal widget URLs remain; no credential migration
+or fresh login is required solely for this update. New movie-history/filter/skin
+behavior needs TV acceptance. See [movie progress](movie-progress.md).
