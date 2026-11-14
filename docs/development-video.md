@@ -160,3 +160,10 @@ view. Choosing a list in HomeFX and creating a skin row remain separate operatio
 The original **Selected lists / widget sources** route still includes movies/shows
 without implicitly adding history reads. See [scope, filters and short TV check](movie-progress.md).
 TMDB, Real-Debrid, playback and remote history/list writes remain inactive.
+
+## Native metadata identity
+
+Movie/show and parent-show identities are exposed through standard Kodi metadata,
+without additional HomeFX requests or a Helper dependency. See the
+[TMDb Helper compatibility evidence and TV check](kodi-metadata.md). This does not
+replace HomeFX placeholders or automatically configure skin artwork.

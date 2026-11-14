@@ -1,10 +1,11 @@
 # Complete project backlog
 
-Status checked on 14 November 2026: published **video 0.17.11 / repository 0.2.0**.
-PR #44 merged as `24f7910677419c5c4bf4efb485ac4e7a8f0e2c0f`; Validation, Security,
-configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43559265739) passed.
-Publication verified 117 public files. TMDB remains inactive and is now deferred
-by owner direction; existing Trakt metadata and the installed skin remain the focus.
+Status checked on 14 November 2026: published **video 0.17.12 / repository 0.2.0**.
+PR #45 merged as `fb86c90315330f4be1465909d389cb1504b3e252`; Validation, Security,
+configuration and [publication / hosted-byte verification](https://github.com/susanto-dev/homefx/actions/runs/43563091592) passed.
+Publication verified 121 public files; fresh index/current-ZIP checks also matched
+retained bytes. Direct TMDB integration remains deferred. The owner identified
+TMDb Helper 5.4.16; its optional compatibility work does not activate a provider.
 **Implemented** means source and automated checks exist; **published** means
 release bytes are hosted. Neither means tested on the TV or against a real account.
 **Mocked/inactive** means service/player code is not wired into Kodi. **Pending**
@@ -18,7 +19,7 @@ provider or release choice. The current public add-on remains synthetic.
 | B01 | Single repository, video add-on, Kodi 21 Python manifest | Implemented; TV reports Kodi 21.2 / Python 3.11.7 | 0.17.4 synthetic storage passed; broader device acceptance remains pending |
 | B02 | Multiple selected list widgets and folder browsing | Published in Development Video; public Preview remains demo-only | Real list selection/save and 100+ movie browsing passed; separate skin-row assignment, widget access and restart acceptance pending |
 | B03 | Episode/season browser, watched counts, aired-unwatched filter | Published Development read-only browser; synthetic integration tests passed | Live episode identity/status, season navigation and refresh behavior on TV |
-| B04 | Continue watching, unfinished first, next aired unwatched | Candidate adds selected-list unfinished movie rows; global/episode Continue Watching and Next aired remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
+| B04 | Continue watching, unfinished first, next aired unwatched | Published Development selected-list unfinished movie rows; global/episode Continue Watching and Next aired remain inactive | New movie-progress TV acceptance; later episode continuation, resume and performance |
 | B05 | Save movies including unreleased titles, upcoming view | Implemented locally; Trakt list-add mocked | Live owned-list selection/write outcomes; regional release semantics |
 | B06 | Manual mark watched | Implemented locally; remote add-history mocked | Explicit live writes and uncertain-result reconciliation; remote unwatched/history deletion needs separate semantics |
 | B07 | Title search | Demo implemented; Trakt title-search contracts mocked/inactive (0.9) | Live literal-query behavior, entitlement, keyboard/context-menu UI and TV integration |
@@ -44,7 +45,7 @@ This repair does not alter private account stores or enable live services.
 | T01 | Device login, refresh, protected token store, HTTPS/session guards | Shared implementation; program lifecycle passed on TV; Development identity/redirect owner-confirmed | Fresh video-profile login/storage acceptance; denial/expiry and interrupted refresh use automated evidence, with live outcomes unclaimed. Do not repeat completed program checks |
 | T02 | Account connect/cancel/switch/disconnect UI | Shared UI and Development video entry published | Program consent/cancellation/restart/disconnect passed; video-profile UI/account switching and service-side revocation remain separate acceptance |
 | T03 | Personal/liked lists and saved account-bound selections | Published in Development Video; synthetic end-to-end acceptance passed | Selection/save and opening a real 100+ movie list passed; verify widget and saved selection after restart on TV |
-| T04 | Complete movie watched snapshot and filtered joins | Development movie-progress candidate wired; synthetic adapter tests passed | Actual endpoint/entitlement, filter and performance acceptance on TV; failed snapshots never mean unwatched |
+| T04 | Complete movie watched snapshot and filtered joins | Published Development movie-progress views; synthetic adapter tests passed | Actual endpoint/entitlement, filter and performance acceptance on TV; failed snapshots never mean unwatched |
 | T05 | Live Trakt read views | Read-only selected-list Development candidate published; public/Production inactive | Validate candidate on TV; Continue Watching, Next aired and Upcoming need separate future integration |
 | T06 | Live history/list actions | Pending | Separate consent/outcome checks after reads; no automatic write retries |
 | T07 | Persistent metadata cache, shared rate limiting and performance | Invocation-memory cache and shared request limits wired in Development Video; persistent metadata cache pending | Validate shared limits and cold/warm/multiple-row load times on TV; use measurements to decide cache retention/invalidation |
@@ -415,3 +416,13 @@ They are not the global Continue Watching feed, next episodes or a personal cale
 Existing mixed-list/series widgets are unchanged. No playback, remote write or
 provider activation is included. Next owner acceptance is one movie view and one
 skin row using the existing Development account, not another login/storage test.
+
+## Native Kodi identity candidate
+
+The owner identified installed TMDb Helper 5.4.16. Its official archive was inspected
+read-only; no source/assets or credentials were reused. The next candidate exposes
+Trakt/TMDB IDs and parent-show identity using Kodi's standard metadata tags. It
+adds no HomeFX network requests and does not enable the Helper service or replace
+whole-row artwork. See [evidence and acceptance](kodi-metadata.md). Current Trakt
+views remain usable, direct TMDB integration deferred, and Real-Debrid/skin work
+subject to their existing gates. Helper/skin behavior and performance need TV evidence.
