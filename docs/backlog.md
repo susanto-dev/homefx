@@ -178,13 +178,13 @@ refresh/version-selection steps. Auto-update on the TV remains unverified.
 The owner subsequently reported all 0.17.4 synthetic storage checks passed, including
 cleanup, with failure stage none. This does not establish live account acceptance. No source-provider, playback, scrobbling or custom-skin expansion is included.
 
-## Prepared: isolated Development device-test artifact
+## Published: isolated Development device-test artifact
 
 The owner confirmed the registered Development ID and redirect match GitHub variables.
 A separate **HomeFX Development Test** program add-on is prepared for explicit
 storage, local status, device authorization, one refresh rotation and disconnect
-checks. Its main-only Pages build will list a content-addressed test ZIP in the existing
-HomeFX File manager source; the manual artifact workflow remains a fallback. It does
+checks. Its main-only Pages build lists a content-addressed test ZIP in the existing
+HomeFX File manager source. The redundant manual artifact workflow is now removed. It does
 not add a Kodi repository index entry or activate
 HomeFX Preview. See the [bounded test instructions](development-device-test.md).
 
@@ -309,3 +309,16 @@ bounded HTTP status to failures, plus the filename for byte mismatches. Bodies,
 headers, redirects and raw exception text remain private. There are no added retries,
 sleeps, relaxed checks or changed add-on archives. No additional feature code is
 needed before the existing candidate's first real-list/widget TV test.
+
+## Development delivery cleanup
+
+The separate manual Actions artifact workflow and its transfer instructions are
+removed; the normal Pages source supplies both experimental ZIPs. Validation,
+Security (including weekly dependency/Action discovery), configuration preflight
+and Pages publishing remain required. No release archive or package changes.
+
+Program add-on retirement is deferred until the Development Video real-list/widget
+journey is accepted on TV and its own-profile disconnect/recovery is covered. Keep
+its completed device evidence, current download, shared implementation and local
+disconnect access. No credentials are migrated or deleted by this cleanup. The next
+owner action remains the [video checklist](development-video.md#smallest-tv-checklist).

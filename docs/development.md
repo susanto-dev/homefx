@@ -194,10 +194,11 @@ after publication; offline link checks do not establish hosted or TV acceptance.
 
 The [device-test guide](development-device-test.md) describes direct ZIP installation
 from the existing HomeFX File manager source. The main-only Pages build selects
-Development and explicitly embeds its public ID/redirect only in the separate script
-ZIP. No secret is accepted; no provider request runs in CI. The public preview's
-runtime, video/repository packages and repository index remain unchanged. The manual
-Development artifact workflow remains an optional fallback, not a second publisher.
+Development and explicitly embeds its public ID/redirect only in the separate
+Development program and video ZIPs. No secret is accepted; no provider request runs in CI. The public preview's
+runtime, video/repository packages and repository index remain unchanged. The redundant manual
+Development artifact workflow has been removed; Pages is the single delivery path.
+The shared builder remains required by both Development ZIPs and their validators.
 
 Builder/runner tests use fabricated public configuration and isolated temporary
 profiles. Run `python tools/run_tests.py --pattern 'test_development_*.py'` with the

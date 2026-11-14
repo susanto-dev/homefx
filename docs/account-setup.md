@@ -60,18 +60,17 @@ the variable placement in repository settings when diagnosing configuration.
 The preflight does not inject configuration into packages. For the separately
 installed Development test, the main-only **Publish preview** build uses the
 **Development** environment and embeds only the public ID/redirect in the script
-ZIP listed at the existing HomeFX source. The next candidate also builds a separate
+ZIP listed at the existing HomeFX source. The same build produces a separate
 Development video ZIP there; see [its explicit install/consent boundary](development-video.md). Those values are intentionally downloadable;
 never use these variables for secrets. The public Preview video/repository ZIPs remain unconfigured,
 and public preview live routes stay inactive. Production is not selected.
 
-The separately named **Build Development device test** workflow remains an optional
-manual, main-only artifact fallback with an explicit readiness confirmation. It
-cannot deploy Pages. See the [installation and privacy instructions](development-device-test.md).
+The redundant manual artifact workflow has been removed. Use the HomeFX source
+ZIPs and their [installation and privacy instructions](development-device-test.md).
 PR tests use fabricated values and never bind to these environments. Missing or
 invalid Development configuration fails the configured publication build without
 falling back to another environment or inventing a redirect. No provider request
-runs in either build path.
+runs in the publication build.
 
 After merge, inspect the Development run's fixed result. Run Production manually
 only when its configuration is ready for inspection. No workflow dispatch or login
