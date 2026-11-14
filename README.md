@@ -20,10 +20,11 @@ For the separately installed test add-on and its HomeFX source installation step
 [bounded Development device test](docs/development-device-test.md). It does not
 activate live routes in HomeFX Preview or join the public repository channel.
 
-## Published preview: 0.17.7
+## Published preview: 0.17.8
 
-HomeFX Preview 0.17.7 and repository 0.2.0 are published. PR #36 post-merge
-validation, security, publication and deployed-byte checks passed. The owner has
+HomeFX Preview 0.17.8 and repository 0.2.0 are published after PR #37. Validation
+and security passed; deployed-byte verification passed on a read-only rerun after
+an initial request error. No rebuild or redeployment was performed for that rerun. The owner has
 reported passing private storage checks, **Connection test: authorized** and
 **Refresh rotation: passed** in the separate Development program add-on on TV.
 No list or history request was made by that refresh test.
@@ -35,11 +36,10 @@ public video preview still uses demo data and does not inherit the test's tokens
 See [what to do after successful login](docs/development-device-test.md#after-successful-authorization-and-refresh)
 and [why the test is separate](docs/development-device-test.md#why-a-program-add-on).
 
-PR #36's video dispatcher and synthetic process-interruption regression are merged;
-post-merge validation and publication passed for **0.17.7**. The next **0.17.8 candidate**
-adds a deliberately installed [Development video list/widget test](docs/development-video.md)
-with its own profile and routes. The public Preview remains synthetic. The new
-Development video ZIP is not yet published; no credentials are migrated.
+The [Development video list/widget candidate](docs/development-video.md) is now
+published with its own profile and routes. It requires deliberate installation,
+a fresh owner-authorized login and private list selection. The public Preview stays
+synthetic and existing widgets stay separate. No credentials are migrated.
 
 **Synthetic data only. No account login, network calls, source resolution, or playback.**
 The preview supplies four selectable demo lists, a series episode browser,

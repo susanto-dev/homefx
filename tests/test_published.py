@@ -2,6 +2,8 @@
 from pathlib import Path
 import shutil
 import sys
+import ssl
+from urllib.error import HTTPError, URLError
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -115,9 +117,48 @@ class PublishedTests(unittest.TestCase):
         fetch = Mock(side_effect=OSError("secret body https://private.invalid/token"))
         with self.assertRaises(published.PublishedCheckError) as raised:
             published.check(self.site, fetch=fetch)
-        self.assertEqual(str(raised.exception), "published request failed")
+        self.assertEqual(str(raised.exception), "published request failed; file: LICENSE.txt; "
+                         "category: request_unavailable; HTTP status: unavailable")
         self.assertTrue(raised.exception.__suppress_context__)
         fetch.assert_called_once()
+
+    def test_request_diagnostics_identify_public_file_without_private_error_details(self):
+        cases = (
+            (HTTPError("https://private.invalid/token", 503, "SECRET", {"Authorization": "SECRET"}, None),
+             "http_status", "503"),
+            (HTTPError("SECRET", "SECRET", "SECRET", {}, None), "http_status", "unavailable"),
+            (URLError(TimeoutError("SECRET")), "timeout", "unavailable"),
+            (URLError(ssl.SSLCertVerificationError("SECRET")), "certificate_verification", "unavailable"),
+            (ssl.SSLError("SECRET"), "tls_error", "unavailable"),
+            (published.PublishedCheckError("published redirect rejected"), "redirect_rejected", "unavailable"),
+            (published.PublishedCheckError("published response rejected"), "response_rejected", "unavailable"),
+        )
+        for error, category, status in cases:
+            self.requests.clear()
+            def fail_later(url, limit, timeout):
+                if url.endswith('/index.html'):
+                    raise error
+                return self.fetch(url, limit, timeout)
+            fetch = Mock(side_effect=fail_later)
+            with self.assertRaises(published.PublishedCheckError) as result:
+                published.check(self.site, fetch=fetch)
+            self.assertEqual(str(result.exception), "published request failed; file: index.html; category: "
+                             + category + "; HTTP status: " + status)
+            self.assertEqual(fetch.call_count, 2)
+            self.assertTrue(result.exception.__suppress_context__)
+
+    def test_mismatch_identifies_file_without_printing_received_bytes(self):
+        def mismatch(url, limit, timeout):
+            if url.endswith('/index.html'):
+                return b'SECRET private response'
+            return self.fetch(url, limit, timeout)
+        with self.assertRaises(published.PublishedCheckError) as result:
+            published.check(self.site, fetch=mismatch)
+        self.assertEqual(str(result.exception), 'published content mismatch; file: index.html')
+
+    def test_diagnostic_path_fallback_rejects_control_absolute_and_traversal_names(self):
+        for name in ('../SECRET', '/SECRET', 'SECRET\nheader', 'https://SECRET', 'a' * 241, None):
+            self.assertEqual(published._public_name(name), 'unavailable')
 
     def test_budget_checked_before_and_after_fetch(self):
         for times, calls in (([0, 301], 0), ([0, 1, 301], 1)):
